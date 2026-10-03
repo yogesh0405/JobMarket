@@ -20,6 +20,28 @@ export const EDUCATION_REQUIREMENT_OPTIONS = [
   'Others',
 ];
 
+export const ITI_TRADES_LIST = [
+  'Fitter',
+  'Turner',
+  'Machinist',
+  'Electrician',
+  'Welder (MIG/TIG/ARC)',
+  'VMC/CNC Operator',
+  'Quality Inspector',
+  'Tool & Die Maker',
+  'Other ITI Trade...',
+];
+
+export const MIDC_LIST = [
+  'Waluj MIDC (Chhatrapati Sambhajinagar)',
+  'Chakan MIDC (Pune)',
+  'Bhosari MIDC (Pune)',
+  'Taloja MIDC (Navi Mumbai)',
+  'Ranjangaon MIDC (Pune)',
+  'Butibori MIDC (Nagpur)',
+  'Other MIDC Zone...',
+];
+
 export const INDUSTRY_ROLE_MAPPINGS: Record<string, string[]> = {
   'Automotive & Auto Components': [
     'Assembly Line Operator',

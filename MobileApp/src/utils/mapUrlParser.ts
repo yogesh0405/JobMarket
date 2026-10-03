@@ -93,8 +93,12 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
 
   const text = input.trim();
 
+  // If text contains a URL, try extracting the clean URL first
+  const urlMatch = text.match(/https?:\/\/[^\s"'<>]+/i);
+  const toScan = urlMatch ? urlMatch[0] : text;
+
   // 1. Standard Google Maps @lat,lng format (e.g., https://www.google.com/maps/place/.../@19.8762,75.3433,17z)
-  const atMatch = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  const atMatch = toScan.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (atMatch) {
     const lat = parseFloat(atMatch[1]);
     const lng = parseFloat(atMatch[2]);
@@ -103,8 +107,10 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
     }
   }
 
-  // 2. Maps path format: search/lat,+lng or dir/lat,lng or place/lat,lng (e.g. /search/18.458266,+73.846720)
-  const pathMatch = text.match(/(?:search|dir|place|maps)\/[^\/]*?(-?\d{1,2}\.\d+)\s*[,;\s]\s*\+?(-?\d{1,3}\.\d+)/i);
+  // 2. Maps path format: search/lat,+lng or dir/lat,lng or place/lat,lng
+  const pathMatch =
+    toScan.match(/(?:search|dir|place|maps)\/[^\/]*?(-?\d{1,2}\.\d+)\s*[,;\s]\s*\+?(-?\d{1,3}\.\d+)/i) ||
+    text.match(/(?:search|dir|place|maps)\/[^\/]*?(-?\d{1,2}\.\d+)\s*[,;\s]\s*\+?(-?\d{1,3}\.\d+)/i);
   if (pathMatch) {
     const lat = parseFloat(pathMatch[1]);
     const lng = parseFloat(pathMatch[2]);
@@ -113,8 +119,10 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
     }
   }
 
-  // 3. Query param q=lat,lng or ll=lat,lng or center=lat,lng or query=lat,lng or destination=lat,lng
-  const paramMatch = text.match(/[?&](?:q|ll|query|center|destination|near)=(-?\d{1,2}\.\d+)(?:%2C|%20|[\s,+])\+?(-?\d{1,3}\.\d+)/i);
+  // 3. Query param q=lat,lng or ll=lat,lng or query=lat,lng or center=lat,lng or destination=lat,lng or daddr=lat,lng
+  const paramMatch =
+    toScan.match(/[?&](?:q|ll|query|center|destination|near|daddr|saddr)=(-?\d{1,2}\.\d+)(?:%2C|%20|[\s,+])\+?(-?\d{1,3}\.\d+)/i) ||
+    text.match(/[?&](?:q|ll|query|center|destination|near|daddr|saddr)=(-?\d{1,2}\.\d+)(?:%2C|%20|[\s,+])\+?(-?\d{1,3}\.\d+)/i);
   if (paramMatch) {
     const lat = parseFloat(paramMatch[1]);
     const lng = parseFloat(paramMatch[2]);
@@ -124,7 +132,7 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
   }
 
   // 4. Data parameters !3d19.8762!4d75.3433
-  const data3d4d = text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  const data3d4d = toScan.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   if (data3d4d) {
     const lat = parseFloat(data3d4d[1]);
     const lng = parseFloat(data3d4d[2]);
@@ -134,7 +142,7 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
   }
 
   // 5. Reverse data parameters !2d75.3433!3d19.8762
-  const data2d3d = text.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
+  const data2d3d = toScan.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/) || text.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
   if (data2d3d) {
     const lng = parseFloat(data2d3d[1]);
     const lat = parseFloat(data2d3d[2]);
@@ -144,7 +152,9 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
   }
 
   // 6. Static map center staticmap?center=lat,lng
-  const staticMapMatch = text.match(/staticmap\?center=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/i);
+  const staticMapMatch =
+    toScan.match(/staticmap\?center=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/i) ||
+    text.match(/staticmap\?center=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/i);
   if (staticMapMatch) {
     const lat = parseFloat(staticMapMatch[1]);
     const lng = parseFloat(staticMapMatch[2]);
@@ -154,7 +164,7 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
   }
 
   // 7. OpenStreetMap hash #map=15/19.8762/75.3433 or ?mlat=19.8762&mlon=75.3433
-  const osmMatch = text.match(/#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/i);
+  const osmMatch = toScan.match(/#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/i) || text.match(/#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/i);
   if (osmMatch) {
     const lat = parseFloat(osmMatch[1]);
     const lng = parseFloat(osmMatch[2]);
@@ -163,7 +173,7 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
     }
   }
 
-  // 8. General coordinate pattern anywhere in string e.g. "18.458266, 73.846720" or "18.458266,73.846720"
+  // 8. General coordinate pattern anywhere in string e.g. "18.458266, 73.846720"
   const looseMatch = text.match(/(-?\d{1,2}\.\d{3,15})\s*[,;\s]\s*\+?(-?\d{1,3}\.\d{3,15})/);
   if (looseMatch) {
     const lat = parseFloat(looseMatch[1]);
@@ -173,16 +183,18 @@ export function extractCoordinatesFromMapInput(input: string): ParsedCoordinates
     }
   }
 
-  // 9. Known locality / industrial hub dictionary lookup matching
-  const lowerText = text.toLowerCase();
-  for (const key of SORTED_KEYS) {
-    if (lowerText.includes(key)) {
-      const entry = KNOWN_LOCATIONS[key];
-      return {
-        latitude: entry.lat,
-        longitude: entry.lng,
-        formattedAddress: entry.address,
-      };
+  // 9. Known locality / industrial hub dictionary lookup matching (only for address strings or non-short URLs)
+  if (!text.includes('goo.gl') && !text.includes('maps.app')) {
+    const lowerText = text.toLowerCase();
+    for (const key of SORTED_KEYS) {
+      if (lowerText.includes(key)) {
+        const entry = KNOWN_LOCATIONS[key];
+        return {
+          latitude: entry.lat,
+          longitude: entry.lng,
+          formattedAddress: entry.address,
+        };
+      }
     }
   }
 
@@ -226,58 +238,100 @@ export async function geocodeQueryOnClient(query: string): Promise<ParsedCoordin
  * Resolves short URLs (like maps.app.goo.gl or goo.gl/maps) directly on device via redirect-follow, backend API, or client geocoder.
  */
 export async function resolveShortMapUrl(
-  shortUrl: string,
-  cityFallback?: string,
-  midcZoneFallback?: string
+  shortUrl: string
 ): Promise<ParsedCoordinates | null> {
   const trimmed = (shortUrl || '').trim();
   if (!trimmed) return null;
 
-  // 1. Instant check if URL already has coordinates or matches industrial dictionary
-  const directExtract = extractCoordinatesFromMapInput(trimmed);
+  // Extract clean URL if embedded in text
+  const urlMatch = trimmed.match(/https?:\/\/[^\s"'<>]+/i);
+  const targetUrl = urlMatch ? urlMatch[0] : trimmed;
+
+  // 1. Direct coordinate check on target URL
+  const directExtract = extractCoordinatesFromMapInput(targetUrl);
   if (directExtract) return directExtract;
 
-  // 2. Direct On-Device Redirect Follow (Works even if remote backend is unreachable)
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+  // 2. Direct On-Device Redirect Follow & HTML Inspector
+  if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const timeoutId = setTimeout(() => controller.abort(), 4500);
 
-      const response = await fetch(trimmed, {
+      const response = await fetch(targetUrl, {
         method: 'GET',
         redirect: 'follow',
         signal: controller.signal,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
       });
       clearTimeout(timeoutId);
 
-      if (response.url) {
+      // A. Check response URL if redirected
+      if (response.url && response.url !== targetUrl) {
         const urlCoords = extractCoordinatesFromMapInput(response.url);
         if (urlCoords) return urlCoords;
+
+        // Try extracting place name from redirected URL path: e.g. /place/Tata+Motors+Chakan/
+        const placeMatch = response.url.match(/\/place\/([^\/@?]+)/i);
+        if (placeMatch && placeMatch[1]) {
+          const placeQuery = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+          const placeGeo = await geocodeQueryOnClient(placeQuery);
+          if (placeGeo) return placeGeo;
+        }
       }
 
+      // B. Inspect response HTML
       if (response.ok) {
         const html = await response.text();
-        const htmlCoords = extractCoordinatesFromMapInput(html.slice(0, 35000));
+
+        // 1. Coordinates directly in HTML
+        const htmlCoords = extractCoordinatesFromMapInput(html.slice(0, 150000));
         if (htmlCoords) return htmlCoords;
+
+        // 2. Coordinates inside staticmap meta content or og:image
+        const staticMapMatch = html.match(/staticmap\?center=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/i);
+        if (staticMapMatch) {
+          const lat = parseFloat(staticMapMatch[1]);
+          const lng = parseFloat(staticMapMatch[2]);
+          if (isValidLatLong(lat, lng)) {
+            return { latitude: lat, longitude: lng };
+          }
+        }
+
+        // 3. Embedded JSON coordinates [null,null,lat,lng]
+        const jsonMatch = html.match(/\[null,null,(-?\d{1,2}\.\d{4,12}),(-?\d{1,3}\.\d{4,12})\]/);
+        if (jsonMatch) {
+          const lat = parseFloat(jsonMatch[1]);
+          const lng = parseFloat(jsonMatch[2]);
+          if (isValidLatLong(lat, lng)) {
+            return { latitude: lat, longitude: lng };
+          }
+        }
+
+        // 4. Meta title / Page title containing place name: <title>Place Name - Google Maps</title>
+        const titleMatch = html.match(/<title>([^<]+?)(?:\s*[-–]\s*Google Maps)?<\/title>/i);
+        if (titleMatch && titleMatch[1]) {
+          const placeName = titleMatch[1].replace(/Google Maps/gi, '').trim();
+          if (placeName && placeName.length > 2) {
+            const titleGeo = await geocodeQueryOnClient(placeName);
+            if (titleGeo) return titleGeo;
+          }
+        }
       }
     } catch (e) {
-      // Proceed to backend or geocoder fallback
+      // Proceed to backend resolver
     }
   }
 
-  // 3. Backend API Resolver
+  // 3. Backend API Resolver (sends clean URL only to avoid fallback pollution)
   try {
     const res = await apiFetch('/api/v1/jobs/resolve-map-url', {
       method: 'POST',
       body: JSON.stringify({
-        url: trimmed,
-        city: cityFallback,
-        location: cityFallback,
-        midcZone: midcZoneFallback,
+        url: targetUrl,
       }),
     });
 
@@ -294,27 +348,17 @@ export async function resolveShortMapUrl(
       }
     }
   } catch (err) {
-    // Proceed to local fallbacks
+    // Proceed to query fallback
   }
 
-  // 4. Fallback 1: Extract coordinates from fallback text directly
-  if (cityFallback && cityFallback.trim()) {
-    const fallbackCoords = extractCoordinatesFromMapInput(cityFallback);
-    if (fallbackCoords) return fallbackCoords;
-  }
-  if (midcZoneFallback && midcZoneFallback.trim()) {
-    const zoneCoords = extractCoordinatesFromMapInput(midcZoneFallback);
-    if (zoneCoords) return zoneCoords;
-  }
-
-  // 5. Fallback 2: Geocode query on client
-  const clientGeo = await geocodeQueryOnClient(trimmed);
-  if (clientGeo) return clientGeo;
-
-  if (cityFallback && cityFallback.trim()) {
-    const cityGeo = await geocodeQueryOnClient(cityFallback);
-    if (cityGeo) return cityGeo;
+  // 4. Check if the URL has a place query string to geocode: ?q=... or /place/...
+  const queryMatch = targetUrl.match(/[?&]q=([^&]+)/i) || targetUrl.match(/\/place\/([^\/@?]+)/i);
+  if (queryMatch && queryMatch[1]) {
+    const placeQuery = decodeURIComponent(queryMatch[1].replace(/\+/g, ' '));
+    const queryGeo = await geocodeQueryOnClient(placeQuery);
+    if (queryGeo) return queryGeo;
   }
 
   return null;
 }
+

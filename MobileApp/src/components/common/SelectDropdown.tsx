@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,10 @@ import {
   FlatList,
   TouchableWithoutFeedback,
   TextInput,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
+  Dimensions,
 } from 'react-native';
 import { ChevronDown, Check, X, Search } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
@@ -48,6 +52,27 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e?.endCoordinates?.height || 280);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Normalize options to DropdownOption format
   const normalizedOptions: DropdownOption[] = options.map((opt) =>
@@ -62,11 +87,34 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
     o.label.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
+  const handleOpen = () => {
+    if (disabled) return;
+    Keyboard.dismiss();
+    setSearchFilter('');
+    setModalVisible(true);
+  };
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    setModalVisible(false);
+    setSearchFilter('');
+  };
+
   const handleSelectOption = (val: string) => {
+    Keyboard.dismiss();
     onSelect(val);
     setModalVisible(false);
     setSearchFilter('');
   };
+
+  const windowHeight = Dimensions.get('window').height;
+  const topSafeInset = insets.top || (Platform.OS === 'android' ? 24 : 0);
+  const bottomSafeInset = insets.bottom || 0;
+
+  // When keyboard is visible, limit sheet height so the search box and options list remain visible above the keyboard
+  const availableSheetHeight = keyboardHeight > 0
+    ? Math.max(260, windowHeight - keyboardHeight - topSafeInset - 24)
+    : windowHeight * 0.75;
 
   return (
     <View style={styles.wrapper}>
@@ -86,7 +134,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
           disabled && styles.triggerDisabled,
           !!value && styles.triggerActive,
         ]}
-        onPress={() => setModalVisible(true)}
+        onPress={handleOpen}
       >
         {leftIcon ? <View style={styles.leftIconSlot}>{leftIcon}</View> : null}
 
@@ -116,20 +164,34 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
         visible={modalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleClose}
+        statusBarTranslucent
       >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableWithoutFeedback onPress={handleClose}>
             <View style={styles.backdrop} />
           </TouchableWithoutFeedback>
 
-          <View style={[styles.sheetPanel, { paddingBottom: Math.max(insets.bottom + 16, 28) }]}>
+          <View
+            style={[
+              styles.sheetPanel,
+              {
+                maxHeight: availableSheetHeight,
+                paddingBottom: keyboardHeight > 0 ? 12 : Math.max(bottomSafeInset + 16, 28),
+                marginBottom: Platform.OS === 'android' && keyboardHeight > 0 ? keyboardHeight : 0,
+              },
+            ]}
+          >
             {/* Sheet Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{label || 'Select Option'}</Text>
               <TouchableOpacity
-                onPress={() => setModalVisible(false)}
+                onPress={handleClose}
                 style={styles.closeBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <X size={20} color={COLORS.slate500} />
               </TouchableOpacity>
@@ -145,7 +207,19 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
                   placeholderTextColor={COLORS.slate400}
                   value={searchFilter}
                   onChangeText={setSearchFilter}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  autoCorrect={false}
                 />
+                {searchFilter.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setSearchFilter('')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ padding: 4 }}
+                  >
+                    <X size={15} color={COLORS.slate400} />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             ) : null}
 
@@ -153,8 +227,22 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
             <FlatList
               data={filteredOptions}
               keyExtractor={(item, index) => `${item.value}-${index}`}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="on-drag"
               contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No matching options found</Text>
+                  {searchFilter ? (
+                    <TouchableOpacity
+                      onPress={() => setSearchFilter('')}
+                      style={styles.clearSearchBtn}
+                    >
+                      <Text style={styles.clearSearchBtnText}>Clear search filter</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              }
               renderItem={({ item }) => {
                 const isSelected = item.value === value;
                 return (
@@ -178,7 +266,7 @@ export const SelectDropdown: React.FC<SelectDropdownProps> = ({
               }}
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -316,5 +404,27 @@ const styles = StyleSheet.create({
   optionLabelSelected: {
     color: COLORS.primary,
     fontWeight: '700',
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.slate500,
+    fontWeight: '500',
+  },
+  clearSearchBtn: {
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 6,
+  },
+  clearSearchBtnText: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });

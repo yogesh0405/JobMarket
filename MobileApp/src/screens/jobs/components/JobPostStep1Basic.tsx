@@ -7,6 +7,7 @@ import {
   Switch,
   TextInput,
   StyleSheet,
+  Keyboard,
 } from 'react-native';
 import {
   Building2,
@@ -40,11 +41,15 @@ interface JobPostStep1BasicProps {
   setTargetIti: (val: boolean) => void;
   itiTrade: string;
   setItiTrade: (val: string) => void;
+  customItiTrade?: string;
+  setCustomItiTrade?: (val: string) => void;
   itiTradesList: string[];
   isMidcLocation: boolean;
   setIsMidcLocation: (val: boolean) => void;
   midcZone: string;
   setMidcZone: (val: string) => void;
+  customMidcZone?: string;
+  setCustomMidcZone?: (val: string) => void;
   midcList: string[];
 }
 
@@ -67,11 +72,15 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
   setTargetIti,
   itiTrade,
   setItiTrade,
+  customItiTrade,
+  setCustomItiTrade,
   itiTradesList,
   isMidcLocation,
   setIsMidcLocation,
   midcZone,
   setMidcZone,
+  customMidcZone,
+  setCustomMidcZone,
   midcList,
 }) => {
   const displayedIndustries = Array.from(new Set([
@@ -172,6 +181,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                 style={styles.stepperBtn}
                 activeOpacity={0.7}
                 onPress={() => {
+                  Keyboard.dismiss();
                   const curr = parseInt(openingsInput, 10) || 1;
                   setOpeningsInput(String(Math.max(1, curr - 1)));
                 }}
@@ -180,7 +190,9 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
               </TouchableOpacity>
               <TextInput
                 style={styles.stepperInput}
-                keyboardType="numeric"
+                keyboardType="number-pad"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
                 value={openingsInput}
                 onChangeText={(val) => {
                   const sanitized = val.replace(/^0+/, '');
@@ -196,6 +208,7 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                 style={styles.stepperBtn}
                 activeOpacity={0.7}
                 onPress={() => {
+                  Keyboard.dismiss();
                   const curr = parseInt(openingsInput, 10) || 1;
                   setOpeningsInput(String(curr + 1));
                 }}
@@ -207,10 +220,33 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
 
           <View style={styles.sectionSeparator} />
 
-          <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.8} onPress={() => setTargetIti(!targetIti)}>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            activeOpacity={0.8}
+            onPress={() => {
+              Keyboard.dismiss();
+              const nextVal = !targetIti;
+              setTargetIti(nextVal);
+              if (!nextVal) {
+                setItiTrade('');
+                setCustomItiTrade?.('');
+              }
+            }}
+          >
             <Award size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
             <Text style={styles.checkboxText}>Target ITI Professionals</Text>
-            <Switch value={targetIti} onValueChange={setTargetIti} trackColor={{ true: COLORS.primary }} />
+            <Switch
+              value={targetIti}
+              onValueChange={(val) => {
+                Keyboard.dismiss();
+                setTargetIti(val);
+                if (!val) {
+                  setItiTrade('');
+                  setCustomItiTrade?.('');
+                }
+              }}
+              trackColor={{ true: COLORS.primary }}
+            />
           </TouchableOpacity>
 
           {targetIti ? (
@@ -220,16 +256,54 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                 placeholder="Select ITI Specialization Trade..."
                 value={itiTrade}
                 options={itiTradesList}
-                onSelect={(val) => setItiTrade(val)}
+                onSelect={(val) => {
+                  setItiTrade(val);
+                  if (val !== 'Other ITI Trade...' && val !== 'Other') {
+                    setCustomItiTrade?.('');
+                  }
+                }}
                 triggerStyle={{ borderRadius: 8 }}
               />
+
+              {(itiTrade === 'Other ITI Trade...' || itiTrade === 'Other') ? (
+                <Input
+                  placeholder="Type custom ITI Trade name (e.g. Wireman / Diesel Mechanic)"
+                  value={customItiTrade || ''}
+                  onChangeText={(val) => setCustomItiTrade?.(val)}
+                  inputContainerStyle={{ borderRadius: 8 }}
+                  style={{ marginTop: -SPACING.xs }}
+                />
+              ) : null}
             </View>
           ) : null}
 
-          <TouchableOpacity style={styles.checkboxRow} activeOpacity={0.8} onPress={() => setIsMidcLocation(!isMidcLocation)}>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            activeOpacity={0.8}
+            onPress={() => {
+              Keyboard.dismiss();
+              const nextVal = !isMidcLocation;
+              setIsMidcLocation(nextVal);
+              if (!nextVal) {
+                setMidcZone('');
+                setCustomMidcZone?.('');
+              }
+            }}
+          >
             <Building2 size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
             <Text style={styles.checkboxText}>This Job is Located in an MIDC Area</Text>
-            <Switch value={isMidcLocation} onValueChange={setIsMidcLocation} trackColor={{ true: COLORS.primary }} />
+            <Switch
+              value={isMidcLocation}
+              onValueChange={(val) => {
+                Keyboard.dismiss();
+                setIsMidcLocation(val);
+                if (!val) {
+                  setMidcZone('');
+                  setCustomMidcZone?.('');
+                }
+              }}
+              trackColor={{ true: COLORS.primary }}
+            />
           </TouchableOpacity>
 
           {isMidcLocation ? (
@@ -239,9 +313,24 @@ export const JobPostStep1Basic: React.FC<JobPostStep1BasicProps> = ({
                 placeholder="Select MIDC Zone in Maharashtra..."
                 value={midcZone}
                 options={midcList}
-                onSelect={(val) => setMidcZone(val)}
+                onSelect={(val) => {
+                  setMidcZone(val);
+                  if (val !== 'Other MIDC Zone...' && val !== 'Other') {
+                    setCustomMidcZone?.('');
+                  }
+                }}
                 triggerStyle={{ borderRadius: 8 }}
               />
+
+              {(midcZone === 'Other MIDC Zone...' || midcZone === 'Other') ? (
+                <Input
+                  placeholder="Type custom MIDC Zone name (e.g. Kurkumbh MIDC)"
+                  value={customMidcZone || ''}
+                  onChangeText={(val) => setCustomMidcZone?.(val)}
+                  inputContainerStyle={{ borderRadius: 8 }}
+                  style={{ marginTop: -SPACING.xs }}
+                />
+              ) : null}
             </View>
           ) : null}
         </View>

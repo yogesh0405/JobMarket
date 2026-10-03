@@ -68,7 +68,7 @@ interface JobPostStep4EligibilityProps {
   onAddCustomSkill: () => void;
   onToggleSkill: (skill: string) => void;
   availableSkills: string[];
-  onFocusInput?: (e?: any) => void;
+  onFocusInput?: (e?: any, extraMargin?: number) => void;
 }
 
 export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = ({
@@ -424,7 +424,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
               placeholderTextColor="#94A3B8"
               value={customSkillInput}
               onChangeText={setCustomSkillInput}
-              onFocus={onFocusInput}
+              onFocus={(e) => onFocusInput?.(e, 85)}
               onSubmitEditing={onAddCustomSkill}
               returnKeyType="done"
             />

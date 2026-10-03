@@ -112,6 +112,32 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         showToast('Please enter a valid number of vacancies (minimum 1).', 'error');
         return;
       }
+      if (targetIti) {
+        const isOtherIti = itiTrade === 'Other' || itiTrade === 'Other ITI Trade...';
+        if (!itiTrade) {
+          setErrorMsg('Please select an ITI Specialization Trade.');
+          showToast('Please select an ITI Specialization Trade.', 'error');
+          return;
+        }
+        if (isOtherIti && !customItiTrade.trim()) {
+          setErrorMsg('Please enter custom ITI Trade name.');
+          showToast('Please enter custom ITI Trade name.', 'error');
+          return;
+        }
+      }
+      if (isMidcLocation) {
+        const isOtherMidc = midcZone === 'Other' || midcZone === 'Other MIDC Zone...';
+        if (!midcZone) {
+          setErrorMsg('Please select an MIDC Zone.');
+          showToast('Please select an MIDC Zone.', 'error');
+          return;
+        }
+        if (isOtherMidc && !customMidcZone.trim()) {
+          setErrorMsg('Please enter custom MIDC Zone name.');
+          showToast('Please enter custom MIDC Zone name.', 'error');
+          return;
+        }
+      }
       setCurrentStep(2);
       const el = document.querySelector('.post-job-scroll-container');
       if (el) el.scrollTop = 0;
@@ -166,6 +192,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
   // 5. MIDC Location
   const [isMidcLocation, setIsMidcLocation] = useState<boolean>(false);
   const [midcZone, setMidcZone] = useState<string>('');
+  const [customMidcZone, setCustomMidcZone] = useState<string>('');
 
   // 6. Vacancy Count (Stepper Control with string state to fix clearing/editing bugs)
   const [openingsInput, setOpeningsInput] = useState<string>('1');
@@ -485,7 +512,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     setIsParsingMapUrl(true);
     setMapUrlStatusMsg('LOADING:Extracting location coordinates from map link...');
 
-    const resolved = await resolveShortMapUrl(inputUrl, location);
+    const resolved = await resolveShortMapUrl(inputUrl);
     setIsParsingMapUrl(false);
 
     if (resolved) {
@@ -498,17 +525,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         setLatitude(geoFallback.latitude);
         setLongitude(geoFallback.longitude);
         setMapUrlStatusMsg(`SUCCESS:Exact location pinned on map (${geoFallback.latitude.toFixed(4)}, ${geoFallback.longitude.toFixed(4)})`);
-      } else if (location && location.trim()) {
-        const cityGeo = await geocodeQueryOnClient(location);
-        if (cityGeo) {
-          setLatitude(cityGeo.latitude);
-          setLongitude(cityGeo.longitude);
-          setMapUrlStatusMsg(`SUCCESS:Location pinned on map (${cityGeo.latitude.toFixed(4)}, ${cityGeo.longitude.toFixed(4)})`);
-        } else {
-          setMapUrlStatusMsg('WARN:Could not extract exact coordinates from link. Please verify link format.');
-        }
       } else {
-        setMapUrlStatusMsg('WARN:Could not extract exact coordinates from link. Please verify link format.');
+        setMapUrlStatusMsg('WARN:Could not extract exact coordinates from link. Please verify link format or pin on map.');
       }
     }
   };
@@ -610,7 +628,18 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
         setItiTrade(existingJob.itiTrade || '');
       }
 
-      setMidcZone(existingJob.midcZone || '');
+      if (existingJob.midcZone) {
+        if (!midcList.includes(existingJob.midcZone)) {
+          setMidcZone('Other MIDC Zone...');
+          setCustomMidcZone(existingJob.midcZone);
+        } else {
+          setMidcZone(existingJob.midcZone);
+          setCustomMidcZone('');
+        }
+      } else {
+        setMidcZone('');
+        setCustomMidcZone('');
+      }
       setIsMidcLocation(!!existingJob.midcZone);
 
       setGoogleMapsUrl((existingJob as any).googleMapsUrl || (existingJob as any).google_maps_url || '');
@@ -749,7 +778,8 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     const finalIndustry = industry === 'Other' ? customIndustry.trim() : industry.trim();
     const finalTitle = title === 'Other' ? customTitle.trim() : title.trim();
     const finalTrade = finalIndustry; // Automatically sync trade with industry
-    const finalItiTrade = targetIti ? (itiTrade === 'Other' ? customItiTrade.trim() : itiTrade.trim()) : '';
+    const finalItiTrade = targetIti ? (itiTrade === 'Other' || itiTrade === 'Other ITI Trade...' ? customItiTrade.trim() : itiTrade.trim()) : '';
+    const finalMidcZone = isMidcLocation ? ((midcZone === 'Other' || midcZone === 'Other MIDC Zone...') ? customMidcZone.trim() : midcZone.trim()) : '';
     const finalEducation = educationRequirement === 'Others' ? customEducation.trim() : educationRequirement.trim();
     const parsedOpenings = Math.max(1, parseInt(openingsInput) || 1);
     const parsedSkills = skills.split(',').map(s => s.trim()).filter(Boolean);
@@ -769,6 +799,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     }
     if (!location.trim()) {
       showToast('Please specify City Location', 'error');
+      return;
+    }
+    if (targetIti && !finalItiTrade) {
+      showToast('Please select or specify an ITI Specialization Trade.', 'error');
+      return;
+    }
+    if (isMidcLocation && !finalMidcZone) {
+      showToast('Please select or specify an MIDC Zone.', 'error');
       return;
     }
     if (!description.trim() || description.trim().length < 5) {
@@ -870,7 +908,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       targetIti,
       itiTrade: finalItiTrade,
       isMidcLocation,
-      midcZone: isMidcLocation ? midcZone : '',
+      midcZone: finalMidcZone,
       experienceRequired,
       minExperience: experienceRequired ? (Number(minExperience) || 0) : 0,
       maxExperience: experienceRequired ? (Number(maxExperience) || 0) : 0,
@@ -1376,7 +1414,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setIsMidcLocation(checked);
-                      if (!checked) setMidcZone('');
+                      if (!checked) {
+                        setMidcZone('');
+                        setCustomMidcZone('');
+                      }
                     }}
                     style={{ width: '18px', height: '18px', accentColor: '#344BFD', cursor: 'pointer' }}
                   />
@@ -1391,12 +1432,29 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     <select
                       className="form-select"
                       value={midcZone}
-                      onChange={(e) => setMidcZone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMidcZone(val);
+                        if (val !== 'Other MIDC Zone...' && val !== 'Other') {
+                          setCustomMidcZone('');
+                        }
+                      }}
                       required={isMidcLocation}
                     >
                       <option value="">Select MIDC Zone in Maharashtra...</option>
                       {midcList.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
+                    {(midcZone === 'Other MIDC Zone...' || midcZone === 'Other') && (
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ marginTop: '8px' }}
+                        placeholder="Type custom MIDC Zone name (e.g. Kurkumbh MIDC)"
+                        value={customMidcZone}
+                        onChange={(e) => setCustomMidcZone(e.target.value)}
+                        required
+                      />
+                    )}
                   </div>
                 )}
               </div>

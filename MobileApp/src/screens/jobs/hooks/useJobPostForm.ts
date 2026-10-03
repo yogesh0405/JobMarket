@@ -4,7 +4,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../../api/jobsApi';
 import { useAuth } from '../../../hooks/useAuth';
-import { getRolesForIndustry, getSkillsForRole, EDUCATION_REQUIREMENT_OPTIONS } from '../components/JobPostConstants';
+import {
+  getRolesForIndustry,
+  getSkillsForRole,
+  EDUCATION_REQUIREMENT_OPTIONS,
+  ITI_TRADES_LIST,
+  MIDC_LIST,
+} from '../components/JobPostConstants';
 import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../../utils/mapUrlParser';
 import { uriToDataUri } from '../../../utils/fileUploadHelper';
 
@@ -168,7 +174,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setAutoResolveMsg('Resolving coordinates from map link...');
 
     try {
-      const resolved = await resolveShortMapUrl(trimmed, location, midcZone);
+      const resolved = await resolveShortMapUrl(trimmed);
       if (resolved) {
         setLatitude(resolved.latitude);
         setLongitude(resolved.longitude);
@@ -185,20 +191,8 @@ export const useJobPostForm = (navigation: any, route: any) => {
             setResolvedAddress(geoFallback.formattedAddress);
           }
           setAutoResolveMsg(`Coordinates Resolved (${geoFallback.latitude.toFixed(4)}, ${geoFallback.longitude.toFixed(4)})`);
-        } else if (location && location.trim()) {
-          const locGeo = await geocodeQueryOnClient(location);
-          if (locGeo) {
-            setLatitude(locGeo.latitude);
-            setLongitude(locGeo.longitude);
-            if (locGeo.formattedAddress) {
-              setResolvedAddress(locGeo.formattedAddress);
-            }
-            setAutoResolveMsg(`Location Pinned (${locGeo.latitude.toFixed(4)}, ${locGeo.longitude.toFixed(4)})`);
-          } else {
-            setAutoResolveMsg('Map link captured');
-          }
         } else {
-          setAutoResolveMsg('Map link captured');
+          setAutoResolveMsg('Map link captured (GPS pin not found from link)');
         }
       }
     } catch (err) {
@@ -362,9 +356,33 @@ export const useJobPostForm = (navigation: any, route: any) => {
               setTitle(j.title || '');
               setOpeningsInput((j.openings ?? 1).toString());
               setTargetIti(!!j.targetIti);
-              setItiTrade(j.itiTrade || '');
-              setIsMidcLocation(!!(j.isMidcLocation || j.midc_zone || j.midcZone));
-              setMidcZone(j.midc_zone || j.midcZone || '');
+              const iti = j.itiTrade || j.iti_trade || '';
+              if (iti) {
+                if (ITI_TRADES_LIST.includes(iti)) {
+                  setItiTrade(iti);
+                  setCustomItiTrade('');
+                } else {
+                  setItiTrade('Other ITI Trade...');
+                  setCustomItiTrade(iti);
+                }
+              } else {
+                setItiTrade('');
+                setCustomItiTrade('');
+              }
+              const midc = j.midc_zone || j.midcZone || '';
+              setIsMidcLocation(!!(j.isMidcLocation || midc));
+              if (midc) {
+                if (MIDC_LIST.includes(midc)) {
+                  setMidcZone(midc);
+                  setCustomMidcZone('');
+                } else {
+                  setMidcZone('Other MIDC Zone...');
+                  setCustomMidcZone(midc);
+                }
+              } else {
+                setMidcZone('');
+                setCustomMidcZone('');
+              }
               setLocation(j.location || '');
               setGoogleMapsUrl(j.googleMapsUrl || j.google_maps_url || '');
               if (j.latitude) setLatitude(j.latitude);
@@ -487,12 +505,39 @@ export const useJobPostForm = (navigation: any, route: any) => {
   };
 
   const handleResolveMapUrl = async () => {
-    const targetUrl = (googleMapsUrl || location || midcZone || '').trim();
-    if (!targetUrl) {
+    if (googleMapsUrl && googleMapsUrl.trim()) {
+      await handleGoogleMapsUrlChange(googleMapsUrl.trim());
+    } else if (location && location.trim()) {
+      setResolvingMap(true);
+      setAutoResolveMsg('Geocoding factory address...');
+      try {
+        const direct = extractCoordinatesFromMapInput(location.trim());
+        if (direct) {
+          setLatitude(direct.latitude);
+          setLongitude(direct.longitude);
+          if (direct.formattedAddress) setResolvedAddress(direct.formattedAddress);
+          setAutoResolveMsg(`Location Pinned (${direct.latitude.toFixed(4)}, ${direct.longitude.toFixed(4)})`);
+        } else {
+          const locGeo = await geocodeQueryOnClient(location.trim());
+          if (locGeo) {
+            setLatitude(locGeo.latitude);
+            setLongitude(locGeo.longitude);
+            if (locGeo.formattedAddress) setResolvedAddress(locGeo.formattedAddress);
+            setAutoResolveMsg(`Location Pinned (${locGeo.latitude.toFixed(4)}, ${locGeo.longitude.toFixed(4)})`);
+          } else {
+            setAutoResolveMsg('Could not find location coordinates');
+            Alert.alert(
+              'Location Not Found',
+              'Could not determine GPS coordinates for this address. Please try adding more detail or paste a Google Maps link.'
+            );
+          }
+        }
+      } finally {
+        setResolvingMap(false);
+      }
+    } else {
       Alert.alert('Location Required', 'Please enter a Google Maps URL or factory address first.');
-      return;
     }
-    await handleGoogleMapsUrlChange(targetUrl);
   };
 
   const handleSubmitJob = async () => {
@@ -500,8 +545,8 @@ export const useJobPostForm = (navigation: any, route: any) => {
 
     const finalIndustry = industry === 'Other' ? customIndustry.trim() : industry.trim();
     const finalTitle = title === 'Other' ? customTitle.trim() : title.trim();
-    const finalItiTrade = targetIti ? (itiTrade === 'Other ITI Trade...' ? customItiTrade.trim() : itiTrade.trim()) : '';
-    const finalMidcZone = isMidcLocation ? (midcZone === 'Other MIDC Zone...' ? customMidcZone.trim() : midcZone.trim()) : '';
+    const finalItiTrade = targetIti ? ((itiTrade === 'Other ITI Trade...' || itiTrade === 'Other') ? customItiTrade.trim() : itiTrade.trim()) : '';
+    const finalMidcZone = isMidcLocation ? ((midcZone === 'Other MIDC Zone...' || midcZone === 'Other') ? customMidcZone.trim() : midcZone.trim()) : '';
     const parsedOpenings = Math.max(1, parseInt(openingsInput, 10) || 1);
 
     if (!finalIndustry) {
@@ -514,6 +559,10 @@ export const useJobPostForm = (navigation: any, route: any) => {
     }
     if (!location.trim()) {
       setError('Please specify City Location / Factory Address.');
+      return false;
+    }
+    if (targetIti && !finalItiTrade) {
+      setError('Please select or specify an ITI Specialization Trade.');
       return false;
     }
     if (isMidcLocation && !finalMidcZone) {

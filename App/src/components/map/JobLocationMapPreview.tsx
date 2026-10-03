@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Target, ZoomIn, ZoomOut } from 'lucide-react';
+import { MAP_TILE_LAYER_URL, MAP_ATTRIBUTION, FALLBACK_OSM_TILE_URL } from '../../constants/mapConfig';
 
 interface JobLocationMapPreviewProps {
   latitude?: number | null;
@@ -59,12 +60,26 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         dragging: true
       });
 
-      // Add high-performance CARTO Voyager tile layer (powered by OSM, no 403 policy blocking)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      // Add high-performance CARTO Voyager tile layer with authenticated key
+      const tileLayer = L.tileLayer(MAP_TILE_LAYER_URL, {
+        attribution: MAP_ATTRIBUTION,
         subdomains: 'abcd',
         maxZoom: 20
       }).addTo(map);
+
+      tileLayer.on('tileerror', (error) => {
+        const tile = (error as any).tile;
+        if (tile && !tile._hasFallback) {
+          tile._hasFallback = true;
+          const coords = (error as any).coords;
+          if (coords) {
+            tile.src = FALLBACK_OSM_TILE_URL
+              .replace('{z}', coords.z)
+              .replace('{x}', coords.x)
+              .replace('{y}', coords.y);
+          }
+        }
+      });
 
       // Add marker pin (draggable if not readOnly or onLocationSelect provided)
       const isDraggable = !readOnly || !!onLocationSelect;

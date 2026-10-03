@@ -9,6 +9,7 @@ import { JobPopupCard } from './JobPopupCard';
 import { createRoot } from 'react-dom/client';
 import { getCompanyLogo } from '../../utils/companyLogos';
 import { BrowserRouter } from 'react-router-dom';
+import { MAP_TILE_LAYER_URL, MAP_ATTRIBUTION, FALLBACK_OSM_TILE_URL } from '../../constants/mapConfig';
 
 
 interface InteractiveJobMapProps {
@@ -55,12 +56,26 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
       touchZoom: true
     });
 
-    // Add high-performance CARTO Voyager tile layer (powered by OSM, no 403 policy blocking)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    // Add high-performance CARTO Voyager tile layer with authenticated key
+    const tileLayer = L.tileLayer(MAP_TILE_LAYER_URL, {
+      attribution: MAP_ATTRIBUTION,
       subdomains: 'abcd',
       maxZoom: 20
     }).addTo(map);
+
+    tileLayer.on('tileerror', (error) => {
+      const tile = (error as any).tile;
+      if (tile && !tile._hasFallback) {
+        tile._hasFallback = true;
+        const coords = (error as any).coords;
+        if (coords) {
+          tile.src = FALLBACK_OSM_TILE_URL
+            .replace('{z}', coords.z)
+            .replace('{x}', coords.x)
+            .replace('{y}', coords.y);
+        }
+      }
+    });
 
     // Add Scale Control
     L.control.scale({ imperial: false, metric: true }).addTo(map);

@@ -19,6 +19,8 @@ import { KeyboardAwareScrollView, handleFocusInput } from '../../components/comm
 import { COLORS } from '../../constants/theme';
 import {
   INDUSTRY_LIST,
+  ITI_TRADES_LIST,
+  MIDC_LIST,
 } from './components/JobPostConstants';
 import { JobPostStep1Basic } from './components/JobPostStep1Basic';
 import { JobPostStep2Location } from './components/JobPostStep2Location';
@@ -84,29 +86,8 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
     { id: 4, title: 'Role & Skills' },
   ];
 
-  const ITI_TRADES_LIST = [
-    'Fitter',
-    'Turner',
-    'Machinist',
-    'Electrician',
-    'Welder (MIG/TIG/ARC)',
-    'VMC/CNC Operator',
-    'Quality Inspector',
-    'Tool & Die Maker',
-    'Other ITI Trade...',
-  ];
-
-  const MIDC_LIST = [
-    'Waluj MIDC (Chhatrapati Sambhajinagar)',
-    'Chakan MIDC (Pune)',
-    'Bhosari MIDC (Pune)',
-    'Taloja MIDC (Navi Mumbai)',
-    'Ranjangaon MIDC (Pune)',
-    'Butibori MIDC (Nagpur)',
-    'Other MIDC Zone...',
-  ];
-
   const handleNextStep = () => {
+    Keyboard.dismiss();
     form.setError(null);
     if (form.currentStep === 1) {
       const activeInd = form.industry === 'Other' ? form.customIndustry.trim() : form.industry.trim();
@@ -122,6 +103,28 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
       if (!form.openingsInput || parseInt(form.openingsInput, 10) < 1) {
         form.setError('Please enter a valid number of vacancies (minimum 1).');
         return;
+      }
+      if (form.targetIti) {
+        const isOtherIti = form.itiTrade === 'Other ITI Trade...' || form.itiTrade === 'Other';
+        if (!form.itiTrade) {
+          form.setError('Please select an ITI Specialization Trade.');
+          return;
+        }
+        if (isOtherIti && !form.customItiTrade.trim()) {
+          form.setError('Please enter custom ITI Trade name.');
+          return;
+        }
+      }
+      if (form.isMidcLocation) {
+        const isOtherMidc = form.midcZone === 'Other MIDC Zone...' || form.midcZone === 'Other';
+        if (!form.midcZone) {
+          form.setError('Please select an MIDC Zone.');
+          return;
+        }
+        if (isOtherMidc && !form.customMidcZone.trim()) {
+          form.setError('Please enter custom MIDC Zone name.');
+          return;
+        }
       }
       form.setCurrentStep(2);
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -139,6 +142,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handlePrevStep = () => {
+    Keyboard.dismiss();
     form.setError(null);
     if (form.currentStep > 1) {
       form.setCurrentStep(form.currentStep - 1);
@@ -147,6 +151,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleFormSubmit = async () => {
+    Keyboard.dismiss();
     const success = await form.handleSubmitJob();
     if (success === false) {
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -174,6 +179,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
                   activeOpacity={0.7}
                   disabled={stepNumber > form.currentStep}
                   onPress={() => {
+                    Keyboard.dismiss();
                     if (stepNumber < form.currentStep) {
                       form.setCurrentStep(stepNumber);
                       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -255,11 +261,15 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             setTargetIti={form.setTargetIti}
             itiTrade={form.itiTrade}
             setItiTrade={form.setItiTrade}
+            customItiTrade={form.customItiTrade}
+            setCustomItiTrade={form.setCustomItiTrade}
             itiTradesList={ITI_TRADES_LIST}
             isMidcLocation={form.isMidcLocation}
             setIsMidcLocation={form.setIsMidcLocation}
             midcZone={form.midcZone}
             setMidcZone={form.setMidcZone}
+            customMidcZone={form.customMidcZone}
+            setCustomMidcZone={form.setCustomMidcZone}
             midcList={MIDC_LIST}
           />
         ) : null}
@@ -364,7 +374,7 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
             onAddCustomSkill={form.handleAddCustomSkill}
             onToggleSkill={form.handleToggleSkill}
             availableSkills={form.availableSkills}
-            onFocusInput={(e) => handleFocusInput(e, scrollViewRef, 24)}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 65)}
           />
         ) : null}
       </KeyboardAwareScrollView>

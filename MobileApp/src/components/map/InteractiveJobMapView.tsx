@@ -28,6 +28,7 @@ import { Job } from '../../types';
 import { getCompanyLogoUrl } from '../../utils/companyLogos';
 import { extractCoordinatesFromMapInput, isValidLatLong, KNOWN_LOCATIONS } from '../../utils/mapUrlParser';
 import { CompanyLogoAvatar } from '../common/CompanyLogoAvatar';
+import { MAP_TILE_LAYER_URL, MAP_ATTRIBUTION, FALLBACK_OSM_TILE_URL } from '../../constants/mapConfig';
 
 interface InteractiveJobMapViewProps {
   jobs: Job[];
@@ -281,11 +282,21 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
             attributionControl: false
           });
 
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
+          const tileLayer = L.tileLayer('${MAP_TILE_LAYER_URL}', {
+            attribution: '${MAP_ATTRIBUTION}',
             subdomains: 'abcd',
             maxZoom: 20
           }).addTo(map);
+
+          tileLayer.on('tileerror', function(error, tile) {
+            if (tile && !tile._hasFallback) {
+              tile._hasFallback = true;
+              tile.src = '${FALLBACK_OSM_TILE_URL}'
+                .replace('{z}', error.coords.z)
+                .replace('{x}', error.coords.x)
+                .replace('{y}', error.coords.y);
+            }
+          });
 
           // Leaflet MarkerCluster Group with Custom Count Badges
           const clusterGroup = L.markerClusterGroup({

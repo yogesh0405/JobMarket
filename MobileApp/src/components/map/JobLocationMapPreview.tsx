@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'rea
 import { WebView } from 'react-native-webview';
 import { MapPin, Target, Navigation2, ExternalLink } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, RADIUS, SHADOWS, SPACING } from '../../constants/theme';
+import { MAP_TILE_LAYER_URL, MAP_ATTRIBUTION, FALLBACK_OSM_TILE_URL } from '../../constants/mapConfig';
 
 interface JobLocationMapPreviewProps {
   latitude?: number | null;
@@ -28,6 +29,33 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
     !isNaN(longitude) &&
     !(latitude === 0 && longitude === 0);
 
+  const lat = latitude ?? 0;
+  const lng = longitude ?? 0;
+
+  const handleOpenGoogleMaps = () => {
+    const queryStr = locationName ? `${locationName}, ${lat},${lng}` : `${lat},${lng}`;
+    const mapsUrl =
+      Platform.OS === 'ios'
+        ? `https://maps.apple.com/?q=${encodeURIComponent(queryStr)}&ll=${lat},${lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryStr)}`;
+
+    Linking.openURL(mapsUrl).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+    });
+  };
+
+  React.useEffect(() => {
+    if (hasValidCoords && webViewRef.current) {
+      const cleanName = (locationName || 'Factory Location').replace(/"/g, '\\"').replace(/\n/g, ' ');
+      webViewRef.current.injectJavaScript(`
+        if (window.updateMapPin) {
+          window.updateMapPin(${lat}, ${lng}, "${cleanName}");
+        }
+        true;
+      `);
+    }
+  }, [lat, lng, locationName, hasValidCoords]);
+
   if (!hasValidCoords) {
     return (
       <View style={[styles.cardContainer, styles.placeholderContainer, { minHeight: 140 }]}>
@@ -41,21 +69,6 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
       </View>
     );
   }
-
-  const lat = latitude;
-  const lng = longitude;
-
-  const handleOpenGoogleMaps = () => {
-    const queryStr = locationName ? `${locationName}, ${lat},${lng}` : `${lat},${lng}`;
-    const mapsUrl =
-      Platform.OS === 'ios'
-        ? `https://maps.apple.com/?q=${encodeURIComponent(queryStr)}&ll=${lat},${lng}`
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryStr)}`;
-
-    Linking.openURL(mapsUrl).catch(() => {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
-    });
-  };
 
   const mapHtml = `
     <!DOCTYPE html>
@@ -102,11 +115,21 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
             touchZoom: true
           });
 
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
+          const tileLayer = L.tileLayer('${MAP_TILE_LAYER_URL}', {
+            attribution: '${MAP_ATTRIBUTION}',
             subdomains: 'abcd',
             maxZoom: 20
           }).addTo(map);
+
+          tileLayer.on('tileerror', function(error, tile) {
+            if (tile && !tile._hasFallback) {
+              tile._hasFallback = true;
+              tile.src = '${FALLBACK_OSM_TILE_URL}'
+                .replace('{z}', error.coords.z)
+                .replace('{x}', error.coords.x)
+                .replace('{y}', error.coords.y);
+            }
+          });
 
           setTimeout(function() {
             map.invalidateSize();
@@ -128,7 +151,15 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
           });
 
           const marker = L.marker([lat, lng], { icon: pinIcon }).addTo(map);
-          marker.bindPopup("<strong style='color:#0f172a;'>Factory Location</strong><br/><span style='font-size:12px;color:#2563eb;'>Tap to Open Maps 🧭</span>").openPopup();
+          marker.bindPopup("<strong style='color:#0f172a;'>" + locName + "</strong><br/><span style='font-size:12px;color:#2563eb;'>Tap to Open Maps 🧭</span>").openPopup();
+
+          window.updateMapPin = function(newLat, newLng, newLabel) {
+            if (map && marker) {
+              marker.setLatLng([newLat, newLng]);
+              map.setView([newLat, newLng], 15, { animate: true });
+              marker.setPopupContent("<strong style='color:#0f172a;'>" + (newLabel || 'Factory Location') + "</strong><br/><span style='font-size:12px;color:#2563eb;'>Tap to Open Maps 🧭</span>").openPopup();
+            }
+          };
 
           marker.on('click', function() {
             if (window.ReactNativeWebView) {
@@ -190,6 +221,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
       {/* Interactive Leaflet WebView Canvas */}
       <View style={[styles.mapWrapper, { height }]}>
         <WebView
+          key={`job-preview-map-${(lat ?? 0).toFixed(4)}-${(lng ?? 0).toFixed(4)}`}
           ref={webViewRef}
           originWhitelist={['*']}
           source={{ html: mapHtml, baseUrl: 'https://unpkg.com' }}

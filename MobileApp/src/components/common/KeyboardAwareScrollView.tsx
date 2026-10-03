@@ -20,67 +20,124 @@ interface KeyboardAwareScrollViewProps extends ScrollViewProps {
 
 let globalActiveKeyboardHeight = 0;
 
+interface FocusedTargetInfo {
+  node: any;
+  scrollRef: React.RefObject<ScrollView | null>;
+  extraMargin: number;
+}
+
+let lastFocusedTarget: FocusedTargetInfo | null = null;
+
 Keyboard.addListener(
   Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
   (e) => {
-    globalActiveKeyboardHeight = e?.endCoordinates?.height || 280;
+    globalActiveKeyboardHeight = e?.endCoordinates?.height || (Platform.OS === 'ios' ? 320 : 300);
   }
 );
 Keyboard.addListener(
   Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
   () => {
     globalActiveKeyboardHeight = 0;
+    lastFocusedTarget = null;
   }
 );
+
+export const scrollToFocused = (
+  node: any,
+  scrollRef: React.RefObject<ScrollView | null>,
+  extraScrollMargin = 60,
+  explicitKbHeight?: number
+) => {
+  if (!node || !scrollRef?.current) return;
+
+  try {
+    const reactTag = typeof node === 'number' ? node : findNodeHandle(node);
+    const scrollTag = findNodeHandle(scrollRef.current);
+    if (!reactTag || !scrollTag) return;
+
+    const screenH = Dimensions.get('window').height;
+    const kbHeight =
+      explicitKbHeight ||
+      (globalActiveKeyboardHeight > 0
+        ? globalActiveKeyboardHeight
+        : Platform.OS === 'ios'
+        ? 320
+        : 300);
+
+    const keyboardTop = screenH - kbHeight;
+
+    // Use measureLayout to get the exact Y coordinate within the scrollable content
+    UIManager.measureLayout(
+      reactTag,
+      scrollTag,
+      () => {
+        // Fallback: If measureLayout fails, use measureInWindow
+        UIManager.measureInWindow(reactTag, (_wx, wy, _ww, wheight) => {
+          if (typeof wy === 'number' && !isNaN(wy)) {
+            const inputBottom = wy + wheight;
+            const targetBottom = keyboardTop - extraScrollMargin;
+            const delta = inputBottom - targetBottom;
+            if (delta > 0) {
+              (scrollRef.current as any)?.scrollTo?.({
+                y: Math.max(0, delta + 60),
+                animated: true,
+              });
+            }
+          }
+        });
+      },
+      (_x, y, _width, height) => {
+        UIManager.measure(scrollTag, (_sx, sy, _sWidth, _sHeight) => {
+          const scrollviewTop = typeof sy === 'number' && sy >= 0 ? sy : 0;
+          // The visible area of the scroll view before the keyboard begins
+          const availableViewportHeight = Math.max(
+            150,
+            keyboardTop - scrollviewTop
+          );
+
+          // Position the input with extraScrollMargin space above the keyboard
+          const targetY = Math.max(
+            0,
+            y + height + extraScrollMargin - availableViewportHeight
+          );
+          scrollRef.current?.scrollTo({ y: targetY, animated: true });
+        });
+      }
+    );
+  } catch (e) {
+    // Fallback
+  }
+};
 
 export const handleFocusInput = (
   event: NativeSyntheticEvent<TargetedEvent> | any,
   scrollRef: React.RefObject<ScrollView | null>,
-  extraScrollMargin = 30
+  extraScrollMargin = 60
 ) => {
-  const node = event?.nativeEvent?.target || event?.target;
+  const node = event?.nativeEvent?.target || event?.target || event;
   if (!node || !scrollRef?.current) return;
 
-  const scrollToInput = () => {
-    try {
-      const reactTag = findNodeHandle(node as any);
-      const scrollTag = findNodeHandle(scrollRef.current);
-      if (reactTag && scrollTag) {
-        UIManager.measureLayout(
-          reactTag,
-          scrollTag,
-          () => {},
-          (_x, y, _width, height) => {
-            UIManager.measure(
-              scrollTag,
-              (_sx, _sy, _sWidth, sHeight) => {
-                const screenH = Dimensions.get('window').height;
-                const kbHeight = globalActiveKeyboardHeight > 0 
-                  ? globalActiveKeyboardHeight 
-                  : (Platform.OS === 'ios' ? 300 : 280);
-                const totalContainerH = sHeight > 100 ? sHeight : screenH;
-                const visibleHeight = sHeight < (screenH - kbHeight + 50)
-                  ? sHeight
-                  : Math.max(160, totalContainerH - kbHeight);
-
-                // Position input field comfortably just above keyboard with extraScrollMargin clearance
-                const targetY = Math.max(0, y + height + extraScrollMargin - visibleHeight);
-                scrollRef.current?.scrollTo({ y: targetY, animated: true });
-              }
-            );
-          }
-        );
-      }
-    } catch (e) {
-      // Fallback
-    }
+  lastFocusedTarget = {
+    node,
+    scrollRef,
+    extraMargin: extraScrollMargin,
   };
 
-  setTimeout(scrollToInput, Platform.OS === 'ios' ? 80 : 150);
+  // Immediate attempt
+  if (globalActiveKeyboardHeight > 0) {
+    setTimeout(() => {
+      scrollToFocused(node, scrollRef, extraScrollMargin, globalActiveKeyboardHeight);
+    }, 40);
+  } else {
+    // If keyboard is animating open, schedule a scroll attempt
+    setTimeout(() => {
+      scrollToFocused(node, scrollRef, extraScrollMargin);
+    }, 120);
+  }
 };
 
 export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwareScrollViewProps>(
-  ({ children, extraScrollHeight = 30, contentContainerStyle, style, ...props }, ref) => {
+  ({ children, extraScrollHeight = 40, contentContainerStyle, style, ...props }, ref) => {
     const internalRef = useRef<ScrollView>(null);
     const scrollRef = (ref as React.RefObject<ScrollView>) || internalRef;
     const [keyboardHeight, setKeyboardHeight] = useState<number>(globalActiveKeyboardHeight);
@@ -89,9 +146,23 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
       const showSub = Keyboard.addListener(
         Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
         (e) => {
-          const height = e?.endCoordinates?.height || 280;
+          const height = e?.endCoordinates?.height || (Platform.OS === 'ios' ? 320 : 300);
           globalActiveKeyboardHeight = height;
           setKeyboardHeight(height);
+
+          // Re-scroll active focused input with the exact measured keyboard height
+          if (lastFocusedTarget && lastFocusedTarget.scrollRef === scrollRef) {
+            setTimeout(() => {
+              if (lastFocusedTarget) {
+                scrollToFocused(
+                  lastFocusedTarget.node,
+                  lastFocusedTarget.scrollRef,
+                  lastFocusedTarget.extraMargin,
+                  height
+                );
+              }
+            }, Platform.OS === 'ios' ? 60 : 120);
+          }
         }
       );
       const hideSub = Keyboard.addListener(
@@ -99,6 +170,7 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
         () => {
           globalActiveKeyboardHeight = 0;
           setKeyboardHeight(0);
+          lastFocusedTarget = null;
         }
       );
 
@@ -115,7 +187,7 @@ export const KeyboardAwareScrollView = React.forwardRef<ScrollView, KeyboardAwar
         : 30;
 
     const dynamicPaddingBottom = keyboardHeight > 0 
-      ? basePaddingBottom + keyboardHeight + extraScrollHeight 
+      ? basePaddingBottom + keyboardHeight + extraScrollHeight + 60 
       : basePaddingBottom;
 
     return (
