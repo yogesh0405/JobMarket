@@ -83,6 +83,7 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
 
   return (
     <div
+      className="emp-walkin-card-root"
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '8px',
@@ -94,28 +95,69 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}
     >
+      <style>{`
+        .emp-walkin-title {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 800;
+          color: #0F172A;
+          line-height: 1.3;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          word-break: break-word;
+        }
+        .emp-walkin-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-top: 1px solid #F1F5F9;
+          padding-top: 10px;
+          gap: 10px;
+        }
+        @media (max-width: 640px) {
+          .emp-walkin-card-root {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+          .emp-walkin-title {
+            font-size: 13.5px !important;
+          }
+          .emp-walkin-footer {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+          .emp-walkin-footer-left {
+            justify-content: space-between !important;
+          }
+          .emp-walkin-footer-actions {
+            width: 100% !important;
+            display: flex !important;
+            gap: 8px !important;
+          }
+          .emp-walkin-footer-actions button {
+            flex: 1 !important;
+            justify-content: center !important;
+            padding: 8px 12px !important;
+          }
+        }
+      `}</style>
+
       {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
           <CompanyDefaultLogo
             companyName={companyName}
             logoUrl={logoUrl}
-            size={44}
+            size={42}
             borderRadius="8px"
           />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '15px',
-                  fontWeight: 800,
-                  color: '#0F172A',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
+              <h3 className="emp-walkin-title">
                 {job.title}
               </h3>
               <span
@@ -130,13 +172,14 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <Ticket size={11} color="#1D4ED8" />
                 <span>WALK-IN DRIVE</span>
               </span>
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, marginTop: '3px' }}>
+            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {companyName} {job.location ? `• ${job.location}` : ''} {job.openings ? `• ${job.openings} Openings` : ''}
             </div>
           </div>
@@ -267,16 +310,8 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
       </div>
 
       {/* Bottom Footer Row with Applicant Count & Actions */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderTop: '1px solid #F1F5F9',
-          paddingTop: '10px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="emp-walkin-footer">
+        <div className="emp-walkin-footer-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div
             style={{
               backgroundColor: '#EFF6FF',
@@ -300,7 +335,7 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="emp-walkin-footer-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {onEditJob && (
             <button
               onClick={() => onEditJob(String(job.id))}

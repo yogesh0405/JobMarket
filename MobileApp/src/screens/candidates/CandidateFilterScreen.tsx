@@ -5,14 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   ArrowLeft,
-  SlidersHorizontal,
   Building2,
   GraduationCap,
   Briefcase,
@@ -21,9 +19,16 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react-native';
-import { COLORS, RADIUS } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
+import {
+  matchesIndustry,
+  matchesEducation,
+  matchesExperience,
+  matchesLocation,
+  matchesTrade,
+} from './components/CandidatesUtils';
 
-export type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE';
+export type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'TRADE' | 'EXPERIENCE' | 'LOCATION';
 
 export const INDUSTRY_FILTER_OPTIONS = [
   'All Industries',
@@ -51,6 +56,23 @@ export const EDUCATION_FILTER_OPTIONS = [
   'Post Graduate / ME / M.Tech',
 ];
 
+export const TRADE_FILTER_OPTIONS = [
+  'All Trades',
+  'CNC Operator',
+  'VMC Operator',
+  'Fitter',
+  'Welder (TIG/MIG/ARC)',
+  'Electrician',
+  'Machinist',
+  'Quality Inspector (QA/QC)',
+  'Maintenance Technician',
+  'Tool & Die Maker',
+  'Assembly Operator',
+  'Turner',
+  'PLC Programmer',
+  'Store Keeper / Inventory',
+];
+
 export const EXPERIENCE_FILTER_OPTIONS = [
   'All Experience',
   'Fresher (0 Years)',
@@ -69,23 +91,6 @@ export const LOCATION_FILTER_OPTIONS = [
   'Aurangabad City',
 ];
 
-export const TRADE_FILTER_OPTIONS = [
-  'All Trades',
-  'CNC Operator',
-  'VMC Operator',
-  'Fitter',
-  'Welder (TIG/MIG/ARC)',
-  'Electrician',
-  'Machinist',
-  'Quality Inspector (QA/QC)',
-  'Maintenance Technician',
-  'Tool & Die Maker',
-  'Assembly Operator',
-  'Turner',
-  'PLC Programmer',
-  'Store Keeper / Inventory',
-];
-
 export const CandidateFilterScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -93,21 +98,22 @@ export const CandidateFilterScreen: React.FC = () => {
 
   const initialFilters = route.params?.initialFilters || {};
   const totalCandidates = route.params?.totalCount || 0;
+  const candidatesList: any[] = route.params?.candidatesList || [];
   const initialTab: FilterTabKey = route.params?.defaultTab || 'INDUSTRY';
 
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTabKey>(initialTab);
   const [draftIndustry, setDraftIndustry] = useState<string | null>(initialFilters.industry || null);
   const [draftEducation, setDraftEducation] = useState<string | null>(initialFilters.education || null);
+  const [draftTrade, setDraftTrade] = useState<string | null>(initialFilters.trade || null);
   const [draftExp, setDraftExp] = useState<string | null>(initialFilters.exp || null);
   const [draftLocation, setDraftLocation] = useState<string | null>(initialFilters.location || null);
-  const [draftTrade, setDraftTrade] = useState<string | null>(initialFilters.trade || null);
 
   const handleResetFilters = () => {
     setDraftIndustry(null);
     setDraftEducation(null);
+    setDraftTrade(null);
     setDraftExp(null);
     setDraftLocation(null);
-    setDraftTrade(null);
   };
 
   const handleApplyFilters = () => {
@@ -115,23 +121,132 @@ export const CandidateFilterScreen: React.FC = () => {
       route.params.onApply({
         industry: draftIndustry,
         education: draftEducation,
+        trade: draftTrade,
         exp: draftExp,
         location: draftLocation,
-        trade: draftTrade,
       });
     }
     navigation.goBack();
   };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (draftIndustry) count++;
-    if (draftEducation) count++;
-    if (draftExp) count++;
-    if (draftLocation) count++;
-    if (draftTrade) count++;
-    return count;
-  }, [draftIndustry, draftEducation, draftExp, draftLocation, draftTrade]);
+  const draftMatchingCount = useMemo(() => {
+    if (!candidatesList || candidatesList.length === 0) return totalCandidates;
+    return candidatesList.filter((item) => {
+      if (!matchesIndustry(item, draftIndustry)) return false;
+      if (!matchesEducation(item, draftEducation)) return false;
+      if (!matchesTrade(item, draftTrade)) return false;
+      if (!matchesExperience(item, draftExp)) return false;
+      if (!matchesLocation(item, draftLocation)) return false;
+      return true;
+    }).length;
+  }, [candidatesList, totalCandidates, draftIndustry, draftEducation, draftTrade, draftExp, draftLocation]);
+
+  const renderTabContent = () => {
+    switch (activeFilterTab) {
+      case 'INDUSTRY':
+        return INDUSTRY_FILTER_OPTIONS.map((ind) => {
+          const isSelected = ind === 'All Industries' ? !draftIndustry || draftIndustry === 'All Industries' : draftIndustry === ind;
+          return (
+            <TouchableOpacity
+              key={ind}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftIndustry(ind === 'All Industries' ? null : isSelected ? null : ind)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {ind}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      case 'EDUCATION':
+        return EDUCATION_FILTER_OPTIONS.map((edu) => {
+          const isSelected = edu === 'All Education Levels' ? !draftEducation || draftEducation === 'All Education Levels' : draftEducation === edu;
+          return (
+            <TouchableOpacity
+              key={edu}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftEducation(edu === 'All Education Levels' ? null : isSelected ? null : edu)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {edu}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      case 'TRADE':
+        return TRADE_FILTER_OPTIONS.map((tr) => {
+          const isSelected = tr === 'All Trades' ? !draftTrade || draftTrade === 'All Trades' : draftTrade === tr;
+          return (
+            <TouchableOpacity
+              key={tr}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftTrade(tr === 'All Trades' ? null : isSelected ? null : tr)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {tr}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      case 'EXPERIENCE':
+        return EXPERIENCE_FILTER_OPTIONS.map((exp) => {
+          const isSelected = exp === 'All Experience' ? !draftExp || draftExp === 'All Experience' : draftExp === exp;
+          return (
+            <TouchableOpacity
+              key={exp}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftExp(exp === 'All Experience' ? null : isSelected ? null : exp)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {exp}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      case 'LOCATION':
+        return LOCATION_FILTER_OPTIONS.map((loc) => {
+          const isSelected = loc === 'All Locations' ? !draftLocation || draftLocation === 'All Locations' : draftLocation === loc;
+          return (
+            <TouchableOpacity
+              key={loc}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftLocation(loc === 'All Locations' ? null : isSelected ? null : loc)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {loc}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -150,227 +265,159 @@ export const CandidateFilterScreen: React.FC = () => {
           <Text style={styles.headerTitle}>Filter Candidates</Text>
         </View>
 
-        {activeFiltersCount > 0 && (
-          <View style={styles.activeFilterCountBadge}>
-            <Text style={styles.activeFilterCountText}>{activeFiltersCount} active</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Horizontal Category Tabs */}
-      <View style={styles.categoryNavWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryTabsScroll}
-        >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setActiveFilterTab('INDUSTRY')}
-            style={[styles.categoryTabItem, activeFilterTab === 'INDUSTRY' && styles.categoryTabItemActive]}
-          >
-            <Building2 size={12} color={activeFilterTab === 'INDUSTRY' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.categoryTabText, activeFilterTab === 'INDUSTRY' && styles.categoryTabTextActive]}>
-              Industry {draftIndustry ? '•' : ''}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setActiveFilterTab('EDUCATION')}
-            style={[styles.categoryTabItem, activeFilterTab === 'EDUCATION' && styles.categoryTabItemActive]}
-          >
-            <GraduationCap size={12} color={activeFilterTab === 'EDUCATION' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.categoryTabText, activeFilterTab === 'EDUCATION' && styles.categoryTabTextActive]}>
-              Education {draftEducation ? '•' : ''}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setActiveFilterTab('EXPERIENCE')}
-            style={[styles.categoryTabItem, activeFilterTab === 'EXPERIENCE' && styles.categoryTabItemActive]}
-          >
-            <Briefcase size={12} color={activeFilterTab === 'EXPERIENCE' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.categoryTabText, activeFilterTab === 'EXPERIENCE' && styles.categoryTabTextActive]}>
-              Experience {draftExp ? '•' : ''}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setActiveFilterTab('LOCATION')}
-            style={[styles.categoryTabItem, activeFilterTab === 'LOCATION' && styles.categoryTabItemActive]}
-          >
-            <MapPin size={12} color={activeFilterTab === 'LOCATION' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.categoryTabText, activeFilterTab === 'LOCATION' && styles.categoryTabTextActive]}>
-              Location {draftLocation ? '•' : ''}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setActiveFilterTab('TRADE')}
-            style={[styles.categoryTabItem, activeFilterTab === 'TRADE' && styles.categoryTabItemActive]}
-          >
-            <Wrench size={12} color={activeFilterTab === 'TRADE' ? '#FFFFFF' : '#64748B'} />
-            <Text style={[styles.categoryTabText, activeFilterTab === 'TRADE' && styles.categoryTabTextActive]}>
-              Trade {draftTrade ? '•' : ''}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
-
-      {/* Scrollable Option Rows */}
-      <ScrollView
-        style={styles.optionsScroll}
-        contentContainerStyle={styles.optionsContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 1. INDUSTRY SECTORS */}
-        {activeFilterTab === 'INDUSTRY' && (
-          <View style={styles.optionsBlock}>
-            <Text style={styles.optionsSubHeader}>SELECT INDUSTRY SECTOR</Text>
-            {INDUSTRY_FILTER_OPTIONS.map((ind) => {
-              const isSelected = ind === 'All Industries' ? !draftIndustry : draftIndustry === ind;
-              return (
-                <TouchableOpacity
-                  key={ind}
-                  activeOpacity={0.8}
-                  onPress={() => setDraftIndustry(ind === 'All Industries' ? null : isSelected ? null : ind)}
-                  style={[styles.optionRow, isSelected && styles.optionRowActive]}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {ind}
-                  </Text>
-                  {isSelected ? (
-                    <Check size={16} color={COLORS.primary} strokeWidth={2.5} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* 2. EDUCATION LEVEL */}
-        {activeFilterTab === 'EDUCATION' && (
-          <View style={styles.optionsBlock}>
-            <Text style={styles.optionsSubHeader}>SELECT MINIMUM EDUCATION</Text>
-            {EDUCATION_FILTER_OPTIONS.map((edu) => {
-              const isSelected = edu === 'All Education Levels' ? !draftEducation : draftEducation === edu;
-              return (
-                <TouchableOpacity
-                  key={edu}
-                  activeOpacity={0.8}
-                  onPress={() => setDraftEducation(edu === 'All Education Levels' ? null : isSelected ? null : edu)}
-                  style={[styles.optionRow, isSelected && styles.optionRowActive]}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {edu}
-                  </Text>
-                  {isSelected ? (
-                    <Check size={16} color={COLORS.primary} strokeWidth={2.5} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* 3. EXPERIENCE / FRESHERS */}
-        {activeFilterTab === 'EXPERIENCE' && (
-          <View style={styles.optionsBlock}>
-            <Text style={styles.optionsSubHeader}>SELECT EXPERIENCE LEVEL</Text>
-            {EXPERIENCE_FILTER_OPTIONS.map((exp) => {
-              const isSelected = exp === 'All Experience' ? !draftExp : draftExp === exp;
-              return (
-                <TouchableOpacity
-                  key={exp}
-                  activeOpacity={0.8}
-                  onPress={() => setDraftExp(exp === 'All Experience' ? null : isSelected ? null : exp)}
-                  style={[styles.optionRow, isSelected && styles.optionRowActive]}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {exp}
-                  </Text>
-                  {isSelected ? (
-                    <Check size={16} color={COLORS.primary} strokeWidth={2.5} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* 4. LOCATION / MIDC ZONES */}
-        {activeFilterTab === 'LOCATION' && (
-          <View style={styles.optionsBlock}>
-            <Text style={styles.optionsSubHeader}>SELECT MIDC ZONE / LOCATION</Text>
-            {LOCATION_FILTER_OPTIONS.map((loc) => {
-              const isSelected = loc === 'All Locations' ? !draftLocation : draftLocation === loc;
-              return (
-                <TouchableOpacity
-                  key={loc}
-                  activeOpacity={0.8}
-                  onPress={() => setDraftLocation(loc === 'All Locations' ? null : isSelected ? null : loc)}
-                  style={[styles.optionRow, isSelected && styles.optionRowActive]}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {loc}
-                  </Text>
-                  {isSelected ? (
-                    <Check size={16} color={COLORS.primary} strokeWidth={2.5} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* 5. TRADE SPECIALIZATION */}
-        {activeFilterTab === 'TRADE' && (
-          <View style={styles.optionsBlock}>
-            <Text style={styles.optionsSubHeader}>SELECT TRADE SPECIALIZATION</Text>
-            {TRADE_FILTER_OPTIONS.map((tr) => {
-              const isSelected = tr === 'All Trades' ? !draftTrade : draftTrade === tr;
-              return (
-                <TouchableOpacity
-                  key={tr}
-                  activeOpacity={0.8}
-                  onPress={() => setDraftTrade(tr === 'All Trades' ? null : isSelected ? null : tr)}
-                  style={[styles.optionRow, isSelected && styles.optionRowActive]}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {tr}
-                  </Text>
-                  {isSelected ? (
-                    <Check size={16} color={COLORS.primary} strokeWidth={2.5} />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Sticky Bottom Actions Bar */}
-      <View style={styles.bottomActionBar}>
+        {/* Header Reset Icon Button */}
         <TouchableOpacity
-          activeOpacity={0.8}
+          style={styles.headerResetBtn}
           onPress={handleResetFilters}
-          style={styles.resetBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.7}
         >
-          <RotateCcw size={14} color="#64748B" />
-          <Text style={styles.resetBtnText}>Reset</Text>
+          <RotateCcw size={17} color="#475569" strokeWidth={2.2} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Two-Column Master-Detail Layout */}
+      <View style={styles.twoColumnContainer}>
+        {/* Left Column: Category Tabs */}
+        <View style={styles.leftTabsColumn}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.tabsScrollContent}>
+            {/* 1. Industry */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'INDUSTRY' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('INDUSTRY')}
+              activeOpacity={0.8}
+            >
+              <Building2
+                size={18}
+                color={activeFilterTab === 'INDUSTRY' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'INDUSTRY' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'INDUSTRY' && styles.tabTitleActive]}>
+                  Industry
+                </Text>
+                {draftIndustry && draftIndustry !== 'All Industries' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 2. Education */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'EDUCATION' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('EDUCATION')}
+              activeOpacity={0.8}
+            >
+              <GraduationCap
+                size={18}
+                color={activeFilterTab === 'EDUCATION' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'EDUCATION' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'EDUCATION' && styles.tabTitleActive]}>
+                  Education
+                </Text>
+                {draftEducation && draftEducation !== 'All Education Levels' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 3. Job Roles */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'TRADE' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('TRADE')}
+              activeOpacity={0.8}
+            >
+              <Wrench
+                size={18}
+                color={activeFilterTab === 'TRADE' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'TRADE' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'TRADE' && styles.tabTitleActive]}>
+                  Job Roles
+                </Text>
+                {draftTrade && draftTrade !== 'All Trades' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 4. Experience */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'EXPERIENCE' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('EXPERIENCE')}
+              activeOpacity={0.8}
+            >
+              <Briefcase
+                size={18}
+                color={activeFilterTab === 'EXPERIENCE' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'EXPERIENCE' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'EXPERIENCE' && styles.tabTitleActive]}>
+                  Experience
+                </Text>
+                {draftExp && draftExp !== 'All Experience' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 5. Location */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'LOCATION' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('LOCATION')}
+              activeOpacity={0.8}
+            >
+              <MapPin
+                size={18}
+                color={activeFilterTab === 'LOCATION' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'LOCATION' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'LOCATION' && styles.tabTitleActive]}>
+                  Location
+                </Text>
+                {draftLocation && draftLocation !== 'All Locations' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* Right Column: Dynamic Options List */}
+        <View style={styles.rightOptionsColumn}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.optionsListContainer}
+          >
+            {renderTabContent()}
+          </ScrollView>
+        </View>
+      </View>
+
+      {/* Screen Bottom Actions Footer */}
+      <View style={[styles.footerBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <TouchableOpacity
+          style={styles.resetBtn}
+          onPress={handleResetFilters}
+          activeOpacity={0.7}
+        >
+          <RotateCcw size={16} color="#64748B" strokeWidth={2} />
+          <Text style={styles.resetBtnText}>Reset All</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={handleApplyFilters}
           style={styles.applyBtn}
+          onPress={handleApplyFilters}
+          activeOpacity={0.85}
         >
-          <Check size={14} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 4 }} />
-          <Text style={styles.applyBtnText}>Apply Filters</Text>
+          <Text style={styles.applyBtnText}>
+            Show ({draftMatchingCount}) Candidates
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -383,13 +430,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerBar: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
     backgroundColor: '#FFFFFF',
   },
   headerLeftGroup: {
@@ -398,148 +445,152 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    padding: 2,
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 14.5,
+    fontSize: 17,
     fontWeight: '700',
     color: '#0F172A',
   },
-  activeFilterCountBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+  headerResetBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  activeFilterCountText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.primary,
+  twoColumnContainer: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  categoryNavWrapper: {
+  leftTabsColumn: {
+    width: 125,
     backgroundColor: '#F8FAFC',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingVertical: 6,
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
   },
-  categoryTabsScroll: {
-    paddingHorizontal: 16,
-    gap: 6,
+  tabsScrollContent: {
+    paddingVertical: 8,
   },
-  categoryTabItem: {
+  tabItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
+  },
+  tabItemActive: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: RADIUS.card,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderLeftColor: COLORS.primary,
   },
-  categoryTabItemActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  categoryTabText: {
-    fontSize: 10.5,
-    fontWeight: '500',
-    color: '#334155',
-  },
-  categoryTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  optionsScroll: {
+  tabTextGroup: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  optionsContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  optionsBlock: {
-    gap: 5,
-  },
-  optionsSubHeader: {
-    fontSize: 9.5,
-    fontWeight: '700',
+  tabTitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
     color: '#64748B',
-    letterSpacing: 0.5,
-    marginBottom: 5,
-    textTransform: 'uppercase',
+  },
+  tabTitleActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  tabActiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+  },
+  rightOptionsColumn: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  optionsListContainer: {
+    padding: 12,
+    gap: 8,
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: RADIUS.card,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
-  optionRowActive: {
+  optionRowSelected: {
+    borderColor: COLORS.primary,
     backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
   },
   optionText: {
-    fontSize: 11.5,
-    fontWeight: '400',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#334155',
     flex: 1,
+    marginRight: 8,
   },
-  optionTextActive: {
+  optionTextSelected: {
+    fontWeight: '700',
     color: COLORS.primary,
-    fontWeight: '600',
   },
-  bottomActionBar: {
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkCircleSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  footerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
-    gap: 10,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 4,
+    gap: 12,
   },
   resetBtn: {
-    height: 38,
-    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    backgroundColor: '#FFFFFF',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: RADIUS.card,
+    backgroundColor: '#FFFFFF',
   },
   resetBtnText: {
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#475569',
   },
   applyBtn: {
     flex: 1,
-    height: 38,
     backgroundColor: COLORS.primary,
-    flexDirection: 'row',
+    borderRadius: 8,
+    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: RADIUS.card,
   },
   applyBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },

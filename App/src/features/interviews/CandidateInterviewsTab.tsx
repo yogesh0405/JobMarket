@@ -362,13 +362,22 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
           background-color: #F1F5F9;
           color: #64748B;
           transition: all 0.15s ease;
+          outline: none !important;
+          -webkit-tap-highlight-color: transparent !important;
+          user-select: none;
+        }
+
+        .cand-tab-btn:focus,
+        .cand-tab-btn:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
         }
 
         .cand-tab-btn.active {
-          background-color: #EFF6FF;
-          border: 1px solid #BFDBFE;
-          color: #1764E8;
-          font-weight: 700;
+          background-color: #EFF6FF !important;
+          border: 1px solid #93C5FD !important;
+          color: #1764E8 !important;
+          font-weight: 700 !important;
         }
 
         .cand-tab-counter {
@@ -539,40 +548,43 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             background-color: #F8FAFC !important;
           }
           .cand-metrics-bar {
-            padding: 8px 12px;
+            padding: 10px 12px;
             margin-bottom: 8px;
           }
           .cand-metric-num {
-            font-size: 15px !important;
+            font-size: 16px !important;
           }
           .cand-metric-tag {
             font-size: 10px !important;
           }
           .cand-toolbar-row {
-            gap: 6px;
-            margin-bottom: 6px;
+            gap: 8px;
+            margin-bottom: 8px;
           }
           .cand-tab-strip {
-            padding: 6px 12px;
-            gap: 6px;
+            padding: 8px 12px;
+            gap: 8px;
           }
           .cand-tab-btn {
-            padding: 6px 8px !important;
-            font-size: 11px !important;
+            padding: 8px 8px !important;
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+            min-height: 38px !important;
           }
           .cand-tab-counter {
-            font-size: 9px !important;
-            padding: 0 5px !important;
+            font-size: 9.5px !important;
+            padding: 1px 6px !important;
           }
           .cand-search-input-wrap {
             margin: 0 12px;
-            padding: 4px 10px;
+            padding: 6px 12px;
           }
           .cand-search-input-wrap input {
-            font-size: 11.5px !important;
+            font-size: 12px !important;
           }
           .cand-standard-card {
-            padding: 10px 12px !important;
+            padding: 12px !important;
             margin-bottom: 8px !important;
             border-radius: 6px !important;
           }
@@ -580,27 +592,27 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
             font-size: 12px !important;
           }
           .cand-card-job-title {
-            font-size: 10.5px !important;
+            font-size: 11px !important;
           }
           .cand-countdown-pill {
-            font-size: 9px !important;
+            font-size: 9.5px !important;
             padding: 2px 6px !important;
           }
           .cand-info-label {
-            font-size: 10.5px !important;
+            font-size: 11px !important;
           }
           .cand-venue-text {
-            font-size: 10.5px !important;
+            font-size: 11px !important;
             padding: 6px 8px !important;
-            line-height: 14px !important;
+            line-height: 15px !important;
           }
           .cand-quick-btn {
-            width: 26px !important;
-            height: 26px !important;
+            width: 28px !important;
+            height: 28px !important;
           }
           .cand-direction-btn {
-            font-size: 10.5px !important;
-            padding: 4px 8px !important;
+            font-size: 11px !important;
+            padding: 5px 10px !important;
           }
         }
       `}</style>
@@ -824,8 +836,9 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '0 16px',
+              padding: '2px 12px 6px 12px',
               overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
             }}
@@ -834,7 +847,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               type="button"
               onClick={() => setFilterType('ALL')}
               style={{
-                padding: '5px 12px',
+                padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '11.5px',
                 fontWeight: filterType === 'ALL' ? 800 : 600,
@@ -843,6 +856,9 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                 border: `1px solid ${filterType === 'ALL' ? '#1D4ED8' : '#CBD5E1'}`,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -852,7 +868,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               type="button"
               onClick={() => setFilterType('WALK_IN')}
               style={{
-                padding: '5px 12px',
+                padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '11.5px',
                 fontWeight: filterType === 'WALK_IN' ? 800 : 600,
@@ -864,6 +880,9 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
+                flexShrink: 0,
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -874,7 +893,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
               type="button"
               onClick={() => setFilterType('SCHEDULED')}
               style={{
-                padding: '5px 12px',
+                padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '11.5px',
                 fontWeight: filterType === 'SCHEDULED' ? 800 : 600,
@@ -883,11 +902,16 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                 border: `1px solid ${filterType === 'SCHEDULED' ? '#1D4ED8' : '#CBD5E1'}`,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent',
                 transition: 'all 0.15s ease'
               }}
             >
               1-on-1 Interviews ({currentList.filter(i => !i.is_walk_in).length})
             </button>
+            {/* Trailing spacer so last chip doesn't clip on scroll */}
+            <div style={{ minWidth: 8, height: 1, flexShrink: 0 }} />
           </div>
         </div>
 

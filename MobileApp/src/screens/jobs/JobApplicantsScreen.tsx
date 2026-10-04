@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   ChevronDown,
   X,
+  Briefcase,
 } from 'lucide-react-native';
 import { applicantsApi } from '../../api/applicantsApi';
 import { jobsApi } from '../../api/jobsApi';
@@ -46,6 +47,11 @@ interface Props {
 
 type TabType = 'ALL' | 'applied' | 'shortlisted' | 'interviewed' | 'hired' | 'rejected';
 
+const isLiveJob = (status?: string) => {
+  const s = (status || '').toUpperCase().trim();
+  return s === 'APPROVED' || s === 'ACTIVE' || s === 'LIVE' || s === 'OPEN';
+};
+
 export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { user } = useAuth();
   const jobId = route?.params?.jobId;
@@ -60,13 +66,26 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 
+  // Filter out only live (approved / active) jobs for the dropdown
+  const liveJobs = useMemo(() => {
+    return myJobs.filter((j) => isLiveJob(j.status));
+  }, [myJobs]);
+
   useEffect(() => {
     if (jobId && jobId !== 'ALL') {
       setSelectedJobId(jobId);
-    } else {
-      setSelectedJobId('ALL');
     }
   }, [jobId]);
+
+  useEffect(() => {
+    if (selectedJobId && selectedJobId !== 'ALL') {
+      const targetClean = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
+      const foundJob = myJobs.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
+      setJobDetails(foundJob || null);
+    } else {
+      setJobDetails(null);
+    }
+  }, [selectedJobId, myJobs]);
 
   // 1 Second (1000ms) Rotating Placeholder Timer
   useEffect(() => {
@@ -195,23 +214,6 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         console.warn('Error loading employer jobs in JobApplicantsScreen:', jobsErr);
       }
 
-      if (selectedJobId && selectedJobId !== 'ALL') {
-        const targetClean = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
-        const foundJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
-        if (foundJob) {
-          setJobDetails(foundJob);
-        } else {
-          try {
-            const singleJobRes = await jobsApi.getJobById(selectedJobId);
-            if (singleJobRes && (singleJobRes.data || (singleJobRes as any).id)) {
-              setJobDetails(singleJobRes.data || (singleJobRes as any));
-            }
-          } catch (_) {}
-        }
-      } else {
-        setJobDetails(null);
-      }
-
       const allExtractedApps: JobApplication[] = [];
 
       // 2. Extract embedded applicants from jobs (identical to how web app does in DashboardPage)
@@ -250,24 +252,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         });
       } catch (_) {}
 
-      // 4. If a specific job is selected, also fetch applicants for that job
-      if (selectedJobId && selectedJobId !== 'ALL') {
-        try {
-          const singleJobRes = await applicantsApi.getApplicantsForJob(selectedJobId);
-          const singleApps = Array.isArray(singleJobRes)
-            ? singleJobRes
-            : Array.isArray(singleJobRes?.data)
-            ? singleJobRes.data
-            : [];
-          const targetClean = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
-          const matchedJob = jobsList.find((j) => String(j.id).toLowerCase().trim().replace(/^job-/i, '') === targetClean);
-          singleApps.forEach((item: any) => {
-            allExtractedApps.push(mapApplicantItem(item, selectedJobId, matchedJob));
-          });
-        } catch (_) {}
-      }
-
-      // 5. Merge persistent local appliedJobsStore
+      // 4. Merge persistent local appliedJobsStore
       try {
         appliedJobsStore.getAppliedJobs().forEach((s: any) => {
           const sJobId = String(s.jobId || s.job?.id || '');
@@ -279,7 +264,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         });
       } catch (_) {}
 
-      // 6. Deduplicate by composite key: jobId + candidateId
+      // 5. Deduplicate by composite key: jobId + candidateId
       const seenKeys = new Set<string>();
       const combinedAll: JobApplication[] = [];
 
@@ -295,7 +280,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         }
       });
 
-      // 7. Sort by applied date descending (most recent first)
+      // 6. Sort by applied date descending (most recent first)
       combinedAll.sort((a, b) => {
         const timeA = new Date(a.applied_at || (a as any).appliedAt || 0).getTime();
         const timeB = new Date(b.applied_at || (b as any).appliedAt || 0).getTime();
@@ -310,7 +295,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedJobId, user]);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -322,8 +307,6 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       const routeJobId = route?.params?.jobId;
       if (routeJobId && routeJobId !== 'ALL') {
         setSelectedJobId(routeJobId);
-      } else if (!routeJobId) {
-        setSelectedJobId('ALL');
       }
       fetchApplicants();
     }, [route?.params?.jobId, fetchApplicants])
@@ -557,6 +540,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               selectedJobId !== 'ALL' && styles.jobSelectPillActive,
             ]}
           >
+            <Briefcase size={12} color={selectedJobId !== 'ALL' ? '#1764E8' : '#657796'} />
             <Text
               style={[
                 styles.jobSelectPillText,
@@ -584,7 +568,7 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               ? applicants
               : applicants.filter((a) => {
                   const targetJobId = String(selectedJobId).toLowerCase().trim().replace(/^job-/i, '');
-                  const appJobId = String(a.job_id || (a.job as any)?.id || '').toLowerCase().trim().replace(/^job-/i, '');
+                  const appJobId = String(a.job_id || (a.job as any)?.id || (a as any)?.jobId || '').toLowerCase().trim().replace(/^job-/i, '');
                   return appJobId === targetJobId;
                 });
             const count = tab.key === 'ALL'
@@ -629,13 +613,15 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <View style={styles.dropdownModalCard}>
             <View style={styles.dropdownHeaderRow}>
-              <Text style={styles.dropdownTitle}>FILTER CANDIDATES BY JOB</Text>
+              <View>
+                <Text style={styles.dropdownTitle}>FILTER BY JOB</Text>
+              </View>
               <TouchableOpacity onPress={() => setJobDropdownVisible(false)} style={{ padding: 4 }}>
                 <X size={16} color={COLORS.slate600} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 280 }}>
+            <ScrollView style={{ maxHeight: 300 }}>
               <TouchableOpacity
                 style={[
                   styles.dropdownOptionRow,
@@ -648,39 +634,53 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.dropdownOptionTitle, selectedJobId === 'ALL' && { color: COLORS.primary, fontWeight: '800' }]}>
-                    All Jobs (All Posted)
+                    All Jobs
                   </Text>
-                  <Text style={styles.dropdownOptionSub}>View candidates across all your posted jobs</Text>
+                  <Text style={styles.dropdownOptionSub}>View candidates across all active job openings</Text>
                 </View>
                 {selectedJobId === 'ALL' ? <CheckCircle2 size={16} color={COLORS.primary} /> : null}
               </TouchableOpacity>
 
-              {myJobs.map((j) => {
-                const isCurrent = selectedJobId === j.id;
-                return (
-                  <TouchableOpacity
-                    key={j.id}
-                    style={[
-                      styles.dropdownOptionRow,
-                      isCurrent && styles.dropdownOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedJobId(j.id);
-                      setJobDropdownVisible(false);
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.dropdownOptionTitle, isCurrent && { color: COLORS.primary, fontWeight: '800' }]}>
-                        {j.title}
-                      </Text>
-                      <Text style={styles.dropdownOptionSub}>
-                        {j.location} • ₹{j.salary_min?.toLocaleString()} - ₹{j.salary_max?.toLocaleString()}
-                      </Text>
-                    </View>
-                    {isCurrent ? <CheckCircle2 size={16} color={COLORS.primary} /> : null}
-                  </TouchableOpacity>
-                );
-              })}
+              {liveJobs.length === 0 ? (
+                <View style={styles.noLiveJobsBox}>
+                  <Text style={styles.noLiveJobsText}>
+                    No active jobs available in this filter.
+                  </Text>
+                </View>
+              ) : (
+                liveJobs.map((j) => {
+                  const isCurrent = String(selectedJobId).toLowerCase() === String(j.id).toLowerCase();
+                  const targetClean = String(j.id).toLowerCase().trim().replace(/^job-/i, '');
+                  const appCountForThisJob = applicants.filter((a) => {
+                    const appJobId = String(a.job_id || (a.job as any)?.id || (a as any)?.jobId || '').toLowerCase().trim().replace(/^job-/i, '');
+                    return appJobId === targetClean;
+                  }).length;
+
+                  return (
+                    <TouchableOpacity
+                      key={j.id}
+                      style={[
+                        styles.dropdownOptionRow,
+                        isCurrent && styles.dropdownOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedJobId(j.id);
+                        setJobDropdownVisible(false);
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.dropdownOptionTitle, isCurrent && { color: COLORS.primary, fontWeight: '800' }]} numberOfLines={1}>
+                          {j.title}
+                        </Text>
+                        <Text style={styles.dropdownOptionSub} numberOfLines={1}>
+                          {j.location || 'Chhatrapati Sambhajinagar'} • {appCountForThisJob} {appCountForThisJob === 1 ? 'applicant' : 'applicants'}
+                        </Text>
+                      </View>
+                      {isCurrent ? <CheckCircle2 size={16} color={COLORS.primary} /> : null}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
             </ScrollView>
           </View>
         </TouchableOpacity>
@@ -880,6 +880,11 @@ const styles = StyleSheet.create({
     color: '#657796',
     letterSpacing: 0.5,
   },
+  dropdownSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
   dropdownOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -904,6 +909,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#657796',
     marginTop: 1,
+  },
+  liveBadgeChip: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  liveBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#059669',
+    letterSpacing: 0.4,
+  },
+  noLiveJobsBox: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noLiveJobsText: {
+    fontSize: 12,
+    color: '#657796',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   emptyContainer: {
     paddingHorizontal: 20,

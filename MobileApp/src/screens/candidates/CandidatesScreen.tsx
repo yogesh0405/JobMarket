@@ -214,6 +214,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
       },
       defaultTab,
       totalCount: candidates.length,
+      candidatesList: candidates,
       onApply: (applied: any) => {
         setActiveIndustryFilter(applied.industry);
         setActiveEducationFilter(applied.education);

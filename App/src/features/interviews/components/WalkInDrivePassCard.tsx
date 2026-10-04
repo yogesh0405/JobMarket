@@ -115,6 +115,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
 
   return (
     <div
+      className="walkin-card-root"
       style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '8px',
@@ -129,32 +130,130 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
         transition: 'all 0.15s ease',
       }}
     >
+      <style>{`
+        .walkin-card-title {
+          margin: 0;
+          font-size: 14.5px;
+          font-weight: 800;
+          color: #0F172A;
+          line-height: 1.3;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          word-break: break-word;
+        }
+
+        .walkin-card-company {
+          font-size: 12px;
+          color: #64748B;
+          font-weight: 600;
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .walkin-card-footer {
+          border-top: 1px solid #F1F5F9;
+          padding-top: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .walkin-card-note {
+          font-size: 11px;
+          color: #64748B;
+          font-weight: 500;
+          line-height: 1.35;
+        }
+
+        .walkin-card-pass-btn {
+          background-color: #1D4ED8;
+          color: #FFFFFF;
+          border: none;
+          padding: 7px 14px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+          transition: background-color 0.15s ease;
+          flex-shrink: 0;
+        }
+        .walkin-card-pass-btn:hover {
+          background-color: #1E40AF;
+        }
+
+        @media (max-width: 640px) {
+          .walkin-card-root {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+          .walkin-header-row {
+            gap: 8px !important;
+          }
+          .walkin-header-left {
+            gap: 10px !important;
+          }
+          .walkin-card-title {
+            font-size: 13.5px !important;
+            line-height: 1.25 !important;
+          }
+          .walkin-card-company {
+            font-size: 11px !important;
+          }
+          .walkin-ticket-banner {
+            padding: 8px 10px !important;
+          }
+          .walkin-card-footer {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+            padding-top: 8px !important;
+          }
+          .walkin-card-note {
+            text-align: center !important;
+            font-size: 11px !important;
+            color: #64748B !important;
+          }
+          .walkin-card-pass-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            padding: 9px 14px !important;
+            font-size: 12.5px !important;
+          }
+        }
+      `}</style>
+
       {/* Top Header Row with Company and Status Badges */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+      <div className="walkin-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+        <div className="walkin-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
           <CompanyDefaultLogo
             companyName={companyName}
             logoUrl={logoUrl}
-            size={44}
+            size={42}
             borderRadius="8px"
           />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <h3
               onClick={() => onNavigateJob && onNavigateJob(passPayload.jobId)}
+              className="walkin-card-title"
               style={{
-                margin: 0,
-                fontSize: '14.5px',
-                fontWeight: 800,
-                color: '#0F172A',
                 cursor: onNavigateJob ? 'pointer' : 'default',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
               }}
             >
               {jobTitle}
             </h3>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+            <div className="walkin-card-company">
               {companyName} {item.location ? `• ${item.location}` : ''}
             </div>
           </div>
@@ -173,6 +272,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
                 padding: '2px 8px',
                 borderRadius: '4px',
                 letterSpacing: '0.3px',
+                whiteSpace: 'nowrap',
               }}
             >
               COMPLETED DRIVE
@@ -189,6 +289,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
                 borderRadius: '4px',
                 animation: 'pulse 2s infinite',
                 letterSpacing: '0.5px',
+                whiteSpace: 'nowrap',
               }}
             >
               🔥 DRIVE TODAY
@@ -203,6 +304,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
                 fontWeight: 800,
                 padding: '3px 8px',
                 borderRadius: '4px',
+                whiteSpace: 'nowrap',
               }}
             >
               TOMORROW
@@ -217,6 +319,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
                 fontWeight: 800,
                 padding: '3px 8px',
                 borderRadius: '4px',
+                whiteSpace: 'nowrap',
               }}
             >
               IN {days} DAYS
@@ -235,6 +338,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '3px',
+              whiteSpace: 'nowrap',
             }}
           >
             <Ticket size={10} color="#1D4ED8" />
@@ -245,6 +349,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
 
       {/* Pass Ticket Banner */}
       <div
+        className="walkin-ticket-banner"
         style={{
           backgroundColor: '#F8FAFC',
           borderRadius: '6px',
@@ -253,27 +358,29 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
         }}
       >
         <div>
           <span style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', display: 'block' }}>
             PASS TICKET ID:
           </span>
-          <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', fontFamily: 'monospace' }}>
             {passNumber}
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <ShieldCheck size={14} color="#16A34A" />
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', whiteSpace: 'nowrap' }}>
             Confirmed Entry Pass
           </span>
         </div>
       </div>
 
       {/* Date, Time & Venue Block */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#334155' }}>
           <Calendar size={14} color="#2563EB" style={{ flexShrink: 0 }} />
           <span>
@@ -288,12 +395,15 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '12px', color: '#334155', gridColumn: '1 / -1' }}>
-          <MapPin size={14} color="#64748B" style={{ flexShrink: 0, marginTop: '2px' }} />
-          <span style={{ flex: 1 }}>
-            Venue: <strong>{venueAddress}</strong>
-          </span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: '#334155', gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', flex: 1, minWidth: 0 }}>
+            <MapPin size={14} color="#64748B" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span style={{ flex: 1, wordBreak: 'break-word', lineHeight: 1.4 }}>
+              Venue: <strong>{venueAddress}</strong>
+            </span>
+          </div>
           <button
+            type="button"
             onClick={handleOpenMap}
             style={{
               background: 'transparent',
@@ -305,7 +415,8 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '3px',
-              padding: 0,
+              padding: '2px 4px',
+              flexShrink: 0,
             }}
           >
             <span>Directions</span>
@@ -325,6 +436,8 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             fontSize: '11.5px',
+            flexWrap: 'wrap',
+            gap: '6px',
           }}
         >
           <span style={{ color: '#475569', fontWeight: 600 }}>
@@ -351,37 +464,15 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
       )}
 
       {/* Action Footer */}
-      <div
-        style={{
-          borderTop: '1px solid #F1F5F9',
-          paddingTop: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
-          Bring 2 resume copies & original photo ID proof
+      <div className="walkin-card-footer">
+        <span className="walkin-card-note">
+          Bring 2 resume copies &amp; original photo ID proof
         </span>
 
         <button
+          type="button"
           onClick={() => onPressPass(passPayload)}
-          style={{
-            backgroundColor: '#1D4ED8',
-            color: '#FFFFFF',
-            border: 'none',
-            padding: '7px 14px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            transition: 'background-color 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1E40AF')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1D4ED8')}
+          className="walkin-card-pass-btn"
         >
           <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
           <span>View Official Pass</span>
