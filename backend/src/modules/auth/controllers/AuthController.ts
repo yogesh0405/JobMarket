@@ -1035,6 +1035,7 @@ export class AuthController {
         data: {
           user: safeUser,
           token: accessToken,
+          accessToken,
           refreshToken,
           sessionId: session?.id,
         },

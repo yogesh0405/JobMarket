@@ -70,6 +70,7 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   const handleSignup = async () => {
+    if (loading) return;
     setError(null);
 
     const cleanEmail = email.trim().toLowerCase();
@@ -77,6 +78,11 @@ export const EmployerSignupScreen: React.FC<Props> = ({ navigation, route }) => 
 
     if (role === 'candidate' && !cleanName) {
       setError('Full name is required for Candidate registration.');
+      return;
+    }
+
+    if (role === 'candidate' && !cleanEmail.endsWith('@gmail.com')) {
+      setError('Candidates must register using a @gmail.com email address.');
       return;
     }
 

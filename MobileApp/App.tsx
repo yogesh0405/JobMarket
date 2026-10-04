@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 import {
   NavigationContainer,
   LinkingOptions,
   useNavigationContainerRef,
+  getStateFromPath,
 } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { useFonts } from 'expo-font';
@@ -34,15 +36,33 @@ WebBrowser.maybeCompleteAuthSession();
 const envApiUrl = process.env.EXPO_PUBLIC_API_URL || '';
 const envWebUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://job-market-wine.vercel.app';
 
+let expoPrefix = 'jobmarket://';
+try {
+  expoPrefix = Linking.createURL('/');
+} catch (_) {}
+
 // Industry-Standard Deep Linking & Universal Link Configuration
 const linking: LinkingOptions<any> = {
   prefixes: [
+    expoPrefix,
     'jobmarket://',
     'exp://',
     envWebUrl,
     envWebUrl.replace('https://', 'http://'),
     ...(envApiUrl ? [envApiUrl, envApiUrl.replace('https://', 'http://')] : []),
   ],
+  filter: (url: string) => {
+    if (!url) return false;
+    const trimmed = url.trim();
+    // Ignore pure Expo development / Metro dev server launch URLs without a deep link payload
+    if (
+      /^exp:\/\/[^/]+(\/--)?\/?$/.test(trimmed) ||
+      /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+):\d+\/?$/.test(trimmed)
+    ) {
+      return false;
+    }
+    return true;
+  },
   config: {
     screens: {
       CandidateJobDetail: 'job/:jobId',
@@ -51,7 +71,45 @@ const linking: LinkingOptions<any> = {
       CompanyProfile: 'company-profile',
       EmployerDashboard: 'employer-dashboard',
       JobApplicants: 'job-applicants/:jobId',
+      NotFound: '*',
     },
+  },
+  getStateFromPath: (path, options) => {
+    if (!path) return undefined;
+
+    let cleanPath = path.trim();
+
+    // Ignore pure Expo development hosts/ports (e.g., "192.168.1.5:8081", "localhost:8081", or "--")
+    if (/^[a-zA-Z0-9.-]+:\d+(\/--)?\/?$/.test(cleanPath)) {
+      return undefined;
+    }
+
+    // Strip Expo host and internal Expo routing prefixes if present
+    cleanPath = cleanPath.replace(/^[a-zA-Z0-9.-]+:\d+\/--\/?/, '');
+    cleanPath = cleanPath.replace(/^[a-zA-Z0-9.-]+:\d+\/?/, '');
+    cleanPath = cleanPath.replace(/^--\/?/, '');
+    cleanPath = cleanPath.replace(/^\/+|\/+$/g, '');
+
+    // Ignore empty/root paths and Expo/Metro internal dev paths
+    if (
+      !cleanPath ||
+      cleanPath === '/' ||
+      cleanPath === '--' ||
+      cleanPath.startsWith('node_modules') ||
+      cleanPath.startsWith('.expo') ||
+      cleanPath.includes('hot') ||
+      cleanPath.includes('symbolicate')
+    ) {
+      return undefined;
+    }
+
+    // Normalize alternate deep link path aliases
+    if (cleanPath.startsWith('jobs/')) {
+      cleanPath = 'job/' + cleanPath.slice(5);
+    }
+
+    // Standard React Navigation resolver — will route to NotFound only for genuine unrecognized deep link paths
+    return getStateFromPath(cleanPath, options);
   },
 };
 
@@ -72,12 +130,27 @@ function MainAppContent() {
     Inter_900Black,
   });
 
-  // Splash screen duration: exactly 2.0 seconds
+  const isReady = (fontsLoaded || !!fontError) && !isLoadingAuth;
+
+  // Splash screen presentation: synchronize with auth state initialization to prevent login screen flash
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let timer: any;
+    if (isReady) {
+      timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 1200);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isReady]);
+
+  // Safety fallback so splash screen never hangs permanently on network failure
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
       setShowSplash(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    }, 3500);
+    return () => clearTimeout(safetyTimer);
   }, []);
 
   // Initialize Push Notification channels and listeners
@@ -127,8 +200,6 @@ function MainAppContent() {
       }
     } catch (_) {}
   };
-
-  const isReady = (fontsLoaded || !!fontError) && !isLoadingAuth;
 
   if (isMaintenanceActive) {
     return (

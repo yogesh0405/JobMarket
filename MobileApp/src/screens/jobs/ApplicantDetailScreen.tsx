@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +44,7 @@ import { ApplicantDetailCandidateTab } from './components/ApplicantDetailCandida
 import { ApplicantDetailStatusTab } from './components/ApplicantDetailStatusTab';
 import { ApplicantDetailInterviewTab } from './components/ApplicantDetailInterviewTab';
 import { ApplicantDetailEmailTab } from './components/ApplicantDetailEmailTab';
+import { KeyboardAwareScrollView, handleFocusInput, dismissKeyboardAndRestore } from '../../components/common/KeyboardAwareScrollView';
 
 export type ModalTabType = 'CANDIDATE' | 'JOB' | 'STATUS' | 'INTERVIEW' | 'EMAIL';
 
@@ -60,6 +63,7 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
   const insets = useSafeAreaInsets();
   const { applicant, jobId, jobTitle = 'Industrial Position' } = route?.params || {};
 
+  const scrollViewRef = useRef<ScrollView>(null);
   const [currentApplicant, setCurrentApplicant] = useState<JobApplication | null>(applicant || null);
   const [modalTab, setModalTab] = useState<ModalTabType>('JOB');
   const [jobDetails, setJobDetails] = useState<Job | null>(null);
@@ -105,6 +109,11 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
     targetJobId?: string;
     label: string;
   } | null>(null);
+
+  useEffect(() => {
+    Keyboard.dismiss();
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  }, [modalTab]);
 
   useEffect(() => {
     if (currentApplicant) {
@@ -346,35 +355,19 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
       return;
     }
 
-    setLoading(true);
     try {
-      const res = await applicantsApi.sendCustomEmail(
-        currentApplicant.job_id || (currentApplicant as any).jobId || jobId || '',
-        currentApplicant.user_id || (currentApplicant as any).userId || '',
-        {
-          subject: emailSubject.trim(),
-          message: emailMessage.trim(),
-        }
-      );
-
-      if (res && res.success) {
-        setEmailSubject('');
-        setEmailMessage('');
-        setSelectedTemplateLabel('');
-        setSuccessModalData({
-          title: 'Email Sent Successfully',
-          message: `Official communication email has been dispatched to ${candidateEmail}.`,
-          buttonText: 'Done',
-          destinationTab: undefined,
-        });
-        setSuccessStatusModalVisible(true);
+      const mailtoUrl = `mailto:${encodeURIComponent(candidateEmail)}?subject=${encodeURIComponent(emailSubject.trim())}&body=${encodeURIComponent(emailMessage.trim())}`;
+      const canOpen = await Linking.canOpenURL(mailtoUrl).catch(() => true);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
       } else {
-        Alert.alert('Email Error', res?.message || 'Failed to send email.');
+        await Linking.openURL(`mailto:${encodeURIComponent(candidateEmail)}`);
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send custom email.');
-    } finally {
-      setLoading(false);
+      Alert.alert(
+        'Unable to Open Mail App',
+        `Please ensure you have an email client (e.g. Gmail) installed. Candidate email: ${candidateEmail}`
+      );
     }
   };
 
@@ -525,82 +518,83 @@ export const ApplicantDetailScreen: React.FC<Props> = ({ navigation, route }) =>
       </View>
 
       {/* Screen Body Tab Content with Keyboard Elevation */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        style={styles.bodyScroll}
+        contentContainerStyle={modalTab === 'EMAIL' ? { flexGrow: 1, paddingBottom: 24 } : { paddingBottom: 60 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        resetScrollOnHide={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 40 : 60}
       >
-        <ScrollView
-          style={styles.bodyScroll}
-          contentContainerStyle={modalTab === 'EMAIL' ? { flexGrow: 1, paddingBottom: 24 } : { paddingBottom: 60 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-        >
-          {modalTab === 'JOB' ? (
-            <ApplicantDetailJobTab
-              selectedApplicant={currentApplicant}
-              jobDetails={jobDetails}
-              myJobs={myJobs}
-              jobTitle={jobTitle}
-            />
-          ) : null}
+        {modalTab === 'JOB' ? (
+          <ApplicantDetailJobTab
+            selectedApplicant={currentApplicant}
+            jobDetails={jobDetails}
+            myJobs={myJobs}
+            jobTitle={jobTitle}
+          />
+        ) : null}
 
-          {modalTab === 'CANDIDATE' ? (
-            <ApplicantDetailCandidateTab
-              selectedApplicant={currentApplicant}
-              onOpenPdfModal={() => setPdfModalVisible(true)}
-              onSelectEmailTab={() => setModalTab('EMAIL')}
-            />
-          ) : null}
+        {modalTab === 'CANDIDATE' ? (
+          <ApplicantDetailCandidateTab
+            selectedApplicant={currentApplicant}
+            onOpenPdfModal={() => setPdfModalVisible(true)}
+            onSelectEmailTab={() => setModalTab('EMAIL')}
+          />
+        ) : null}
 
-          {modalTab === 'STATUS' ? (
-            <ApplicantDetailStatusTab
-              selectedApplicant={currentApplicant}
-              jobId={jobId}
-              onUpdateStatus={handleUpdateStatus}
-              statusDates={statusDates}
-            />
-          ) : null}
+        {modalTab === 'STATUS' ? (
+          <ApplicantDetailStatusTab
+            selectedApplicant={currentApplicant}
+            jobId={jobId}
+            onUpdateStatus={handleUpdateStatus}
+            statusDates={statusDates}
+          />
+        ) : null}
 
-          {modalTab === 'INTERVIEW' ? (
-            <ApplicantDetailInterviewTab
-              selectedApplicant={currentApplicant}
-              interviewMode={interviewMode}
-              setInterviewMode={setInterviewMode}
-              interviewDate={interviewDate}
-              interviewTime={interviewTime}
-              setInterviewTime={setInterviewTime}
-              interviewLocation={interviewLocation}
-              setInterviewLocation={setInterviewLocation}
-              interviewMapsLink={interviewMapsLink}
-              setInterviewMapsLink={setInterviewMapsLink}
-              interviewNotes={interviewNotes}
-              setInterviewNotes={setInterviewNotes}
-              onScheduleInterview={handleScheduleInterview}
-              onOpenDatePicker={() => setDatePickerVisible(true)}
-              onOpenTimePicker={() => setTimePickerVisible(true)}
-              modalLoading={loading}
-            />
-          ) : null}
+        {modalTab === 'INTERVIEW' ? (
+          <ApplicantDetailInterviewTab
+            selectedApplicant={currentApplicant}
+            interviewMode={interviewMode}
+            setInterviewMode={setInterviewMode}
+            interviewDate={interviewDate}
+            interviewTime={interviewTime}
+            setInterviewTime={setInterviewTime}
+            interviewLocation={interviewLocation}
+            setInterviewLocation={setInterviewLocation}
+            interviewMapsLink={interviewMapsLink}
+            setInterviewMapsLink={setInterviewMapsLink}
+            interviewNotes={interviewNotes}
+            setInterviewNotes={setInterviewNotes}
+            onScheduleInterview={handleScheduleInterview}
+            onOpenDatePicker={() => setDatePickerVisible(true)}
+            onOpenTimePicker={() => setTimePickerVisible(true)}
+            modalLoading={loading}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 85)}
+            onDismissKeyboard={() => dismissKeyboardAndRestore(scrollViewRef)}
+          />
+        ) : null}
 
-          {modalTab === 'EMAIL' ? (
-            <ApplicantDetailEmailTab
-              selectedApplicant={currentApplicant}
-              selectedTemplateLabel={selectedTemplateLabel}
-              onOpenTemplateDropdown={() => setTemplateDropdownVisible(true)}
-              onSelectTemplateKey={applyEmailTemplate}
-              emailSubject={emailSubject}
-              setEmailSubject={setEmailSubject}
-              emailMessage={emailMessage}
-              setEmailMessage={setEmailMessage}
-              onSendCustomEmail={handleSendCustomEmail}
-              modalLoading={loading}
-              jobTitle={jobTitle}
-            />
-          ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {modalTab === 'EMAIL' ? (
+          <ApplicantDetailEmailTab
+            selectedApplicant={currentApplicant}
+            selectedTemplateLabel={selectedTemplateLabel}
+            onOpenTemplateDropdown={() => setTemplateDropdownVisible(true)}
+            onSelectTemplateKey={applyEmailTemplate}
+            emailSubject={emailSubject}
+            setEmailSubject={setEmailSubject}
+            emailMessage={emailMessage}
+            setEmailMessage={setEmailMessage}
+            onSendCustomEmail={handleSendCustomEmail}
+            modalLoading={loading}
+            jobTitle={jobTitle}
+            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 85)}
+            onDismissKeyboard={() => dismissKeyboardAndRestore(scrollViewRef)}
+          />
+        ) : null}
+      </KeyboardAwareScrollView>
 
       {/* Universal Resume PDF Viewer Modal */}
       {currentApplicant ? (

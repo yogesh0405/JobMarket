@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { AlertCircle, Mail } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
+import { COLORS, RADIUS, SHADOWS } from '../../constants/theme';
 
 interface Props {
   reason?: string | null;
@@ -168,25 +169,21 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.border,
     paddingHorizontal: 28,
     paddingVertical: 36,
     width: '100%',
     maxWidth: 440,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    ...SHADOWS.sm,
   },
   iconWrap: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: RADIUS.full,
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
     borderColor: '#FECACA',
@@ -214,8 +211,8 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
     padding: 18,
     marginBottom: 18,
   },
@@ -252,7 +249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F1F5F9',
-    borderRadius: 8,
+    borderRadius: RADIUS.sm,
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -283,8 +280,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     height: 48,
-    backgroundColor: '#2563EB',
-    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
   },
   btnIcon: {
     marginRight: 8,
@@ -303,7 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#CBD5E1',
-    borderRadius: 10,
+    borderRadius: RADIUS.md,
   },
   secondaryBtnText: {
     fontSize: 15,
@@ -321,7 +318,7 @@ const styles = StyleSheet.create({
   },
   supportLink: {
     fontSize: 13,
-    color: '#2563EB',
+    color: COLORS.primary,
     fontWeight: '600',
   },
 });

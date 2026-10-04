@@ -168,7 +168,7 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        const refreshToken = (await getRefreshToken()) || (await getAccessToken());
+        const refreshToken = await getRefreshToken();
         const sessionId = await getSessionId();
 
         if (!refreshToken) {

@@ -25,6 +25,7 @@ import { JobFilterSideDrawer, FilterOptions } from '../../components/common/JobF
 import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 import { FONTS, COLORS } from '../../constants/theme';
+import { evaluateJobMatchesFilter } from './utils/jobFilterEngine';
 
 const DEFAULT_MAP_FILTERS: FilterOptions = {
   industry: 'All Industries',
@@ -154,66 +155,7 @@ export const CandidateJobMapScreen: React.FC<{ navigation: any; route: any }> = 
 
   // Filtered jobs for Map view pins
   const filteredJobs = useMemo(() => {
-    return jobs.filter((j) => {
-      // 1. Keyword search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const title = (j.title || '').toLowerCase();
-        const company = (j.company || '').toLowerCase();
-        const location = (j.location || '').toLowerCase();
-        const industry = (j.industry || '').toLowerCase();
-        const trade = (j.trade || '').toLowerCase();
-        const skills = Array.isArray(j.skills) ? j.skills.join(' ').toLowerCase() : '';
-
-        const match =
-          title.includes(q) ||
-          company.includes(q) ||
-          location.includes(q) ||
-          industry.includes(q) ||
-          trade.includes(q) ||
-          skills.includes(q);
-
-        if (!match) return false;
-      }
-
-      // 2. Active filters (Smart Industry Match)
-      if (activeFilters.industry && activeFilters.industry !== 'All Industries' && activeFilters.industry !== 'All') {
-        const rawInd = activeFilters.industry.toLowerCase().trim();
-        const jobInd = (j.industry || '').toLowerCase();
-        const jobTitle = (j.title || '').toLowerCase();
-        const jobTrade = (j.trade || '').toLowerCase();
-        const jobDesc = (j.description || '').toLowerCase();
-
-        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-        const indTokens = rawInd
-          .split(/[\s&,/()]+/)
-          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-          .filter((t) => t.length >= 2);
-
-        const matchesInd =
-          directMatch ||
-          indTokens.length === 0 ||
-          indTokens.some(
-            (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
-          );
-
-        if (!matchesInd) return false;
-      }
-      if (activeFilters.midcZone !== 'All MIDC Zones') {
-        if (!(j.location || '').toLowerCase().includes(activeFilters.midcZone.toLowerCase())) return false;
-      }
-      if (activeFilters.jobType !== 'All Types') {
-        if ((j.job_type || (j as any).jobType || '').toLowerCase() !== activeFilters.jobType.toLowerCase()) return false;
-      }
-      if (activeFilters.workMode !== 'All Modes') {
-        if ((j.work_mode || (j as any).workMode || '').toLowerCase() !== activeFilters.workMode.toLowerCase()) return false;
-      }
-      if (activeFilters.busFacility && !(j as any).bus_facility && !j.bus_facility) return false;
-      if (activeFilters.canteen && !(j as any).canteen_facility && !j.canteen) return false;
-      if (activeFilters.accommodation && !j.accommodation) return false;
-
-      return true;
-    });
+    return jobs.filter((j) => evaluateJobMatchesFilter(j, activeFilters, searchQuery));
   }, [jobs, searchQuery, activeFilters]);
 
   const activeFilterCount = [

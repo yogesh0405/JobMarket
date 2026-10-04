@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Users,
@@ -111,7 +111,7 @@ export const MobileBottomNav: React.FC = () => {
         {isEmployer ? (
           <>
             {/* 1. Candidates */}
-            <NavLink
+            <Link
               to="/dashboard?tab=candidates"
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=candidates') ? 'active' : ''}`}
             >
@@ -124,10 +124,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Candidates</span>
-            </NavLink>
+            </Link>
 
             {/* 2. Applicants */}
-            <NavLink
+            <Link
               to="/dashboard?tab=applicants"
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=applicants') ? 'active' : ''}`}
             >
@@ -140,10 +140,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Applicants</span>
-            </NavLink>
+            </Link>
 
             {/* 3. Post */}
-            <NavLink
+            <Link
               to="/post-job"
               className={`mobile-app-tab-item ${isTabActive('/post-job') ? 'active' : ''}`}
             >
@@ -156,10 +156,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Post</span>
-            </NavLink>
+            </Link>
 
             {/* 4. Manage */}
-            <NavLink
+            <Link
               to="/dashboard?tab=manage"
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=manage') ? 'active' : ''}`}
             >
@@ -172,10 +172,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Manage</span>
-            </NavLink>
+            </Link>
 
             {/* 5. Company */}
-            <NavLink
+            <Link
               to="/dashboard?tab=profile"
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=profile') ? 'active' : ''}`}
             >
@@ -204,12 +204,12 @@ export const MobileBottomNav: React.FC = () => {
                 )}
               </div>
               <span className="tab-label">Company</span>
-            </NavLink>
+            </Link>
           </>
         ) : (
           <>
             {/* 1. Home */}
-            <NavLink
+            <Link
               to="/"
               className={`mobile-app-tab-item ${isTabActive('/') ? 'active' : ''}`}
             >
@@ -222,10 +222,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Home</span>
-            </NavLink>
+            </Link>
 
             {/* 2. Companies */}
-            <NavLink
+            <Link
               to="/companies"
               className={`mobile-app-tab-item ${isTabActive('/companies') ? 'active' : ''}`}
             >
@@ -238,10 +238,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Companies</span>
-            </NavLink>
+            </Link>
 
             {/* 3. Jobs */}
-            <NavLink
+            <Link
               to="/jobs"
               className={`mobile-app-tab-item ${isTabActive('/jobs') ? 'active' : ''}`}
             >
@@ -254,10 +254,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Jobs</span>
-            </NavLink>
+            </Link>
 
             {/* 4. Applied */}
-            <NavLink
+            <Link
               to={currentUser ? '/dashboard?tab=applied' : '/login'}
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=applied') ? 'active' : ''}`}
             >
@@ -270,10 +270,10 @@ export const MobileBottomNav: React.FC = () => {
                 />
               </div>
               <span className="tab-label">Applied</span>
-            </NavLink>
+            </Link>
 
             {/* 5. Profile */}
-            <NavLink
+            <Link
               to={currentUser ? (currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile') : '/login'}
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile') ? 'active' : ''}`}
             >
@@ -304,7 +304,7 @@ export const MobileBottomNav: React.FC = () => {
                 )}
               </div>
               <span className="tab-label">Profile</span>
-            </NavLink>
+            </Link>
           </>
         )}
       </div>

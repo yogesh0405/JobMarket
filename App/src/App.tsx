@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 're
 import { Layout } from './components/Layout/Layout';
 import { MaintenancePage } from './components/common/MaintenancePage';
 import { AccountSuspendedPage } from './components/common/AccountSuspendedPage';
+import { NotFoundPage } from './components/common/NotFoundPage';
 import { HomePage } from './features/home/HomePage';
 import { LoginPage } from './features/auth/LoginPage';
 import { SignupPage } from './features/auth/SignupPage';
@@ -227,10 +228,9 @@ export const App: React.FC = () => {
           <Route path="/about/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/about/privacy" element={<PrivacyPage />} />
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-
-        {/* 4. Fallback Catch-All */}
-        <Route path="*" element={<Navigate to={isEmployer ? "/dashboard" : "/"} replace />} />
       </Routes>
     </ErrorBoundary>
   );

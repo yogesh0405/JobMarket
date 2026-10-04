@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { User, AuthTokens } from '../types';
 import { appliedJobsStore } from './appliedJobsStore';
+import { savedJobsStore } from './savedJobsStore';
 
 const ACCESS_TOKEN_KEY = 'csn_employer_access_token';
 const REFRESH_TOKEN_KEY = 'csn_employer_refresh_token';
@@ -145,6 +146,7 @@ export async function clearAuthSession(): Promise<void> {
   memorySessionId = null;
   memoryUser = null;
   appliedJobsStore.clear();
+  savedJobsStore.clear();
 
   try {
     const isAvailable = await SecureStore.isAvailableAsync();

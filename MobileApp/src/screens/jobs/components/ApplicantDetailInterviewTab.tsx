@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import {
   Building2,
   Zap,
@@ -33,6 +33,8 @@ interface ApplicantDetailInterviewTabProps {
   onOpenDatePicker: () => void;
   onOpenTimePicker: () => void;
   modalLoading: boolean;
+  onFocusInput?: (e: any, margin?: number) => void;
+  onDismissKeyboard?: () => void;
 }
 
 const POPULAR_SLOTS = ['10:00 AM', '11:30 AM', '02:30 PM', '04:00 PM'];
@@ -54,10 +56,21 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
   onOpenDatePicker,
   onOpenTimePicker,
   modalLoading,
+  onFocusInput,
+  onDismissKeyboard,
 }) => {
+  const mapsInputRef = React.useRef<any>(null);
+  const notesInputRef = React.useRef<any>(null);
+
+  const handleDismiss = () => {
+    Keyboard.dismiss();
+    onDismissKeyboard?.();
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.sectionCard}>
+    <TouchableWithoutFeedback onPress={handleDismiss} accessible={false}>
+      <View style={styles.container}>
+        <View style={styles.sectionCard}>
         <Text style={styles.sectionHeadingTitle}>SCHEDULE TECHNICAL INTERVIEW</Text>
         <Text style={styles.infoSectionBody}>
           Send an official interview invitation to <Text style={{ fontWeight: '700', color: '#102A5C' }}>{safeValue(selectedApplicant?.user?.name)}</Text>.
@@ -80,7 +93,10 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
                 key={item.key}
                 activeOpacity={0.75}
                 style={[styles.cleanModePillBtn, isSelected && styles.cleanModePillBtnSelected]}
-                onPress={() => setInterviewMode(item.key)}
+                onPress={() => {
+                  handleDismiss();
+                  setInterviewMode(item.key);
+                }}
               >
                 <IconComp size={13} color={isSelected ? '#1764E8' : '#657796'} />
                 <Text style={[styles.cleanModePillText, isSelected && styles.cleanModePillTextSelected]}>
@@ -101,7 +117,14 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
           <Text style={styles.inputLabelStyle}>
             Interview Date <Text style={{ color: '#EF4444' }}>*</Text>
           </Text>
-          <TouchableOpacity activeOpacity={0.8} onPress={onOpenDatePicker} style={styles.cleanDatePickerTriggerBtn}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              handleDismiss();
+              onOpenDatePicker();
+            }}
+            style={styles.cleanDatePickerTriggerBtn}
+          >
             <Calendar size={15} color="#1764E8" strokeWidth={1.8} />
             <Text style={styles.cleanDatePickerTriggerText}>
               {interviewDate ? new Date(interviewDate + 'T00:00:00').toDateString() : 'Tap to select interview date...'}
@@ -125,7 +148,10 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
                   key={slot}
                   activeOpacity={0.75}
                   style={[styles.quickSlotChip, isSelected && styles.quickSlotChipSelected]}
-                  onPress={() => setInterviewTime?.(slot)}
+                  onPress={() => {
+                    handleDismiss();
+                    setInterviewTime?.(slot);
+                  }}
                 >
                   <Text style={[styles.quickSlotChipText, isSelected && styles.quickSlotChipTextSelected]}>
                     {slot}
@@ -136,7 +162,14 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
           </View>
 
           {/* Custom Time Trigger */}
-          <TouchableOpacity activeOpacity={0.8} onPress={onOpenTimePicker} style={styles.cleanDatePickerTriggerBtn}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              handleDismiss();
+              onOpenTimePicker();
+            }}
+            style={styles.cleanDatePickerTriggerBtn}
+          >
             <Clock size={15} color="#1764E8" strokeWidth={1.8} />
             <Text style={styles.cleanDatePickerTriggerText}>
               {interviewTime ? `Selected: ${interviewTime}` : 'Choose Custom Time...'}
@@ -155,33 +188,48 @@ export const ApplicantDetailInterviewTab: React.FC<ApplicantDetailInterviewTabPr
           placeholder="e.g. Factory Gate #2, Waluj MIDC, CSN"
           value={interviewLocation}
           onChangeText={setInterviewLocation}
+          onFocus={(e) => onFocusInput?.(e, 85)}
+          returnKeyType="next"
+          onSubmitEditing={() => mapsInputRef.current?.focus()}
         />
 
         <Input
+          ref={mapsInputRef}
           label="Google Maps Location Link *"
           placeholder="e.g. https://maps.app.goo.gl/... or https://maps.google.com/..."
           value={interviewMapsLink}
           onChangeText={setInterviewMapsLink}
           keyboardType="url"
           autoCapitalize="none"
+          onFocus={(e) => onFocusInput?.(e, 95)}
+          returnKeyType="next"
+          onSubmitEditing={() => notesInputRef.current?.focus()}
         />
 
         <Input
+          ref={notesInputRef}
           label="Instructions for Candidate"
           placeholder="Bring original ITI trade certificate & Aadhaar card."
           value={interviewNotes}
           onChangeText={setInterviewNotes}
+          onFocus={(e) => onFocusInput?.(e, 120)}
+          returnKeyType="done"
+          onSubmitEditing={handleDismiss}
         />
 
         <Button
           title="Schedule & Send Invite"
-          onPress={onScheduleInterview}
+          onPress={() => {
+            handleDismiss();
+            onScheduleInterview();
+          }}
           loading={modalLoading}
           icon={<Send size={14} color="#FFFFFF" />}
           style={styles.scheduleBtn}
         />
       </View>
     </View>
+  </TouchableWithoutFeedback>
   );
 };
 

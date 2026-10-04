@@ -37,6 +37,7 @@ import { JobFilterScreen } from '../screens/jobs/JobFilterScreen';
 import { CompanyFilterScreen } from '../screens/company/CompanyFilterScreen';
 import { CandidateGlobalSearchScreen } from '../screens/candidate/CandidateGlobalSearchScreen';
 import { CandidateSearchScreen } from '../screens/candidates/CandidateSearchScreen';
+import { NotFoundScreen } from '../screens/common/NotFoundScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,6 +69,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
           <Stack.Screen name="JobFilter" component={JobFilterScreen} />
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
+          <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </>
       ) : isCandidate ? (
         // Candidate / Employee App Stack (RBAC)
@@ -96,6 +98,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="GlobalSearch" component={CandidateGlobalSearchScreen} />
           <Stack.Screen name="JobFilter" component={JobFilterScreen} />
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
+          <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </>
       ) : (
         // Employer App Stack (RBAC)
@@ -126,6 +129,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
           <Stack.Screen name="CandidateSearch" component={CandidateSearchScreen} />
           <Stack.Screen name="EmployerCandidateSearch" component={CandidateSearchScreen} />
+          <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </>
       )}
     </Stack.Navigator>

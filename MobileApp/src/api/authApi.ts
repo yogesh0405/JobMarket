@@ -1,6 +1,6 @@
 import { apiFetch, isValidId } from './client';
 import { User, ApiResponse } from '../types';
-import { getAccessToken } from '../utils/secureStorage';
+import { getAccessToken, getSessionId } from '../utils/secureStorage';
 
 export const authApi = {
   login: async (credentials: any): Promise<ApiResponse> => {
@@ -39,10 +39,21 @@ export const authApi = {
   },
 
   sendOTP: async (email: string, reason?: string): Promise<ApiResponse> => {
-    return apiFetch('/api/v1/auth/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ email, reason }),
-    });
+    const cleanEmail = (email || '').trim().toLowerCase();
+    try {
+      return await apiFetch('/api/v1/auth/send-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, reason }),
+      });
+    } catch (err: any) {
+      if (err.status === 404 || err.message?.includes('404')) {
+        return await apiFetch('/api/v1/auth/forgot-password', {
+          method: 'POST',
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+      }
+      throw err;
+    }
   },
 
   verifyOTP: async (email: string, otpCode: string): Promise<ApiResponse> => {
@@ -84,15 +95,18 @@ export const authApi = {
   },
 
   logout: async (sessionId?: string): Promise<ApiResponse> => {
+    const activeSessionId = sessionId || (await getSessionId()) || undefined;
     return apiFetch('/api/v1/auth/logout', {
       method: 'POST',
-      body: JSON.stringify({ sessionId }),
+      body: JSON.stringify({ sessionId: activeSessionId }),
     });
   },
 
-  logoutAll: async (): Promise<ApiResponse> => {
+  logoutAll: async (keepSessionId?: string): Promise<ApiResponse> => {
+    const currentSessionId = keepSessionId || (await getSessionId()) || undefined;
     return apiFetch('/api/v1/auth/logout-all', {
       method: 'POST',
+      body: JSON.stringify(currentSessionId ? { currentSessionId } : {}),
     });
   },
 
@@ -117,10 +131,11 @@ export const authApi = {
     });
   },
 
-  logoutAllOtherSessions: async (): Promise<ApiResponse> => {
+  logoutAllOtherSessions: async (keepSessionId?: string): Promise<ApiResponse> => {
+    const currentSessionId = keepSessionId || (await getSessionId()) || undefined;
     return apiFetch('/api/v1/auth/logout-all', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify(currentSessionId ? { currentSessionId } : {}),
     });
   },
 

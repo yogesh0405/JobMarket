@@ -36,6 +36,7 @@ import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
+import { evaluateJobMatchesFilter } from './utils/jobFilterEngine';
 import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
 
 const FALLBACK_JOBS: Job[] = [
@@ -497,111 +498,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   }, [jobs, showToast]);
 
   const filteredJobs = useMemo(() => {
-    const cleanQ = searchQuery.toLowerCase().trim();
-    return jobs.filter((job) => {
-      // 1. Text Search Query Match
-      if (cleanQ) {
-        const matchesQuery = matchJobAgainstKeyword(job, cleanQ);
-        if (!matchesQuery) return false;
-      }
-
-      // 2. Category Match
-      const catMatch =
-        selectedCategory === 'All Jobs' ||
-        (job.trade && job.trade.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-        (job.industry && job.industry.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-        (job.title && job.title.toLowerCase().includes(selectedCategory.toLowerCase())) ||
-        (selectedCategory === 'HR Jobs' && (job.title.includes('HR') || job.industry.includes('HR'))) ||
-        (selectedCategory === 'Marketing Jobs' && (job.title.includes('Marketing') || job.industry.includes('Marketing'))) ||
-        (selectedCategory === 'ITI & Trade Jobs' && (job.title.includes('Welder') || job.title.includes('Wireman') || job.title.includes('CNC') || job.title.includes('Fitter'))) ||
-        (selectedCategory === 'Healthcare' && (job.title.includes('Nurse') || job.industry.includes('Healthcare')));
-
-      if (!catMatch) return false;
-
-      // 3. Industry Filter Match
-      if (activeFilters.industry && activeFilters.industry !== 'All Industries') {
-        const rawInd = activeFilters.industry.toLowerCase().trim();
-        const jobInd = (job.industry || '').toLowerCase();
-        const jobTitle = (job.title || '').toLowerCase();
-        const jobTrade = (job.trade || '').toLowerCase();
-        const jobDesc = (job.description || '').toLowerCase();
-
-        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-        const indTokens = rawInd
-          .split(/[\s&,/()]+/)
-          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-          .filter((t) => t.length >= 2);
-
-        const matchesInd =
-          directMatch ||
-          indTokens.length === 0 ||
-          indTokens.some(
-            (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
-          );
-
-        if (!matchesInd) return false;
-      }
-
-      // 4. Education Filter Match
-      if (activeFilters.education && activeFilters.education !== 'All Education Levels') {
-        const matchesEdu = matchJobAgainstKeyword(job, activeFilters.education);
-        if (!matchesEdu) return false;
-      }
-
-      // 4b. Dynamic Job Role Filter Match
-      if (activeFilters.jobRole && activeFilters.jobRole !== 'All Roles') {
-        const roleTarget = activeFilters.jobRole.toLowerCase();
-        const jobTitle = (job.title || '').toLowerCase();
-        const jobTrade = (job.trade || '').toLowerCase();
-        const jobDesc = (job.description || '').toLowerCase();
-        const roleTokens = roleTarget
-          .split(/[\s/()&,]+/)
-          .map((t) => t.replace(/(s|ing|er|or|ist)$/, ''))
-          .filter((t) => t.length >= 2);
-        const matchesRole =
-          jobTitle.includes(roleTarget) ||
-          jobTrade.includes(roleTarget) ||
-          roleTokens.length === 0 ||
-          roleTokens.some((t) => jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
-        if (!matchesRole) return false;
-      }
-
-      // 5. MIDC Zone Filter Match
-      if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
-        const rawZone = activeFilters.midcZone.toLowerCase();
-        const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
-        const jobLoc = (job.location || '').toLowerCase();
-        const jobDesc = (job.description || '').toLowerCase();
-
-        const matchesZone = zoneTokens.length === 0 || zoneTokens.some(
-          (t) => jobLoc.includes(t) || jobDesc.includes(t)
-        );
-
-        if (!matchesZone) return false;
-      }
-
-      // 6. Job Type Filter Match
-      if (activeFilters.jobType && activeFilters.jobType !== 'All Types') {
-        const typeKey = activeFilters.jobType.toLowerCase();
-        const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
-        if (!jType.includes(typeKey)) return false;
-      }
-
-      // 7. Work Mode Filter Match
-      if (activeFilters.workMode && activeFilters.workMode !== 'All Modes') {
-        const modeKey = activeFilters.workMode.toLowerCase();
-        const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
-        if (!jMode.includes(modeKey)) return false;
-      }
-
-      // 8. Amenities Filters
-      if (activeFilters.busFacility && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
-      if (activeFilters.canteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
-      if (activeFilters.accommodation && !(job.accommodation || (job as any).accommodation || (job.perks || []).includes('Accommodation'))) return false;
-      if (activeFilters.overtime && !(job.overtime || (job as any).overtime || (job.perks || []).includes('Overtime Pay'))) return false;
-
-      return true;
-    });
+    return jobs.filter((job) =>
+      evaluateJobMatchesFilter(job, activeFilters, searchQuery, selectedCategory)
+    );
   }, [jobs, searchQuery, selectedCategory, activeFilters]);
 
   const activeFilterCount = useMemo(() => {
@@ -613,6 +512,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       Boolean(activeFilters.jobType && activeFilters.jobType !== 'All Types'),
       Boolean(activeFilters.workMode && activeFilters.workMode !== 'All Modes'),
       Boolean(activeFilters.minExperience && activeFilters.minExperience !== 'All Experience'),
+      Boolean(activeFilters.salaryMin && activeFilters.salaryMin > 0),
       Boolean(activeFilters.busFacility),
       Boolean(activeFilters.canteen),
       Boolean(activeFilters.accommodation),

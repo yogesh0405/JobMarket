@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   User, Mail, Phone, MapPin, Briefcase, 
-  Clock, FileText, CheckCircle2, Calendar, Bus, Home, 
+  Clock, FileText, X, CheckCircle2, Calendar, Bus, Home, 
   Building2, Check, ArrowLeft, ArrowRight, ExternalLink, Zap, Lock, AlertCircle, HelpCircle,
-  Keyboard as KeyboardIcon, Send, ChevronDown, ChevronRight, MessageSquare, IndianRupee
+  Keyboard as KeyboardIcon, Send, ChevronDown, ChevronRight, MessageSquare, IndianRupee, XCircle
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useJobs } from '../../hooks/useJobs';
@@ -178,6 +178,11 @@ export const ApplicantDetailPage: React.FC = () => {
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
 
+  // Active Scheduled Interview State (prevents duplicate bookings and allows cancellation)
+  const [activeInterview, setActiveInterview] = useState<any>(null);
+  const [isCancellingInterview, setIsCancellingInterview] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+
   // Email States
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
@@ -273,6 +278,37 @@ export const ApplicantDetailPage: React.FC = () => {
       Object.assign(initialDates, item.status_dates);
     }
     setStatusDates(initialDates);
+
+    // Initialize activeInterview if already scheduled
+    const date = toSafeString(item.interviewDate || item.interview_date || '');
+    const time = toSafeString(item.interviewTime || item.interview_time || '10:00 AM', '10:00 AM');
+    const mode = toSafeString(item.interviewMode || item.interview_mode || 'In-Person Walk-in', 'In-Person Walk-in');
+    const venue = toSafeString(item.venueAddress || item.venue_address || item.interviewLocation || 'Factory Gate #2, Industrial MIDC', 'Factory Gate #2, Industrial MIDC');
+    const maps = toSafeString(item.mapsLink || item.maps_link || '');
+    const notes = toSafeString(item.notes || item.interviewNotes || '');
+    const isCancelled = item.interview_status === 'cancelled' || item.interviewStatus === 'cancelled';
+    const isScheduled =
+      !isCancelled &&
+      Boolean(
+        item.interviewStatus === 'scheduled' ||
+        item.interview_status === 'scheduled' ||
+        curStatus === 'interview' ||
+        (date && curStatus !== 'rejected')
+      );
+
+    if (date && isScheduled) {
+      setActiveInterview({
+        interviewDate: date,
+        interviewTime: time,
+        interviewMode: mode,
+        venueAddress: venue,
+        mapsLink: maps,
+        notes: notes,
+        status: 'scheduled',
+      });
+    } else {
+      setActiveInterview(null);
+    }
   };
 
   useEffect(() => {
@@ -482,6 +518,17 @@ export const ApplicantDetailPage: React.FC = () => {
       setStatusDates(updatedDates);
       setCurrentStatus('interview');
 
+      // Update active interview state so the UI locks and lists the scheduled interview
+      setActiveInterview({
+        interviewDate,
+        interviewTime: interviewTime || '10:00 AM',
+        interviewMode,
+        venueAddress: venue,
+        mapsLink: '',
+        notes: interviewNotes,
+        status: 'scheduled',
+      });
+
       setSuccessModalData({
         title: 'Interview Successfully Scheduled',
         message: `Official interview invite for ${candidateName} has been recorded for ${interviewDate} at ${interviewTime || '10:00 AM'}.\n\nApplication status is now updated to "Interview Scheduled".`,
@@ -494,6 +541,40 @@ export const ApplicantDetailPage: React.FC = () => {
       showToast(err.message || 'Failed to schedule interview', 'error');
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  // Cancel Scheduled Interview
+  const handleCancelInterview = async () => {
+    setIsCancellingInterview(true);
+    try {
+      const targetUserId = toSafeString(user?.id || applicant?.userId || applicant?.id);
+
+      if (updateApplicantStatus && effectiveJobId && targetUserId) {
+        await updateApplicantStatus(effectiveJobId, targetUserId, 'shortlisted');
+      }
+
+      const appId = applicant?.application_id || applicant?.applicationId || applicant?.id;
+      if (appId) {
+        await apiFetch(`/api/v1/jobs/employer/interviews/${appId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'shortlisted',
+            postponedReason: 'Interview cancelled by employer to reschedule.',
+          }),
+        }).catch(() => null);
+      }
+
+      setActiveInterview(null);
+      setCurrentStatus('shortlisted');
+      setCancelModalVisible(false);
+
+      showToast('Scheduled interview cancelled. You can now schedule a new interview.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to cancel interview', 'error');
+    } finally {
+      setIsCancellingInterview(false);
     }
   };
 
@@ -1389,220 +1470,398 @@ export const ApplicantDetailPage: React.FC = () => {
           {/* ═══════════ TAB 4: INTERVIEW ═══════════ */}
           {activeTab === 'INTERVIEW' && (
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
-                SCHEDULE TECHNICAL INTERVIEW
-              </div>
-              <div style={{ fontSize: '12px', color: '#657796', lineHeight: '18px', marginBottom: '12px' }}>
-                Send an official interview invitation to <strong style={{ color: '#102A5C' }}>{candidateName}</strong>.
-              </div>
-
-              <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
-
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
-                1. INTERVIEW MODE
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                {[
-                  { key: 'In-Person Walk-in', icon: Building2, label: 'In-Person' },
-                  { key: 'Online Video Call', icon: Zap, label: 'Video Call' },
-                  { key: 'Phone Screening', icon: Phone, label: 'Phone Call' },
-                ].map((item) => {
-                  const IconComp = item.icon;
-                  const isSelected = interviewMode === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setInterviewMode(item.key)}
-                      style={{
-                        flex: 1,
-                        height: '38px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '5px',
-                        borderRadius: '6px',
-                        border: isSelected ? '1.5px solid #1764E8' : '1px solid #E2E8F0',
-                        backgroundColor: isSelected ? '#EFF6FF' : '#F8FAFC',
-                        color: isSelected ? '#1764E8' : '#657796',
-                        fontSize: '11.5px',
-                        fontWeight: isSelected ? 700 : 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <IconComp size={13} color={isSelected ? '#1764E8' : '#657796'} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
-
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
-                2. DATE & TIME SELECTION
-              </div>
-
-              {/* Date Field */}
-              <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
-                  Interview Date <span style={{ color: '#EF4444' }}>*</span>
-                </label>
+              {/* Alert Banner when an interview is already booked */}
+              {activeInterview && (
                 <div
-                  onClick={() => setDatePickerVisible(true)}
                   style={{
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #F59E0B',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    marginBottom: '16px',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                    cursor: 'pointer'
+                    alignItems: 'flex-start',
+                    gap: '10px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Calendar size={15} color="#1764E8" />
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C' }}>
-                      {interviewDate ? new Date(interviewDate + 'T00:00:00').toDateString() : 'Tap to select interview date...'}
-                    </span>
+                  <AlertCircle size={18} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#92400E', marginBottom: '2px' }}>
+                      Interview Already Scheduled for this Candidate
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#B45309', lineHeight: '16px' }}>
+                      An interview has already been arranged earlier. Scheduling controls are disabled below to avoid duplicate invites. If you need to reschedule or change details, please cancel the current interview first.
+                    </div>
                   </div>
-                  <ChevronRight size={14} color="#91A0BA" />
                 </div>
-              </div>
+              )}
 
-              {/* Time Field & Quick Slots */}
-              <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
-                  Interview Time <span style={{ color: '#EF4444' }}>*</span>
-                </label>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                  {['10:00 AM', '11:30 AM', '02:30 PM', '04:00 PM'].map((slot) => {
-                    const isSelected = interviewTime === slot;
+              {/* Scheduling Form Container: Disabled & non-clickable if activeInterview exists */}
+              <div
+                style={{
+                  opacity: activeInterview ? 0.45 : 1,
+                  pointerEvents: activeInterview ? 'none' : 'auto',
+                  userSelect: activeInterview ? 'none' : 'auto',
+                  filter: activeInterview ? 'grayscale(0.2)' : 'none',
+                  transition: 'opacity 0.2s ease',
+                }}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  SCHEDULE TECHNICAL INTERVIEW
+                </div>
+                <div style={{ fontSize: '12px', color: '#657796', lineHeight: '18px', marginBottom: '12px' }}>
+                  Send an official interview invitation to <strong style={{ color: '#102A5C' }}>{candidateName}</strong>.
+                </div>
+
+                <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
+
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  1. INTERVIEW MODE
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  {[
+                    { key: 'In-Person Walk-in', icon: Building2, label: 'In-Person' },
+                    { key: 'Online Video Call', icon: Zap, label: 'Video Call' },
+                    { key: 'Phone Screening', icon: Phone, label: 'Phone Call' },
+                  ].map((item) => {
+                    const IconComp = item.icon;
+                    const isSelected = interviewMode === item.key;
                     return (
                       <button
-                        key={slot}
+                        key={item.key}
                         type="button"
-                        onClick={() => setInterviewTime(slot)}
+                        onClick={() => setInterviewMode(item.key)}
                         style={{
                           flex: 1,
-                          height: '32px',
+                          height: '38px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
                           borderRadius: '6px',
-                          border: isSelected ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                          border: isSelected ? '1.5px solid #1764E8' : '1px solid #E2E8F0',
                           backgroundColor: isSelected ? '#EFF6FF' : '#F8FAFC',
-                          color: isSelected ? '#1764E8' : '#334155',
-                          fontSize: '10.5px',
+                          color: isSelected ? '#1764E8' : '#657796',
+                          fontSize: '11.5px',
                           fontWeight: isSelected ? 700 : 600,
                           cursor: 'pointer'
                         }}
                       >
-                        {slot}
+                        <IconComp size={13} color={isSelected ? '#1764E8' : '#657796'} />
+                        <span>{item.label}</span>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Custom Time Trigger */}
-                <div
-                  onClick={() => setTimePickerVisible(true)}
+                <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
+
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  2. DATE & TIME SELECTION
+                </div>
+
+                {/* Date Field */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
+                    Interview Date <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <div
+                    onClick={() => setDatePickerVisible(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '6px',
+                      padding: '10px 12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Calendar size={15} color="#1764E8" />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C' }}>
+                        {interviewDate ? new Date(interviewDate + 'T00:00:00').toDateString() : 'Tap to select interview date...'}
+                      </span>
+                    </div>
+                    <ChevronRight size={14} color="#91A0BA" />
+                  </div>
+                </div>
+
+                {/* Time Field & Quick Slots */}
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
+                    Interview Time <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                    {['10:00 AM', '11:30 AM', '02:30 PM', '04:00 PM'].map((slot) => {
+                      const isSelected = interviewTime === slot;
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setInterviewTime(slot)}
+                          style={{
+                            flex: 1,
+                            height: '32px',
+                            borderRadius: '6px',
+                            border: isSelected ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            backgroundColor: isSelected ? '#EFF6FF' : '#F8FAFC',
+                            color: isSelected ? '#1764E8' : '#334155',
+                            fontSize: '10.5px',
+                            fontWeight: isSelected ? 700 : 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Time Trigger */}
+                  <div
+                    onClick={() => setTimePickerVisible(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '6px',
+                      padding: '10px 12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={15} color="#1764E8" />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C' }}>
+                        {interviewTime ? `Selected: ${interviewTime}` : 'Choose Custom Time...'}
+                      </span>
+                    </div>
+                    <ChevronRight size={14} color="#91A0BA" />
+                  </div>
+                </div>
+
+                <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
+
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                  3. VENUE & INSTRUCTIONS
+                </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
+                    Venue Address / Video Meeting Link
+                  </label>
+                  <input
+                    type="text"
+                    value={interviewLocation}
+                    onChange={(e) => setInterviewLocation(e.target.value)}
+                    placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      borderRadius: '6px',
+                      border: '1px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      padding: '0 12px',
+                      fontSize: '12px',
+                      color: '#102A5C',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
+                    Instructions for Candidate
+                  </label>
+                  <input
+                    type="text"
+                    value={interviewNotes}
+                    onChange={(e) => setInterviewNotes(e.target.value)}
+                    placeholder="Bring original ITI trade certificate & Aadhaar card."
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      borderRadius: '6px',
+                      border: '1px solid #E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      padding: '0 12px',
+                      fontSize: '12px',
+                      color: '#102A5C',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isScheduling || Boolean(activeInterview)}
+                  onClick={handleScheduleSubmit}
                   style={{
+                    width: '100%',
+                    height: '42px',
+                    borderRadius: '6px',
+                    backgroundColor: activeInterview ? '#94A3B8' : '#1764E8',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '6px',
-                    padding: '10px 12px',
-                    cursor: 'pointer'
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: (isScheduling || activeInterview) ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={15} color="#1764E8" />
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#102A5C' }}>
-                      {interviewTime ? `Selected: ${interviewTime}` : 'Choose Custom Time...'}
+                  {activeInterview ? (
+                    <>
+                      <Lock size={14} color="#FFFFFF" />
+                      <span>Interview Already Scheduled (Locked)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={14} color="#FFFFFF" />
+                      <span>{isScheduling ? 'Scheduling Interview...' : 'Schedule & Send Invite'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* ═══════════ ALREADY SCHEDULED INTERVIEW SECTION ═══════════ */}
+              {activeInterview && (
+                <div
+                  style={{
+                    marginTop: '20px',
+                    padding: '16px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1.5px solid #CBD5E1',
+                    borderRadius: '8px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#10B981',
+                          display: 'inline-block',
+                          boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)',
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#102A5C', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                        Earlier Scheduled Interview
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        backgroundColor: '#ECFDF5',
+                        border: '1px solid #A7F3D0',
+                        color: '#065F46',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        borderRadius: '12px',
+                      }}
+                    >
+                      Active Invitation
                     </span>
                   </div>
-                  <ChevronRight size={14} color="#91A0BA" />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Date & Time */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#102A5C', fontWeight: 600 }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Calendar size={15} color="#1764E8" />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Scheduled Slot</div>
+                        <div>
+                          {new Date(activeInterview.interviewDate + 'T00:00:00').toDateString() || activeInterview.interviewDate} • {activeInterview.interviewTime || '10:00 AM'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mode */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#102A5C', fontWeight: 600 }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Building2 size={15} color="#1764E8" />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Interview Mode</div>
+                        <span>{activeInterview.interviewMode || 'In-Person Walk-in'}</span>
+                      </div>
+                    </div>
+
+                    {/* Venue / Meeting link */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#102A5C', fontWeight: 600 }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                        <MapPin size={15} color="#1764E8" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Venue / Location</div>
+                        <div>{activeInterview.venueAddress || 'Factory Gate #2, Industrial MIDC'}</div>
+                        {activeInterview.mapsLink && (
+                          <a
+                            href={activeInterview.mapsLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#1764E8', fontSize: '11px', marginTop: '2px', textDecoration: 'none' }}
+                          >
+                            <span>Open in Google Maps</span>
+                            <ChevronRight size={12} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Notes / Instructions if any */}
+                    {activeInterview.notes && (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#102A5C', fontWeight: 600 }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                          <FileText size={15} color="#64748B" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Candidate Instructions</div>
+                          <div style={{ color: '#334155', fontWeight: 500 }}>{activeInterview.notes}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cancel Button */}
+                  <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#657796' }}>Need to reschedule this candidate?</span>
+                    <button
+                      type="button"
+                      onClick={() => setCancelModalVisible(true)}
+                      style={{
+                        padding: '7px 14px',
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: '1px solid #FCA5A5',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      <XCircle size={13} color="#DC2626" />
+                      <span>Cancel Scheduled Interview</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div style={{ height: '1px', backgroundColor: '#E7EBF2', margin: '12px 0' }} />
-
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#657796', letterSpacing: '0.5px', marginBottom: '6px' }}>
-                3. VENUE & INSTRUCTIONS
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
-                  Venue Address / Video Meeting Link
-                </label>
-                <input
-                  type="text"
-                  value={interviewLocation}
-                  onChange={(e) => setInterviewLocation(e.target.value)}
-                  placeholder="Factory Gate #2, Waluj MIDC or Google Meet Link"
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#F8FAFC',
-                    padding: '0 12px',
-                    fontSize: '12px',
-                    color: '#102A5C',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#657796', marginBottom: '5px' }}>
-                  Instructions for Candidate
-                </label>
-                <input
-                  type="text"
-                  value={interviewNotes}
-                  onChange={(e) => setInterviewNotes(e.target.value)}
-                  placeholder="Bring original ITI trade certificate & Aadhaar card."
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#F8FAFC',
-                    padding: '0 12px',
-                    fontSize: '12px',
-                    color: '#102A5C',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              <button
-                type="button"
-                disabled={isScheduling}
-                onClick={handleScheduleSubmit}
-                style={{
-                  width: '100%',
-                  height: '42px',
-                  borderRadius: '6px',
-                  backgroundColor: '#1764E8',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  cursor: isScheduling ? 'not-allowed' : 'pointer'
-                }}
-              >
-                <Send size={14} color="#FFFFFF" />
-                <span>{isScheduling ? 'Scheduling Interview...' : 'Schedule & Send Invite'}</span>
-              </button>
+              )}
             </div>
           )}
 
@@ -1931,6 +2190,99 @@ export const ApplicantDetailPage: React.FC = () => {
             >
               {successModalData.buttonText}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── POPUP: Cancel Scheduled Interview Confirmation ── */}
+      {cancelModalVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100005,
+            padding: '16px'
+          }}
+          onClick={() => setCancelModalVisible(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              padding: '20px',
+              maxWidth: '420px',
+              width: '100%',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '18px',
+                backgroundColor: '#FEE2E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertCircle size={20} color="#DC2626" />
+              </div>
+              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                Cancel Scheduled Interview?
+              </h4>
+            </div>
+
+            <p style={{ fontSize: '12.5px', color: '#475569', lineHeight: '18px', margin: '0 0 16px 0' }}>
+              Are you sure you want to cancel the scheduled interview for <strong>{candidateName}</strong>?
+              <br /><br />
+              This will cancel the active slot and unlock the scheduling form so you can schedule a new interview date and time.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setCancelModalVisible(false)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Keep Interview
+              </button>
+
+              <button
+                type="button"
+                disabled={isCancellingInterview}
+                onClick={handleCancelInterview}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: isCancellingInterview ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isCancellingInterview ? 'Cancelling...' : 'Yes, Cancel Interview'}
+              </button>
+            </div>
           </div>
         </div>
       )}

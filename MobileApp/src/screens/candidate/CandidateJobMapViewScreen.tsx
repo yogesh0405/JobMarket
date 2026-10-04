@@ -19,6 +19,7 @@ import { candidateApi } from '../../api/candidateApi';
 import { Job } from '../../types';
 import { COLORS } from '../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { evaluateJobMatchesFilter } from './utils/jobFilterEngine';
 
 interface Props {
   navigation: any;
@@ -106,112 +107,13 @@ export const CandidateJobMapViewScreen: React.FC<Props> = ({ navigation, route }
   }, [activeFilters]);
 
   const filteredJobs = useMemo(() => {
-    return jobs.filter((j) => {
-      // 1. Text Search Filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const title = (j.title || '').toLowerCase();
-        const company = (j.company || '').toLowerCase();
-        const location = (j.location || '').toLowerCase();
-        const industry = (j.industry || (j as any).category || '').toLowerCase();
-        const matchesText = title.includes(q) || company.includes(q) || location.includes(q) || industry.includes(q);
-        if (!matchesText) return false;
-      }
-
-      // 2. Industry Filter (Smart Matching)
-      if (activeFilters.industry && activeFilters.industry !== 'All Industries' && activeFilters.industry !== 'All') {
-        const rawInd = activeFilters.industry.toLowerCase().trim();
-        const jobInd = (j.industry || (j as any).category || '').toLowerCase();
-        const jobTitle = (j.title || '').toLowerCase();
-        const jobTrade = (j.trade || '').toLowerCase();
-
-        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-        const indTokens = rawInd
-          .split(/[\s&,/()]+/)
-          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-          .filter((t) => t.length >= 2);
-
-        const matchesInd =
-          directMatch ||
-          indTokens.length === 0 ||
-          indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t));
-
-        if (!matchesInd) return false;
-      }
-
-      // 3. MIDC Zone Filter
-      if (activeFilters.midcZone !== 'All MIDC Zones') {
-        const zone = (j as any).midcZone || j.midc_zone || j.location || '';
-        if (!zone.toLowerCase().includes(activeFilters.midcZone.toLowerCase())) return false;
-      }
-
-      // 4. Job Type Filter
-      if (activeFilters.jobType !== 'All Types') {
-        const jt = j.job_type || j.jobType || '';
-        if (jt !== activeFilters.jobType) return false;
-      }
-
-      // 5. Work Mode Filter
-      if (activeFilters.workMode !== 'All Modes') {
-        const wm = j.work_mode || j.workMode || '';
-        if (wm !== activeFilters.workMode) return false;
-      }
-
-      // 6. Amenities Filters
-      if (activeFilters.busFacility && !((j as any).requiresBus || (j as any).requires_bus || (j.perks || []).includes('Bus Transport'))) return false;
-      if (activeFilters.canteen && !(j.perks || []).includes('Free Canteen')) return false;
-
-      return true;
-    });
+    return jobs.filter((j) => evaluateJobMatchesFilter(j, activeFilters, searchQuery));
   }, [jobs, searchQuery, activeFilters]);
 
   // Real-time count for draft filters (used inside filter drawer before Apply is tapped)
   const getMatchingCountForDraft = useCallback(
     (draftFilters: FilterOptions): number => {
-      return jobs.filter((j) => {
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const title = (j.title || '').toLowerCase();
-          const company = (j.company || '').toLowerCase();
-          const location = (j.location || '').toLowerCase();
-          const industry = (j.industry || (j as any).category || '').toLowerCase();
-          if (!title.includes(q) && !company.includes(q) && !location.includes(q) && !industry.includes(q)) return false;
-        }
-        if (draftFilters.industry && draftFilters.industry !== 'All Industries' && draftFilters.industry !== 'All') {
-          const rawInd = draftFilters.industry.toLowerCase().trim();
-          const jobInd = (j.industry || (j as any).category || '').toLowerCase();
-          const jobTitle = (j.title || '').toLowerCase();
-          const jobTrade = (j.trade || '').toLowerCase();
-
-          const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-          const indTokens = rawInd
-            .split(/[\s&,/()]+/)
-            .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-            .filter((t) => t.length >= 2);
-
-          const matchesInd =
-            directMatch ||
-            indTokens.length === 0 ||
-            indTokens.some((t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t));
-
-          if (!matchesInd) return false;
-        }
-        if (draftFilters.midcZone !== 'All MIDC Zones') {
-          const zone = (j as any).midcZone || j.midc_zone || j.location || '';
-          if (!zone.toLowerCase().includes(draftFilters.midcZone.toLowerCase())) return false;
-        }
-        if (draftFilters.jobType !== 'All Types') {
-          const jt = j.job_type || j.jobType || '';
-          if (jt !== draftFilters.jobType) return false;
-        }
-        if (draftFilters.workMode !== 'All Modes') {
-          const wm = j.work_mode || j.workMode || '';
-          if (wm !== draftFilters.workMode) return false;
-        }
-        if (draftFilters.busFacility && !((j as any).requiresBus || (j as any).requires_bus || (j.perks || []).includes('Bus Transport'))) return false;
-        if (draftFilters.canteen && !(j.perks || []).includes('Free Canteen')) return false;
-        return true;
-      }).length;
+      return jobs.filter((j) => evaluateJobMatchesFilter(j, draftFilters, searchQuery)).length;
     },
     [jobs, searchQuery]
   );

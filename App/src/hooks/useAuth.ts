@@ -527,10 +527,19 @@ export const useAuth = () => {
         return { success: false, error: errorMessage, errorCode };
       }
 
-      const { accessToken, refreshToken, sessionId, user: apiUser } = data.data;
+      const token = data.data.accessToken || data.data.token;
+      const refreshToken = data.data.refreshToken;
+      const sessionId = data.data.sessionId;
+      const apiUser = data.data.user || data.data;
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      if (!token) {
+        return { success: false, error: 'Authentication token missing from response' };
+      }
+
+      localStorage.setItem('accessToken', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
       if (sessionId) {
         localStorage.setItem('sessionId', sessionId);
       }

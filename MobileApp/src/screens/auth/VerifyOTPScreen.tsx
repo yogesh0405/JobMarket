@@ -62,6 +62,7 @@ export const VerifyOTPScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleVerify = async () => {
+    if (loading) return;
     setError(null);
     const cleanOtp = otpCode.trim();
 

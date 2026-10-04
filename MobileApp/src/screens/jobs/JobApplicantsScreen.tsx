@@ -12,6 +12,7 @@ import {
   TextInput,
   Platform,
   StatusBar,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -447,21 +448,24 @@ export const JobApplicantsScreen: React.FC<Props> = ({ route, navigation }) => {
       Alert.alert('Validation Error', 'Please enter both Subject and Message body.');
       return;
     }
-    setModalLoading(true);
+    const candidateEmail = selectedApplicant.user?.email;
+    if (!candidateEmail) {
+      Alert.alert('Error', 'No email address registered for this candidate.');
+      return;
+    }
     try {
-      if (jobId) {
-        await applicantsApi.sendCustomEmail(jobId, selectedApplicant.user_id, {
-          subject: emailSubject,
-          message: emailMessage,
-        });
+      const mailtoUrl = `mailto:${encodeURIComponent(candidateEmail)}?subject=${encodeURIComponent(emailSubject.trim())}&body=${encodeURIComponent(emailMessage.trim())}`;
+      const canOpen = await Linking.canOpenURL(mailtoUrl).catch(() => true);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+      } else {
+        await Linking.openURL(`mailto:${encodeURIComponent(candidateEmail)}`);
       }
-      setEmailSubject('');
-      setEmailMessage('');
-      Alert.alert('Custom Email Sent', `Email successfully sent to ${selectedApplicant.user?.email || 'candidate'}.`);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send custom email.');
-    } finally {
-      setModalLoading(false);
+      Alert.alert(
+        'Unable to Open Mail App',
+        `Please ensure you have an email client (e.g. Gmail) installed. Candidate email: ${candidateEmail}`
+      );
     }
   };
 

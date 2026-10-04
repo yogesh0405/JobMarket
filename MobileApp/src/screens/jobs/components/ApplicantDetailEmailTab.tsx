@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Mail, User, Send, ChevronDown } from 'lucide-react-native';
 import { JobApplication } from '../../../types';
 import { Input } from '../../../components/common/Input';
@@ -19,6 +19,8 @@ interface ApplicantDetailEmailTabProps {
   onSendCustomEmail: () => void;
   modalLoading: boolean;
   jobTitle?: string;
+  onFocusInput?: (e: any, margin?: number) => void;
+  onDismissKeyboard?: () => void;
 }
 
 export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = ({
@@ -32,15 +34,24 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
   onSendCustomEmail,
   modalLoading,
   jobTitle,
+  onFocusInput,
+  onDismissKeyboard,
 }) => {
+  const messageInputRef = React.useRef<any>(null);
   const candidateName = safeValue(selectedApplicant?.user?.name || 'Applicant');
   const candidateEmail = safeValue(selectedApplicant?.user?.email || 'No email provided');
   const activeJobTitle = safeValue(selectedApplicant?.job?.title || jobTitle || 'Position');
 
   const isFormValid = emailSubject.trim().length > 0 && emailMessage.trim().length > 0;
 
+  const handleDismiss = () => {
+    Keyboard.dismiss();
+    onDismissKeyboard?.();
+  };
+
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={handleDismiss} accessible={false}>
+      <View style={styles.container}>
       <View style={styles.sectionCard}>
         {/* Candidate Recipient Card */}
         <View style={styles.recipientHeaderRow}>
@@ -89,12 +100,16 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
             placeholder="e.g. Technical Interview Call: Industrial Fitter"
             value={emailSubject}
             onChangeText={setEmailSubject}
+            onFocus={(e) => onFocusInput?.(e, 85)}
+            returnKeyType="next"
+            onSubmitEditing={() => messageInputRef.current?.focus()}
           />
 
           <View style={styles.messageInputGroup}>
             <Text style={styles.inputLabelText}>Email Message Body *</Text>
             <View style={styles.multilineInputBoxContainer}>
               <Input
+                ref={messageInputRef}
                 placeholder="Write official email message to candidate..."
                 value={emailMessage}
                 onChangeText={setEmailMessage}
@@ -103,21 +118,26 @@ export const ApplicantDetailEmailTab: React.FC<ApplicantDetailEmailTabProps> = (
                 style={styles.multilineInputBox}
                 inputContainerStyle={styles.multilineInputContainerStyle}
                 containerStyle={{ flex: 1, marginBottom: 0 }}
+                onFocus={(e) => onFocusInput?.(e, 100)}
               />
             </View>
           </View>
         </View>
 
         <Button
-          title="Send Custom Email"
-          onPress={onSendCustomEmail}
+          title="Open in Email App / Gmail"
+          onPress={() => {
+            handleDismiss();
+            onSendCustomEmail();
+          }}
           loading={modalLoading}
           disabled={!isFormValid || modalLoading}
-          icon={<Send size={14} color="#FFFFFF" />}
+          icon={<Mail size={15} color="#FFFFFF" />}
           style={styles.sendSubmitBtn}
         />
       </View>
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 

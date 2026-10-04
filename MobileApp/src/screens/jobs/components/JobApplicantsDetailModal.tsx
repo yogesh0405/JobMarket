@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Keyboard,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import { ApplicantDetailCandidateTab } from './ApplicantDetailCandidateTab';
 import { ApplicantDetailStatusTab } from './ApplicantDetailStatusTab';
 import { ApplicantDetailInterviewTab } from './ApplicantDetailInterviewTab';
 import { ApplicantDetailEmailTab } from './ApplicantDetailEmailTab';
+import { KeyboardAwareScrollView, handleFocusInput, dismissKeyboardAndRestore } from '../../../components/common/KeyboardAwareScrollView';
 
 export type ModalTabType = 'CANDIDATE' | 'JOB' | 'STATUS' | 'INTERVIEW' | 'EMAIL';
 
@@ -105,9 +107,15 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
   onOpenPdfModal,
   modalLoading,
 }) => {
+  const modalScrollRef = useRef<ScrollView>(null);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [currentPickerMonth, setCurrentPickerMonth] = useState(new Date());
   const [templateDropdownVisible, setTemplateDropdownVisible] = useState(false);
+
+  useEffect(() => {
+    Keyboard.dismiss();
+    modalScrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [modalTab]);
 
   const applyEmailTemplate = (templateKey: string) => {
     const candidateName = selectedApplicant?.user?.name || 'Candidate';
@@ -232,10 +240,14 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
             </View>
 
             {/* Modal Body Tabs */}
-            <ScrollView
+            <KeyboardAwareScrollView
+              ref={modalScrollRef}
               style={styles.modalBodyScroll}
               contentContainerStyle={{ padding: 14, paddingBottom: 64 }}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              resetScrollOnHide={true}
+              extraScrollHeight={60}
             >
               {modalTab === 'JOB' ? (
                 <ApplicantDetailJobTab
@@ -279,6 +291,8 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                   onOpenDatePicker={() => setDatePickerVisible(true)}
                   onOpenTimePicker={() => setTimePickerVisible(true)}
                   modalLoading={modalLoading}
+                  onFocusInput={(e, margin) => handleFocusInput(e, modalScrollRef, margin ?? 85)}
+                  onDismissKeyboard={() => dismissKeyboardAndRestore(modalScrollRef)}
                 />
               ) : null}
 
@@ -295,9 +309,11 @@ export const JobApplicantsDetailModal: React.FC<JobApplicantsDetailModalProps> =
                   onSendCustomEmail={onSendCustomEmail}
                   modalLoading={modalLoading}
                   jobTitle={jobTitle}
+                  onFocusInput={(e, margin) => handleFocusInput(e, modalScrollRef, margin ?? 85)}
+                  onDismissKeyboard={() => dismissKeyboardAndRestore(modalScrollRef)}
                 />
               ) : null}
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </View>
         </SafeAreaView>
       </Modal>

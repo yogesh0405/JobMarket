@@ -28,6 +28,8 @@ import {
 import { COLORS, RADIUS } from '../../constants/theme';
 import { FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { Job } from '../../types';
+import { candidateApi } from '../../api/candidateApi';
+import { evaluateJobMatchesFilter } from '../candidate/utils/jobFilterEngine';
 
 export type JobFilterTabKey =
   | 'INDUSTRY'
@@ -106,132 +108,195 @@ export const JOB_WORK_MODES: string[] = [
   'Remote',
 ];
 
-// Education → Job Roles mapping
-const EDUCATION_JOB_ROLES: Record<string, string[]> = {
-  'All Education Levels': [
+// Industry → Job Roles mapping (Dynamic industry-grade mapping)
+export const INDUSTRY_JOB_ROLES: Record<string, string[]> = {
+  'All Industries': [
     'All Roles',
     'Machine Operator',
+    'Production Supervisor',
+    'Quality Inspector (QA / QC)',
+    'Maintenance Technician',
     'Fitter',
     'Welder',
     'Electrician',
-    'Quality Inspector',
-    'Supervisor',
     'CNC Operator',
-    'VMC Operator',
     'Assembly Technician',
-    'Maintenance Technician',
-    'Store Keeper',
+    'Store Keeper / Inventory',
     'Packing / Packaging Operator',
     'Helper / General Worker',
-    'Driver / Forklift Operator',
-    'Security Guard',
-    'Housekeeping Staff',
+    'Safety Officer (EHS)',
+    'Forklift Operator / Driver',
+    'Plant / Production Engineer',
   ],
-  '10th / SSC Pass': [
+  'Automotive & Auto Components': [
     'All Roles',
-    'Helper / General Worker',
-    'Packing / Packaging Operator',
-    'Machine Operator (Trainee)',
-    'Assembly Line Worker',
-    'Loading / Unloading Staff',
-    'Housekeeping Staff',
-    'Security Guard',
-    'Store Helper',
-    'Cleaning Staff',
-    'Driver / Forklift Operator',
-  ],
-  '12th / HSC Pass': [
-    'All Roles',
-    'Machine Operator',
-    'Packing / Packaging Operator',
-    'Assembly Line Worker',
-    'Data Entry Operator',
-    'Store Keeper',
-    'Office Assistant',
-    'Dispatch Coordinator',
-    'Quality Checker',
-    'Delivery Executive',
-    'Telecaller / BPO Executive',
-  ],
-  'ITI Certificate (Fitter / Welder / Electrician / CNC / Machinist)': [
-    'All Roles',
-    'Fitter',
-    'Welder (MIG / TIG / ARC)',
-    'Electrician',
-    'CNC Operator',
-    'VMC Operator',
-    'Machinist',
-    'Turner',
-    'Maintenance Technician',
-    'Tool Maker',
-    'Die Maker',
-    'Wireman',
-    'Sheet Metal Worker',
-    'Plumber (Industrial)',
-    'Instrument Technician',
-    'AC / Refrigeration Mechanic',
-  ],
-  'Diploma in Engineering (Mechanical / Electrical / Automobile / Civil)': [
-    'All Roles',
-    'Junior Engineer',
+    'Automotive Assembly Technician',
+    'Chassis & Body Assembler',
+    'Wiring Harness Assembler',
+    'Automotive Paint Shop Operator',
+    'Engine Assembly Technician',
+    'Stamping / Press Operator',
+    'Quality Inspector (Automotive PDI)',
     'Production Supervisor',
-    'Quality Inspector',
-    'Maintenance Engineer',
-    'Design Draughtsman (AutoCAD)',
-    'CNC Programmer',
-    'PLC / SCADA Technician',
-    'Process Engineer',
-    'Safety Officer',
-    'Store / Inventory Manager',
-    'Testing Technician',
-    'Site Supervisor (Civil)',
-    'Electrical Panel Technician',
+    'Die Casting Operator',
+    'Tool & Die Maker',
+    'Line Inspector / QA',
+    'Robotic Welding Operator',
+    'Maintenance Electrician / Fitter',
+    'Automotive Design Draughtsman',
   ],
-  'B.E. / B.Tech (Engineering Graduate)': [
+  'Industrial & Heavy Manufacturing': [
     'All Roles',
-    'Production Engineer',
-    'Quality Engineer (QA / QC)',
-    'Design Engineer',
-    'Process Engineer',
-    'Maintenance Manager',
-    'Project Engineer',
-    'R&D Engineer',
-    'Automation Engineer (PLC / HMI)',
-    'Safety & EHS Engineer',
-    'Supply Chain Engineer',
-    'Plant Engineer',
-    'Software Engineer / Developer',
-    'IT Support Engineer',
+    'Heavy Equipment Operator',
+    'Plant Maintenance Engineer',
+    'Industrial Mechanical Fitter',
+    'Boiler Attendant / Operator',
+    'Hydraulics & Pneumatics Tech',
+    'Production Shift Supervisor',
+    'Foundry & Moulding Operator',
+    'Safety & EHS Officer',
+    'Heavy Fabrication Welder',
+    'EOT Crane Operator',
+    'Plant Quality Inspector',
+    'Assembly Line Worker',
+    'Store & Dispatch Executive',
   ],
-  'Graduate (B.Sc / B.Com / BA / BCA / BBA)': [
+  'CNC Machining & Precision Tooling': [
     'All Roles',
-    'HR Executive',
-    'Accounts Executive',
-    'Admin / Office Executive',
-    'Purchase / Procurement Executive',
-    'Sales Executive (B2B / Industrial)',
-    'Store / Inventory Executive',
-    'Data Entry / MIS Executive',
-    'Customer Support Executive',
-    'Marketing Executive',
-    'Lab Technician (B.Sc)',
-    'Quality Analyst',
+    'CNC Milling Operator',
+    'CNC Turning Operator',
+    'VMC Operator / Setter',
+    'CNC Programmer (Fanuc / Siemens)',
+    'Precision Machinist',
+    'Tool & Die Maker',
+    'Surface Grinding Machine Operator',
+    'CMM Inspector (Quality Assurance)',
+    'Lathe Machine Turner',
+    'Boring Machine Operator',
+    'EDM / Wire Cut Operator',
+    'Quality Checker (Vernier / Micrometer)',
+    'Tool Room Supervisor',
+  ],
+  'Pharmaceutical & Chemical Manufacturing': [
+    'All Roles',
+    'Production Chemist',
+    'QC / QA Chemist',
+    'Formulation Operator (Granulation / Tablet)',
+    'API Plant Operator',
+    'Packaging Machine Operator (Blister / Strip)',
+    'Cleanroom Technician',
+    'Microbiologist',
+    'Chemical Plant Operator',
+    'Analytical Lab Chemist (HPLC / GC)',
+    'R&D Executive',
+    'Safety & Effluent Treatment (ETP) Tech',
+    'Documentation Executive (GMP / Regulatory)',
+    'Pharma Warehouse Assistant',
+  ],
+  'Electronics & Electrical Assembly': [
+    'All Roles',
+    'PCB Assembly Technician',
+    'SMT Machine Operator',
+    'Soldering & Wireman Technician',
+    'Control Panel Wiring Electrician',
+    'Electronics Testing Technician',
+    'PLC & Automation Programmer',
+    'Appliance Assembly Worker',
+    'Electrical Maintenance Engineer',
+    'Transformer & Motor Winding Tech',
+    'In-Circuit Quality Tester',
+    'Component Sorter & Packer',
+    'R&D Electronics Technician',
+  ],
+  'Steel, Metal & Fabrication': [
+    'All Roles',
+    'MIG / TIG / Arc Welder',
+    'Structural Fabricator',
+    'Sheet Metal Worker',
+    'Laser Cutting Machine Operator',
+    'Press Brake Operator (Bending)',
+    'Foundry & Furnace Operator',
+    'Gas Cutter / Grinder',
+    'Galvanizing / Coating Operator',
+    'Pipe Fitter & Plumber (Industrial)',
+    'NDT Quality Inspector (Welding)',
+    'Metal Polisher / Finisher',
+    'Rolling Mill Operator',
+  ],
+  'Packaging, Paper & Printing': [
+    'All Roles',
+    'Corrugated Box Machine Operator',
+    'Offset Printing Machine Operator',
+    'Flexographic Printer',
+    'Carton Pasting / Gluing Operator',
+    'Die Punching Machine Operator',
+    'Blown Film Extruder Operator',
+    'Lamination Machine Operator',
+    'Slitting & Rewinding Operator',
+    'Packaging Quality Checker',
+    'Finished Goods Packing Helper',
+    'Graphic Pre-Press Technician',
+    'Dispatch & Logistics Assistant',
+  ],
+  'Food Processing & Beverages': [
+    'All Roles',
+    'Food Processing Machine Operator',
+    'Bakery / Confectionery Worker',
+    'Beverage Bottling Line Operator',
+    'Dairy Plant Technician',
+    'Food Safety & QA Inspector (HACCP)',
+    'Cold Storage & Chiller Attendant',
+    'Sorting & Grading Worker',
+    'Pouch Packing Machine Operator',
+    'Nutrition / Food Lab Assistant',
+    'Cooking & Mixing Operator',
+    'Sanitation & Hygiene Worker',
+    'Warehouse & Dispatch Staff',
+  ],
+  'Textile & Garment Manufacturing': [
+    'All Roles',
+    'Industrial Sewing Machine Operator',
+    'Pattern Maker / Cutter',
+    'Spinning Machine Operator',
+    'Weaving / Loom Operator',
+    'Dyeing & Bleaching Operator',
+    'Garment Finishing & Ironing Worker',
+    'Textile Quality Checker',
+    'Tailor / Sample Maker',
+    'Embroidery Machine Operator',
+    'Fabric Inspector',
+    'Packing & Folding Helper',
+    'Textile Supervisor',
+  ],
+  'Warehouse & Logistics Operations': [
+    'All Roles',
+    'Forklift / Reach Truck Operator',
+    'Warehouse Store Keeper',
+    'Inventory / Stock Executive',
+    'Loading / Unloading Supervisor',
+    'Order Picker & Packer',
+    'Dispatch & Shipping Coordinator',
+    'Billing & SAP / ERP Data Operator',
+    'Material Handler',
+    'Fleet / Driver Supervisor',
     'Logistics Coordinator',
+    'Safety & Yard Inspector',
+    'Supply Chain Executive',
   ],
-  'Post Graduate (M.Tech / MBA / MCA)': [
+  'IT & Software Engineering': [
     'All Roles',
-    'Plant Manager',
-    'Production Manager',
-    'Quality Manager',
-    'HR Manager',
-    'Finance Manager',
-    'Operations Manager',
-    'Supply Chain Manager',
-    'Project Manager',
-    'Business Development Manager',
+    'Full Stack Developer',
+    'Frontend Developer (React / React Native)',
+    'Backend Developer (Node.js / Python / Java)',
+    'Mobile App Developer',
+    'QA / Software Test Engineer',
+    'DevOps & Cloud Engineer',
+    'IT Support / Network Engineer',
+    'Database Administrator (DBA)',
+    'UI/UX Designer',
+    'Data Analyst / BI Developer',
+    'Technical Support Executive',
     'ERP / SAP Consultant',
-    'Software Developer (Senior)',
-    'Data Analyst / Business Analyst',
   ],
 };
 
@@ -255,7 +320,18 @@ export const JobFilterScreen: React.FC = () => {
   };
 
   const initialTab: JobFilterTabKey = route.params?.defaultTab || 'INDUSTRY';
-  const jobsList: Job[] = route.params?.jobs || [];
+  const initialJobsList: Job[] = route.params?.jobs || [];
+  const [loadedJobs, setLoadedJobs] = useState<Job[]>(initialJobsList);
+
+  React.useEffect(() => {
+    if (!initialJobsList || initialJobsList.length === 0) {
+      candidateApi.getAllJobs().then((res) => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setLoadedJobs(res.data);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   const [activeFilterTab, setActiveFilterTab] = useState<JobFilterTabKey>(initialTab);
   const [draftIndustry, setDraftIndustry] = useState<string>(currentFilters.industry || 'All Industries');
@@ -270,21 +346,58 @@ export const JobFilterScreen: React.FC = () => {
   const [draftOvertime, setDraftOvertime] = useState<boolean>(Boolean(currentFilters.overtime));
   const [draftJobRole, setDraftJobRole] = useState<string>(currentFilters.jobRole || 'All Roles');
 
-  // Dynamically compute available job roles based on selected education
+  // Dynamically compute available job roles based on selected Industry + dynamically discovered from loaded jobs
   const availableJobRoles = useMemo(() => {
-    return EDUCATION_JOB_ROLES[draftEducation] || EDUCATION_JOB_ROLES['All Education Levels'];
-  }, [draftEducation]);
+    const baseRoles = INDUSTRY_JOB_ROLES[draftIndustry] || INDUSTRY_JOB_ROLES['All Industries'] || [];
+    const customRoles = new Set<string>();
 
-  // Auto-reset job role when education changes and current role is not in new list
-  const prevEducationRef = React.useRef(draftEducation);
+    if (loadedJobs && loadedJobs.length > 0) {
+      loadedJobs.forEach((job) => {
+        const jobInd = (job.industry || '').toLowerCase();
+        const targetInd = (draftIndustry || '').toLowerCase();
+        const matchesIndustry =
+          !draftIndustry ||
+          draftIndustry === 'All Industries' ||
+          jobInd.includes(targetInd.slice(0, 5)) ||
+          targetInd.includes(jobInd.slice(0, 5));
+
+        if (matchesIndustry) {
+          if (job.trade && job.trade.trim().length >= 2) {
+            customRoles.add(job.trade.trim());
+          }
+          if (job.title && job.title.trim().length >= 2 && job.title.length <= 40) {
+            customRoles.add(job.title.trim());
+          }
+        }
+      });
+    }
+
+    const uniqueList: string[] = ['All Roles'];
+    baseRoles.forEach((role) => {
+      if (role !== 'All Roles' && !uniqueList.some((r) => r.toLowerCase() === role.toLowerCase())) {
+        uniqueList.push(role);
+      }
+    });
+
+    Array.from(customRoles).forEach((role) => {
+      if (!uniqueList.some((r) => r.toLowerCase() === role.toLowerCase())) {
+        uniqueList.push(role);
+      }
+    });
+
+    return uniqueList;
+  }, [draftIndustry, loadedJobs]);
+
+  // Auto-reset job role when industry changes and current role is not in new list
+  const prevIndustryRef = React.useRef(draftIndustry);
   React.useEffect(() => {
-    if (prevEducationRef.current !== draftEducation) {
-      prevEducationRef.current = draftEducation;
+    if (prevIndustryRef.current !== draftIndustry) {
+      prevIndustryRef.current = draftIndustry;
       if (!availableJobRoles.includes(draftJobRole)) {
         setDraftJobRole('All Roles');
       }
     }
-  }, [draftEducation, availableJobRoles, draftJobRole]);
+  }, [draftIndustry, availableJobRoles, draftJobRole]);
 
   const handleResetFilters = () => {
     setDraftIndustry('All Industries');
@@ -328,97 +441,32 @@ export const JobFilterScreen: React.FC = () => {
     draftOvertime,
   ]);
 
-  // Real-time matching jobs calculation
+  // Real-time matching jobs calculation using unified industry-grade engine
   const draftMatchingCount = useMemo(() => {
-    if (!jobsList || jobsList.length === 0) {
+    const listToFilter = loadedJobs.length > 0 ? loadedJobs : initialJobsList;
+    if (!listToFilter || listToFilter.length === 0) {
       return route.params?.totalMatchingJobsCount ?? 0;
     }
 
-    return jobsList.filter((job) => {
-      // 1. Industry
-      if (draftIndustry && draftIndustry !== 'All Industries') {
-        const rawInd = draftIndustry.toLowerCase().trim();
-        const jobInd = (job.industry || '').toLowerCase();
-        const jobTitle = (job.title || '').toLowerCase();
-        const jobTrade = (job.trade || '').toLowerCase();
-        const jobDesc = (job.description || '').toLowerCase();
+    const draftFilters: FilterOptions = {
+      industry: draftIndustry,
+      education: draftEducation,
+      jobRole: draftJobRole !== 'All Roles' ? draftJobRole : undefined,
+      minExperience: draftExp,
+      midcZone: draftZone,
+      jobType: draftJobType,
+      workMode: draftWorkMode,
+      salaryMin: currentFilters.salaryMin || 0,
+      busFacility: draftBus,
+      canteen: draftCanteen,
+      accommodation: draftAccommodation,
+      overtime: draftOvertime,
+    };
 
-        const directMatch = jobInd.includes(rawInd) || rawInd.includes(jobInd);
-        const indTokens = rawInd
-          .split(/[\s&,/()]+/)
-          .map((t) => t.replace(/(s|ing|als|ics)$/, ''))
-          .filter((t) => t.length >= 2);
-
-        const matchesInd =
-          directMatch ||
-          indTokens.length === 0 ||
-          indTokens.some(
-            (t) => jobInd.includes(t) || jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t)
-          );
-
-        if (!matchesInd) return false;
-      }
-
-      // 2. Education
-      if (draftEducation && draftEducation !== 'All Education Levels') {
-        const edu = ((job as any).education || (job as any).educationRequirement || (job as any).education_requirement || '').toLowerCase();
-        const target = draftEducation.toLowerCase();
-        if (target.includes('10th') && !edu.includes('10th') && !edu.includes('ssc')) return false;
-        if (target.includes('12th') && !edu.includes('12th') && !edu.includes('hsc')) return false;
-        if (target.includes('iti') && !edu.includes('iti')) return false;
-        if (target.includes('diploma') && !edu.includes('diploma')) return false;
-        if (target.includes('b.e') && !edu.includes('b.e') && !edu.includes('b.tech') && !edu.includes('engineer')) return false;
-      }
-
-      // 3. Job Role
-      if (draftJobRole && draftJobRole !== 'All Roles') {
-        const roleTarget = draftJobRole.toLowerCase();
-        const jobTitle = (job.title || '').toLowerCase();
-        const jobTrade = (job.trade || '').toLowerCase();
-        const jobDesc = (job.description || '').toLowerCase();
-        const roleTokens = roleTarget
-          .split(/[\s/()&,]+/)
-          .map((t) => t.replace(/(s|ing|er|or|ist)$/, ''))
-          .filter((t) => t.length >= 2);
-        const matchesRole =
-          jobTitle.includes(roleTarget) ||
-          jobTrade.includes(roleTarget) ||
-          roleTokens.length === 0 ||
-          roleTokens.some((t) => jobTitle.includes(t) || jobTrade.includes(t) || jobDesc.includes(t));
-        if (!matchesRole) return false;
-      }
-
-      // 4. Location / MIDC
-      if (draftZone && draftZone !== 'All MIDC Zones') {
-        const rawZone = draftZone.toLowerCase();
-        const zoneTokens = rawZone.replace(/\s*\([^)]*\)/g, '').split(/[\s,/-]+/).filter((t) => t.length > 2 && t !== 'midc' && t !== 'zone');
-        const jobLoc = (job.location || '').toLowerCase();
-        const matchesZone = zoneTokens.length === 0 || zoneTokens.some((t) => jobLoc.includes(t));
-        if (!matchesZone) return false;
-      }
-
-      // 5. Job Type
-      if (draftJobType && draftJobType !== 'All Types') {
-        const jType = (job.job_type || (job as any).jobType || '').toLowerCase();
-        if (!jType.includes(draftJobType.toLowerCase())) return false;
-      }
-
-      // 6. Work Mode
-      if (draftWorkMode && draftWorkMode !== 'All Modes') {
-        const jMode = (job.work_mode || (job as any).workMode || '').toLowerCase();
-        if (!jMode.includes(draftWorkMode.toLowerCase())) return false;
-      }
-
-      // 7. Amenities
-      if (draftBus && !(job.bus_facility || (job as any).busFacility || (job.perks || []).includes('Bus Transport'))) return false;
-      if (draftCanteen && !(job.canteen || (job as any).canteen || (job.perks || []).includes('Free Canteen'))) return false;
-      if (draftAccommodation && !(job.accommodation || (job as any).accommodation || (job.perks || []).includes('Accommodation'))) return false;
-      if (draftOvertime && !(job.overtime || (job as any).overtime || (job.perks || []).includes('Overtime Pay'))) return false;
-
-      return true;
-    }).length;
+    return listToFilter.filter((job) => evaluateJobMatchesFilter(job, draftFilters)).length;
   }, [
-    jobsList,
+    loadedJobs,
+    initialJobsList,
     draftIndustry,
     draftEducation,
     draftJobRole,
@@ -529,11 +577,11 @@ export const JobFilterScreen: React.FC = () => {
       case 'JOB_ROLE':
         return (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {draftEducation !== 'All Education Levels' && (
+            {draftIndustry !== 'All Industries' && (
               <View style={styles.roleHintRow}>
-                <GraduationCap size={13} color="#64748B" strokeWidth={1.8} />
+                <Building2 size={13} color="#64748B" strokeWidth={1.8} />
                 <Text style={styles.roleHintText}>
-                  Roles for: {draftEducation.split('(')[0].trim()}
+                  Roles for: {draftIndustry.split('&')[0].trim()}
                 </Text>
               </View>
             )}

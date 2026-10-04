@@ -998,6 +998,104 @@ export class EmailService {
     return EmailService.dispatchEmail(workerEmail, workerName, subject || `Message from ${companyName} regarding your application`, htmlContent);
   }
 
+  /**
+   * Send custom email from employer/recruiter directly to applicant
+   */
+  static async sendCustomApplicantEmail(
+    candidateEmail: string,
+    candidateName: string,
+    companyName: string,
+    jobTitle: string,
+    subject: string,
+    message: string
+  ): Promise<boolean> {
+    const currentYear = new Date().getFullYear();
+    const safeCompany = companyName || 'CSN-JobMarket Employer';
+    const safeJobTitle = jobTitle || 'Application';
+    const emailSubject = subject || `Update regarding your application for ${safeJobTitle} at ${safeCompany}`;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${emailSubject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#1e3a8a;border-radius:12px;padding:10px 20px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">CSN-JobMarket</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
+
+              <!-- Blue top bar -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);height:6px;"></td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+
+                    <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;">Message from ${safeCompany}</p>
+                    <p style="margin:0 0 6px;font-size:13.5px;font-weight:600;color:#2563eb;text-transform:uppercase;letter-spacing:0.5px;">Position: ${safeJobTitle}</p>
+                    <p style="margin:0 0 24px;font-size:15px;color:#64748b;line-height:1.6;">
+                      Hi <strong style="color:#0f172a;">${candidateName}</strong>, the recruitment team from <strong style="color:#1e3a8a;">${safeCompany}</strong> has sent you a message:
+                    </p>
+
+                    <!-- Message Box -->
+                    <div style="background-color:#f8fafc;border-radius:12px;padding:24px;margin-bottom:28px;border:1px solid #e2e8f0;font-size:15px;color:#0f172a;line-height:1.6;white-space:pre-wrap;">${message}</div>
+
+                    <p style="margin:0;font-size:14px;color:#64748b;line-height:1.6;">
+                      You can reply directly to this email or reach out via CSN-JobMarket.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="margin:0;font-size:12px;color:#94a3b8;">
+                &copy; ${currentYear} CSN-JobMarket. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    return EmailService.dispatchEmail(candidateEmail, candidateName, emailSubject, htmlContent);
+  }
+
   static async sendSupportTicketNotification(
     toEmail: string,
     toName: string,

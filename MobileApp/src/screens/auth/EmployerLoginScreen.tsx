@@ -119,6 +119,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleLogin = async () => {
+    if (loading) return;
     setError(null);
     const cleanEmail = email.trim().toLowerCase();
 
@@ -142,15 +143,49 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
       showToast('Welcome back to JobMarket!', 'success', 1000);
     } catch (err: any) {
       const errMsg = err.message || 'Login failed. Please check your credentials.';
+      const lowerMsg = errMsg.toLowerCase();
 
-      // Case 1: Account suspended / restricted / blocked / inactive (PRIORITY CHECK)
+      // Case 1: Role Mismatch (CHECK THIS FIRST before any generic 403 or error check)
+      const isRoleMismatch =
+        lowerMsg.includes('does not belong to this role') ||
+        lowerMsg.includes('change the role') ||
+        lowerMsg.includes('role mismatch') ||
+        err.errorCode === 'ROLE_MISMATCH';
+
+      if (isRoleMismatch) {
+        const oppositeRole = role === 'candidate' ? 'employer' : 'candidate';
+        const oppositeRoleLabel = role === 'candidate' ? 'Employer / Recruiter' : 'Job Seeker / Candidate';
+        setConfirmModalConfig({
+          visible: true,
+          title: 'Role Mismatch Detected',
+          message: `This account is registered under the ${oppositeRoleLabel} portal. Would you like to switch to the ${oppositeRoleLabel} login tab?`,
+          confirmText: `Switch to ${role === 'candidate' ? 'Employer' : 'Candidate'}`,
+          cancelText: 'Cancel',
+          type: 'primary',
+          icon: <Briefcase size={24} color={COLORS.primary} />,
+          iconBgColor: '#EFF6FF',
+          onConfirm: () => {
+            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+            setRole(oppositeRole);
+            setError(null);
+          },
+        });
+        return;
+      }
+
+      // Case 2: Account suspended / restricted / blocked / inactive (PRIORITY CHECK)
       const isSuspended =
-        err.errorCode === 'ACCOUNT_BLOCKED' ||
-        err.errorCode === 'ACCOUNT_INACTIVE' ||
-        err.status === 403 ||
-        errMsg.toLowerCase().includes('suspended') ||
-        errMsg.toLowerCase().includes('restricted') ||
-        errMsg.toLowerCase().includes('blocked');
+        !isRoleMismatch &&
+        (err.errorCode === 'ACCOUNT_BLOCKED' ||
+          err.errorCode === 'ACCOUNT_INACTIVE' ||
+          (err.status === 403 &&
+            (lowerMsg.includes('suspended') ||
+              lowerMsg.includes('restricted') ||
+              lowerMsg.includes('blocked') ||
+              lowerMsg.includes('inactive'))) ||
+          lowerMsg.includes('suspended') ||
+          lowerMsg.includes('account has been suspended') ||
+          lowerMsg.includes('blocked'));
 
       if (isSuspended) {
         triggerSuspension(
@@ -160,12 +195,12 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      // Case 2: Unverified Account -> Prompt to send verification OTP
+      // Case 3: Unverified Account -> Prompt to send verification OTP
       if (
         err.requiresVerification ||
-        errMsg.toLowerCase().includes('verify your otp') ||
-        errMsg.toLowerCase().includes('not verified') ||
-        errMsg.toLowerCase().includes('verify your email')
+        lowerMsg.includes('verify your otp') ||
+        lowerMsg.includes('not verified') ||
+        lowerMsg.includes('verify your email')
       ) {
         setConfirmModalConfig({
           visible: true,
@@ -191,31 +226,6 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         return;
       }
 
-      // Case 3: Role Mismatch -> Offer switching tab
-      if (
-        errMsg.toLowerCase().includes('does not belong to this role') ||
-        errMsg.toLowerCase().includes('change the role')
-      ) {
-        const oppositeRole = role === 'candidate' ? 'employer' : 'candidate';
-        const oppositeRoleLabel = role === 'candidate' ? 'Employer / Recruiter' : 'Job Seeker / Candidate';
-        setConfirmModalConfig({
-          visible: true,
-          title: 'Role Mismatch Detected',
-          message: `This account is registered under the ${oppositeRoleLabel} portal. Would you like to switch to the ${oppositeRoleLabel} login tab?`,
-          confirmText: `Switch to ${role === 'candidate' ? 'Employer' : 'Candidate'}`,
-          cancelText: 'Cancel',
-          type: 'primary',
-          icon: <Briefcase size={24} color={COLORS.primary} />,
-          iconBgColor: '#EFF6FF',
-          onConfirm: () => {
-            setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
-            setRole(oppositeRole);
-            setError(null);
-          },
-        });
-        return;
-      }
-
       setError(errMsg);
     } finally {
       setLoading(false);
@@ -223,6 +233,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleResend2FA = async () => {
+    if (loading || twoFactorLoading) return;
     const cleanEmail = email.trim().toLowerCase();
     try {
       const response = await login(cleanEmail, password, role);
@@ -236,6 +247,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleVerify2FACode = async () => {
+    if (twoFactorLoading) return;
     if (!twoFactorOtp || twoFactorOtp.trim().length !== 6) {
       setTwoFactorError('Please enter the complete 6-digit OTP code.');
       return;

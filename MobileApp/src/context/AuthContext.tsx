@@ -8,6 +8,7 @@ import {
   getStoredUser,
   getAccessToken,
   getRefreshToken,
+  getSessionId,
   clearAuthSession,
 } from '../utils/secureStorage';
 import { setGlobalCompanyLogo } from '../utils/companyLogos';
@@ -371,13 +372,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(res?.message || res?.error || 'Login failed. Please check credentials.');
       }
     } catch (err: any) {
-      if (
-        err.errorCode === 'ACCOUNT_BLOCKED' ||
-        err.errorCode === 'ACCOUNT_INACTIVE' ||
-        err.status === 403 ||
-        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
-      ) {
-        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      const errMsg = (err?.message || '').toLowerCase();
+      const isRoleMismatch =
+        errMsg.includes('does not belong to this role') ||
+        errMsg.includes('change the role') ||
+        errMsg.includes('role mismatch') ||
+        err?.errorCode === 'ROLE_MISMATCH';
+
+      const isSuspended =
+        !isRoleMismatch &&
+        (err?.errorCode === 'ACCOUNT_BLOCKED' ||
+          err?.errorCode === 'ACCOUNT_INACTIVE' ||
+          (err?.status === 403 &&
+            (errMsg.includes('suspended') ||
+              errMsg.includes('restricted') ||
+              errMsg.includes('blocked') ||
+              errMsg.includes('inactive'))) ||
+          errMsg.includes('suspended') ||
+          errMsg.includes('blocked'));
+
+      if (isSuspended) {
+        triggerSuspension(err?.errorCode || 'ACCOUNT_BLOCKED', err.message);
       }
       throw err;
     } finally {
@@ -423,13 +438,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(res.message || (res as any).error || '2FA OTP Verification failed');
       }
     } catch (err: any) {
-      if (
-        err.errorCode === 'ACCOUNT_BLOCKED' ||
-        err.errorCode === 'ACCOUNT_INACTIVE' ||
-        err.status === 403 ||
-        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
-      ) {
-        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      const errMsg = (err?.message || '').toLowerCase();
+      const isRoleMismatch =
+        errMsg.includes('does not belong to this role') ||
+        errMsg.includes('change the role') ||
+        errMsg.includes('role mismatch') ||
+        err?.errorCode === 'ROLE_MISMATCH';
+
+      const isSuspended =
+        !isRoleMismatch &&
+        (err?.errorCode === 'ACCOUNT_BLOCKED' ||
+          err?.errorCode === 'ACCOUNT_INACTIVE' ||
+          (err?.status === 403 &&
+            (errMsg.includes('suspended') ||
+              errMsg.includes('restricted') ||
+              errMsg.includes('blocked') ||
+              errMsg.includes('inactive'))) ||
+          errMsg.includes('suspended') ||
+          errMsg.includes('blocked'));
+
+      if (isSuspended) {
+        triggerSuspension(err?.errorCode || 'ACCOUNT_BLOCKED', err.message);
       }
       throw err;
     } finally {
@@ -597,13 +626,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       throw new Error(res.message || res.error || 'Google Sign-In failed on server.');
     } catch (err: any) {
-      if (
-        err.errorCode === 'ACCOUNT_BLOCKED' ||
-        err.errorCode === 'ACCOUNT_INACTIVE' ||
-        err.status === 403 ||
-        (err.message && (err.message.toLowerCase().includes('suspended') || err.message.toLowerCase().includes('blocked')))
-      ) {
-        triggerSuspension(err.errorCode || 'ACCOUNT_BLOCKED', err.message);
+      const errMsg = (err?.message || '').toLowerCase();
+      const isRoleMismatch =
+        errMsg.includes('does not belong to this role') ||
+        errMsg.includes('change the role') ||
+        errMsg.includes('role mismatch') ||
+        err?.errorCode === 'ROLE_MISMATCH';
+
+      const isSuspended =
+        !isRoleMismatch &&
+        (err?.errorCode === 'ACCOUNT_BLOCKED' ||
+          err?.errorCode === 'ACCOUNT_INACTIVE' ||
+          (err?.status === 403 &&
+            (errMsg.includes('suspended') ||
+              errMsg.includes('restricted') ||
+              errMsg.includes('blocked') ||
+              errMsg.includes('inactive'))) ||
+          errMsg.includes('suspended') ||
+          errMsg.includes('blocked'));
+
+      if (isSuspended) {
+        triggerSuspension(err?.errorCode || 'ACCOUNT_BLOCKED', err.message);
       }
       throw err;
     } finally {
@@ -613,8 +656,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setIsLoggingOut(true);
-    // Fire-and-forget server logout in background without blocking UI
-    authApi.logout().catch(() => {});
+    const activeSessionId = await getSessionId();
+    // Fire-and-forget server logout with active session ID in background
+    authApi.logout(activeSessionId || undefined).catch(() => {});
     PushNotificationManager.unregisterDeviceToken().catch(() => {});
 
     try {
