@@ -29,6 +29,7 @@ import { COLORS, RADIUS } from '../../constants/theme';
 import { FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { Job } from '../../types';
 import { candidateApi } from '../../api/candidateApi';
+import { jobsApi } from '../../api/jobsApi';
 import { evaluateJobMatchesFilter } from '../candidate/utils/jobFilterEngine';
 
 export type JobFilterTabKey =
@@ -346,6 +347,28 @@ export const JobFilterScreen: React.FC = () => {
   const [draftOvertime, setDraftOvertime] = useState<boolean>(Boolean(currentFilters.overtime));
   const [draftJobRole, setDraftJobRole] = useState<string>(currentFilters.jobRole || 'All Roles');
 
+  // Dynamic Categories from backend API
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  React.useEffect(() => {
+    let isMounted = true;
+    jobsApi.getCategories()
+      .then((res: any) => {
+        if (!isMounted) return;
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = res.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean);
+          setAvailableCategories(names);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const displayedIndustries = useMemo(() => {
+    return Array.from(new Set(['All Industries', ...availableCategories, ...JOB_INDUSTRIES])).filter(Boolean);
+  }, [availableCategories]);
+
   // Dynamically compute available job roles based on selected Industry + dynamically discovered from loaded jobs
   const availableJobRoles = useMemo(() => {
     const baseRoles = INDUSTRY_JOB_ROLES[draftIndustry] || INDUSTRY_JOB_ROLES['All Industries'] || [];
@@ -529,7 +552,7 @@ export const JobFilterScreen: React.FC = () => {
       case 'INDUSTRY':
         return (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {JOB_INDUSTRIES.map((option) => {
+            {displayedIndustries.map((option) => {
               const isSelected = draftIndustry === option;
               return (
                 <TouchableOpacity

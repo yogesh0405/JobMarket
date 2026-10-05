@@ -14,7 +14,11 @@ export class JobController {
   static async getCategories(req: any, res: Response, next: NextFunction) {
     try {
       const data = await PlatformRepository.getCategories();
-      const activeOnly = data.filter((c: any) => c.status === 'ACTIVE' || !c.status);
+      const activeOnly = data.filter((c: any) => {
+        if (!c.status) return true;
+        const s = String(c.status).trim().toUpperCase();
+        return s === 'ACTIVE' || s === 'APPROVED';
+      });
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {
       next(error);
@@ -24,7 +28,11 @@ export class JobController {
   static async getSkills(req: any, res: Response, next: NextFunction) {
     try {
       const data = await PlatformRepository.getSkills();
-      const activeOnly = data.filter((s: any) => s.status === 'ACTIVE' || !s.status);
+      const activeOnly = data.filter((s: any) => {
+        if (!s.status) return true;
+        const norm = String(s.status).trim().toUpperCase();
+        return norm === 'ACTIVE' || norm === 'APPROVED';
+      });
       res.status(200).json({ success: true, data: activeOnly });
     } catch (error) {
       next(error);

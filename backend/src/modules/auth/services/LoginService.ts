@@ -65,10 +65,6 @@ export class LoginService {
       );
     }
 
-    if (role && !isRoleCompatible(user.role, role)) {
-      throw new ForbiddenError('This user does not belong to this role, please change the role');
-    }
-
     const isPasswordValid = await bcrypt.compare(passwordPlain, user.password_hash);
     if (!isPasswordValid) {
       await AuditRepository.logAction('LOGIN_FAILED', user.id, 'Auth', ipAddress, userAgent);

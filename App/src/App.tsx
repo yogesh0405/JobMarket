@@ -40,7 +40,8 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 const CandidateOrGuestOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  const isEmployer = !!token && currentUser?.role?.toLowerCase() === 'employer';
+  const role = currentUser?.role?.toLowerCase();
+  const isEmployer = !!token && (role === 'employer' || role === 'recruiter');
   if (isEmployer) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -51,10 +52,20 @@ const CandidateOrGuestOnly: React.FC<{ children: React.ReactNode }> = ({ childre
 const EmployerOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  if (!token || !currentUser) {
-    return <Navigate to="/login" replace />;
+  if (!token) {
+    return <Navigate to="/login?role=employer" replace />;
   }
-  const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
+  // While syncing user state from token, render a graceful loader instead of bouncing to login
+  if (!currentUser) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '12px' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid #cbd5e1', borderTopColor: '#2563EB', animation: 'spin 0.8s linear infinite' }} />
+        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Verifying employer workspace...</span>
+      </div>
+    );
+  }
+  const role = currentUser?.role?.toLowerCase();
+  const isEmployer = role === 'employer' || role === 'recruiter' || role === 'admin';
   if (!isEmployer) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -113,10 +124,10 @@ export const App: React.FC = () => {
       const params = new URLSearchParams(hash);
       const accessToken = params.get('access_token');
       if (accessToken) {
-        window.history.replaceState(null, '', window.location.pathname);
-        loginWithGoogle({ accessToken }, 'candidate').then((res) => {
+        const initialRole = (window.location.search.includes('role=employer') ? 'employer' : 'candidate');
+        loginWithGoogle({ accessToken }, initialRole).then((res) => {
           if (res.success) {
-            navigate(res.user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+            navigate('/dashboard');
           }
         });
       }

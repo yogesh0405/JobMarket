@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
@@ -22,6 +22,7 @@ const GoogleGLogo: React.FC<{ size?: number }> = ({ size = 18 }) => (
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { login, loginWithGoogle, verify2FALogin, currentUser } = useAuth();
   const { showToast } = useToast();
@@ -96,15 +97,15 @@ export const LoginPage: React.FC = () => {
   }, [loginWithGoogle, role, navigate, showToast]);
 
   useEffect(() => {
-    setEmail('');
-    setPassword('');
-  }, [role]);
-
-  useEffect(() => {
     if (currentUser) {
+      const fromPath = (location.state as any)?.from;
+      if (fromPath && typeof fromPath === 'string' && !fromPath.startsWith('/login') && !fromPath.startsWith('/auth')) {
+        navigate(fromPath, { replace: true });
+      } else {
         navigate('/dashboard', { replace: true });
+      }
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +128,12 @@ export const LoginPage: React.FC = () => {
 
       if (result.success) {
         showToast(`Welcome back, ${result.user?.name}!`, 'success');
-        navigate('/dashboard');
+        const fromPath = (location.state as any)?.from;
+        if (fromPath && typeof fromPath === 'string' && !fromPath.startsWith('/login') && !fromPath.startsWith('/auth')) {
+          navigate(fromPath, { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       } else {
         if (result.errorCode === 'ACCOUNT_BLOCKED' || result.errorCode === 'ACCOUNT_INACTIVE') {
           dispatch({

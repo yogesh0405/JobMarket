@@ -38,6 +38,8 @@ import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
 import { evaluateJobMatchesFilter } from './utils/jobFilterEngine';
 import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
+import { jobsApi } from '../../api/jobsApi';
+import { CATEGORIES } from './components/CandidateJobSearchUtils';
 
 const FALLBACK_JOBS: Job[] = [
   {
@@ -266,6 +268,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     };
   }, []);
   const [selectedCategory, setSelectedCategory] = useState('All Jobs');
+  const [categoriesList, setCategoriesList] = useState<string[]>(CATEGORIES);
   const [activeSelectedJobId, setActiveSelectedJobId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -437,10 +440,19 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
 
   const loadJobsData = useCallback(async (isRefresh: boolean = false) => {
     try {
-      const [jobsRes, savedRes] = await Promise.all([
+      const [jobsRes, savedRes, catsRes] = await Promise.all([
         candidateApi.getAllJobs(),
         candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
+        jobsApi.getCategories().catch(() => ({ success: false, data: [] })),
       ]);
+
+      if (catsRes && catsRes.success && Array.isArray(catsRes.data) && catsRes.data.length > 0) {
+        const names: string[] = catsRes.data
+          .map((c: any) => (typeof c === 'string' ? c : c.name))
+          .filter(Boolean);
+        const merged = Array.from(new Set(['All Jobs', ...names, ...CATEGORIES]));
+        setCategoriesList(merged);
+      }
 
       if (jobsRes.success && jobsRes.data) {
         const rawJobs = ensureJobLogos(jobsRes.data || []);
@@ -612,6 +624,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         setViewMode={setViewMode}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
+        categories={categoriesList}
         navigation={navigation}
       />
 

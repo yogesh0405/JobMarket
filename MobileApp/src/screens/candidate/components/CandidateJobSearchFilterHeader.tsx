@@ -45,6 +45,7 @@ interface CandidateJobSearchFilterHeaderProps {
   setViewMode: (mode: 'grid' | 'list') => void;
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
+  categories?: string[];
   navigation: any;
 }
 
@@ -63,6 +64,7 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
   setViewMode,
   selectedCategory,
   setSelectedCategory,
+  categories,
   navigation,
 }) => {
   const searchInputRef = useRef<TextInput>(null);
@@ -296,7 +298,7 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
       {/* Horizontal Category Filter Pills */}
       <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContainer}>
-          {CATEGORIES.map((cat) => (
+          {(categories && categories.length > 0 ? categories : CATEGORIES).map((cat) => (
             <TouchableOpacity
               key={cat}
               activeOpacity={0.85}

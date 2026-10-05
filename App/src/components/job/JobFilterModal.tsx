@@ -19,6 +19,7 @@ import {
   Home,
   Zap,
 } from 'lucide-react';
+import { apiFetch } from '../../utils/api';
 
 export type JobFilterCategoryKey =
   | 'LOCATION'
@@ -169,6 +170,27 @@ export const JobFilterModal: React.FC<JobFilterModalProps> = ({
   defaultTab = 'LOCATION',
 }) => {
   const [activeTab, setActiveTab] = useState<JobFilterCategoryKey>(defaultTab);
+
+  // Dynamic Categories from backend
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch('/api/v1/jobs/meta/categories')
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (!isMounted) return;
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = res.data.map((c: any) => typeof c === 'string' ? c : c.name).filter(Boolean);
+          setDynamicCategories(names);
+        }
+      })
+      .catch(() => null);
+    return () => { isMounted = false; };
+  }, []);
+
+  const displayedIndustries = useMemo(() => {
+    return Array.from(new Set(['All Industries', ...dynamicCategories, ...INDUSTRIES_OPTIONS])).filter(Boolean);
+  }, [dynamicCategories]);
 
   // Draft internal state
   const [draftZone, setDraftZone] = useState<string | null>(null);
@@ -693,7 +715,7 @@ export const JobFilterModal: React.FC<JobFilterModalProps> = ({
                   gap: '6px',
                 }}
               >
-                {INDUSTRIES_OPTIONS.map((opt) => {
+                {displayedIndustries.map((opt) => {
                   const isChecked = (draftIndustry === opt) || (!draftIndustry && opt === 'All Industries');
                   return (
                     <div

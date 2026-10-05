@@ -60,6 +60,7 @@ export const Footer: React.FC = () => {
             <div className="footer-col">
               <h4>For Employers</h4>
               <Link to="/post-job">Post a Job</Link>
+              <Link to="/login?role=employer">Employer Login</Link>
               <Link to="/signup?role=employer">Create Account</Link>
               <Link to="/dashboard">Employer Dashboard</Link>
               <a href="#">Pricing Plans</a>

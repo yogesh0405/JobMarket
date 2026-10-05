@@ -585,18 +585,35 @@ function matchCategory(job: Job, category?: string): boolean {
   const title = (job.title || '').toLowerCase();
   const trade = (job.trade || '').toLowerCase();
   const industry = (job.industry || '').toLowerCase();
-  const allText = `${title} ${trade} ${industry}`;
+  const jobCategory = ((job as any).category || (job as any).category_name || (job as any).job_category || (job as any).categoryName || '').toLowerCase();
+  const allText = `${title} ${trade} ${industry} ${jobCategory}`;
 
+  // 1. Direct match with category field, industry, or trade
+  if (jobCategory && (jobCategory === cat || jobCategory.includes(cat) || cat.includes(jobCategory))) {
+    return true;
+  }
+  if (industry && (industry === cat || industry.includes(cat) || cat.includes(industry))) {
+    return true;
+  }
+  if (trade && (trade === cat || trade.includes(cat) || cat.includes(trade))) {
+    return true;
+  }
+
+  // 2. Specific trade/keyword domain aliases
   if (cat.includes('hr')) {
-    return allText.includes('hr') || allText.includes('human resource') || allText.includes('recruiter') || allText.includes('talent');
+    if (allText.includes('hr') || allText.includes('human resource') || allText.includes('recruiter') || allText.includes('talent')) {
+      return true;
+    }
   }
 
   if (cat.includes('marketing')) {
-    return allText.includes('marketing') || allText.includes('sales') || allText.includes('business development') || allText.includes('branding');
+    if (allText.includes('marketing') || allText.includes('sales') || allText.includes('business development') || allText.includes('branding')) {
+      return true;
+    }
   }
 
   if (cat.includes('iti') || cat.includes('trade')) {
-    return (
+    if (
       allText.includes('iti') ||
       allText.includes('fitter') ||
       allText.includes('welder') ||
@@ -608,11 +625,13 @@ function matchCategory(job: Job, category?: string): boolean {
       allText.includes('turner') ||
       allText.includes('operator') ||
       allText.includes('technician')
-    );
+    ) {
+      return true;
+    }
   }
 
   if (cat.includes('health') || cat.includes('medical')) {
-    return (
+    if (
       allText.includes('nurse') ||
       allText.includes('health') ||
       allText.includes('pharma') ||
@@ -620,11 +639,21 @@ function matchCategory(job: Job, category?: string): boolean {
       allText.includes('hospital') ||
       allText.includes('clinic') ||
       allText.includes('doctor')
-    );
+    ) {
+      return true;
+    }
   }
 
   if (cat.includes('auto')) {
-    return allText.includes('auto') || allText.includes('vehicle') || allText.includes('motor') || allText.includes('mechanic');
+    if (allText.includes('auto') || allText.includes('vehicle') || allText.includes('motor') || allText.includes('mechanic')) {
+      return true;
+    }
+  }
+
+  // 3. Token-based matching for multi-word categories (e.g. "Information Technology (IT)", "CNC & VMC Operator")
+  const tokens = cat.replace(/[()&,/]/g, ' ').split(/\s+/).filter((t) => t.length > 2);
+  if (tokens.length > 0 && tokens.some((t) => allText.includes(t))) {
+    return true;
   }
 
   return allText.includes(cat);

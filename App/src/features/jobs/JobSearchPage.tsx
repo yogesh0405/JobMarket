@@ -20,6 +20,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { MobileHeader } from '../../components/common/MobileHeader';
+import { apiFetch } from '../../utils/api';
 import { Job } from '../../types';
 import {
   JobFilterModal,
@@ -27,7 +28,7 @@ import {
   DEFAULT_JOB_FILTERS,
 } from '../../components/job/JobFilterModal';
 
-const CATEGORIES = [
+export const CATEGORIES = [
   'All Jobs',
   'Automotive',
   'CNC / VMC Operator',
@@ -71,9 +72,38 @@ export const JobSearchPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('keyword') || '');
-  const [selectedCategory, setSelectedCategory] = useState('All Jobs');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All Jobs');
+  const [categoriesList, setCategoriesList] = useState<string[]>(CATEGORIES);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+
+  // Fetch dynamic categories from backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    apiFetch('/api/v1/jobs/meta/categories')
+      .then(r => r.ok ? r.json() : null)
+      .then(res => {
+        if (!isMounted) return;
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names: string[] = res.data
+            .map((c: any) => typeof c === 'string' ? c : c.name)
+            .filter(Boolean);
+          const merged = Array.from(new Set(['All Jobs', ...names, ...CATEGORIES]));
+          setCategoriesList(merged);
+        }
+      })
+      .catch(() => null);
+
+    return () => { isMounted = false; };
+  }, []);
+
+  // Sync category param from URL
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) {
+      setSelectedCategory(cat);
+    }
+  }, [searchParams]);
 
   // Sync candidate saved jobs from PostgreSQL on mount
   useEffect(() => {
@@ -168,11 +198,23 @@ export const JobSearchPage: React.FC = () => {
     return allJobs.filter((job) => {
       // Category filter
       if (selectedCategory !== 'All Jobs') {
-        const cat = selectedCategory.toLowerCase();
-        const titleMatch = (job.title || '').toLowerCase().includes(cat);
-        const industryMatch = (job.industry || '').toLowerCase().includes(cat);
-        const tradeMatch = (job.trade || '').toLowerCase().includes(cat);
-        if (!titleMatch && !industryMatch && !tradeMatch) {
+        const cat = selectedCategory.toLowerCase().trim();
+        const title = (job.title || '').toLowerCase();
+        const industry = (job.industry || '').toLowerCase();
+        const trade = (job.trade || '').toLowerCase();
+        const catField = ((job as any).category || (job as any).category_name || (job as any).categoryName || (job as any).job_category || '').toLowerCase();
+
+        const titleMatch = title.includes(cat);
+        const industryMatch = industry.includes(cat) || (industry.length > 0 && cat.includes(industry));
+        const tradeMatch = trade.includes(cat) || (trade.length > 0 && cat.includes(trade));
+        const catFieldMatch = catField.includes(cat) || (catField.length > 0 && cat.includes(catField));
+
+        // Token match for multi-word categories (e.g., "Information Technology (IT)", "CNC & VMC Operator")
+        const tokens = cat.replace(/[()&,/]/g, ' ').split(/\s+/).filter((t: string) => t.length > 2);
+        const allJobText = `${title} ${industry} ${trade} ${catField}`;
+        const tokenMatch = tokens.length > 0 && tokens.some((t: string) => allJobText.includes(t));
+
+        if (!titleMatch && !industryMatch && !tradeMatch && !catFieldMatch && !tokenMatch) {
           return false;
         }
       }
@@ -526,7 +568,7 @@ export const JobSearchPage: React.FC = () => {
             paddingBottom: '2px',
           }}
         >
-          {CATEGORIES.map((cat) => {
+          {categoriesList.map((cat) => {
             const isActive = selectedCategory === cat;
             return (
               <button

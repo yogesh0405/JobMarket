@@ -44,11 +44,7 @@ export const Layout: React.FC = () => {
     }
   }, [location.pathname, location.hash]);
 
-  // Industry-Standard Admin Isolation:
-  // Admin users are strictly restricted to /admin/* and cannot access public user pages or user dashboards.
-  if (currentUser && currentUser.role === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
+
 
   // If maintenance mode is active (and user is not admin navigating admin pages), show maintenance landing page
   if (platformSettings.maintenance_mode === 'true' && currentUser?.role !== 'admin') {
