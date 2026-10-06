@@ -14,7 +14,7 @@ import { Calendar, ChevronLeft, ChevronRight, Clock, Check } from 'lucide-react-
 import { Input } from '../../../components/common/Input';
 import { Button } from '../../../components/common/Button';
 import { ResumePdfViewerModal } from '../../../components/common/ResumePdfViewerModal';
-import { TRADES, SHIFTS } from './CandidateEditConstants';
+import { TRADES, SHIFTS, AVAILABILITY_OPTIONS } from './CandidateEditConstants';
 
 interface CandidateEditModalsProps {
   tradeModalOpen: boolean;
@@ -24,6 +24,11 @@ interface CandidateEditModalsProps {
   shiftModalOpen: boolean;
   onCloseShiftModal: () => void;
   onSelectShift: (shift: string) => void;
+
+  availabilityModalOpen?: boolean;
+  onCloseAvailabilityModal?: () => void;
+  onSelectAvailability?: (days: number) => void;
+  selectedAvailabilityDays?: number;
 
   expModalOpen: boolean;
   onCloseExpModal: () => void;
@@ -66,6 +71,11 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
   shiftModalOpen,
   onCloseShiftModal,
   onSelectShift,
+
+  availabilityModalOpen,
+  onCloseAvailabilityModal,
+  onSelectAvailability,
+  selectedAvailabilityDays,
 
   expModalOpen,
   onCloseExpModal,
@@ -170,6 +180,47 @@ export const CandidateEditModals: React.FC<CandidateEditModalsProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Availability Selector Modal */}
+      {availabilityModalOpen && (
+        <Modal
+          visible={availabilityModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={onCloseAvailabilityModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Select Joining Availability</Text>
+              <ScrollView style={{ maxHeight: 360 }}>
+                {AVAILABILITY_OPTIONS.map((opt) => {
+                  const isSelected = selectedAvailabilityDays === opt.days;
+                  return (
+                    <TouchableOpacity
+                      key={opt.days}
+                      style={[
+                        styles.modalOptionRow,
+                        isSelected && { backgroundColor: '#EFF6FF' },
+                      ]}
+                      onPress={() => onSelectAvailability && onSelectAvailability(opt.days)}
+                    >
+                      <Text
+                        style={[
+                          styles.modalOptionText,
+                          isSelected && { color: '#1764E8', fontWeight: '700' },
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                      {isSelected && <Check size={16} color="#1764E8" strokeWidth={2.5} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Add Experience Modal with Start & End Year Controls */}
       <Modal visible={expModalOpen} transparent animationType="slide" onRequestClose={onCloseExpModal}>

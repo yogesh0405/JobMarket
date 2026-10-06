@@ -2261,19 +2261,56 @@ export const AVAILABILITY_FILTER_OPTIONS = [
   'Within 60 Days',
 ];
 
+const getCandidateAvailabilityDays = (candidate: any): number => {
+  if (candidate?.availableInDays !== undefined && candidate?.availableInDays !== null) {
+    const parsed = Number(candidate.availableInDays);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.available_in_days !== undefined && candidate?.available_in_days !== null) {
+    const parsed = Number(candidate.available_in_days);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.user?.availableInDays !== undefined && candidate?.user?.availableInDays !== null) {
+    const parsed = Number(candidate.user.availableInDays);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.user?.available_in_days !== undefined && candidate?.user?.available_in_days !== null) {
+    const parsed = Number(candidate.user.available_in_days);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+
+  const notice = String(candidate?.notice_period || candidate?.noticePeriod || '').toLowerCase();
+  if (notice.includes('immediate') || notice.includes('0 day') || notice.includes('0d')) return 0;
+  if (notice.includes('7 day') || notice.includes('1 week')) return 7;
+  if (notice.includes('15 day') || notice.includes('2 week')) return 15;
+  if (notice.includes('1 month') || notice.includes('30 day')) return 30;
+  if (notice.includes('45 day')) return 45;
+  if (notice.includes('2 month') || notice.includes('60 day')) return 60;
+  if (notice.includes('3 month') || notice.includes('90 day')) return 90;
+
+  return 0;
+};
+
 const matchesAvailability = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Availability') return true;
-  const days = Number(candidate.availableInDays ?? candidate.available_in_days ?? 0);
+  const days = getCandidateAvailabilityDays(candidate);
   switch (filter) {
     case 'Immediate Joiner (0 Days)':
+    case 'Immediate (0 Days)':
+    case 'Immediate (0d)':
+    case 'Immediate':
       return days === 0;
     case 'Within 7 Days':
+    case '≤ 7 Days':
       return days <= 7;
     case 'Within 15 Days':
+    case '≤ 15 Days':
       return days <= 15;
     case 'Within 30 Days':
+    case '≤ 30 Days':
       return days <= 30;
     case 'Within 60 Days':
+    case '≤ 60 Days':
       return days <= 60;
     default:
       return true;
@@ -2464,7 +2501,7 @@ const CandidatesTab: React.FC<{
   const quickPillOptions = [
     { label: 'All Candidates', active: !activeFiltersCount && !searchQuery, onPress: handleResetAllFilters },
     {
-      label: '⚡ Immediate (0d)',
+      label: 'Immediate (0d)',
       active: activeAvailabilityFilter === 'Immediate Joiner (0 Days)',
       onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Immediate Joiner (0 Days)' ? null : 'Immediate Joiner (0 Days)'),
     },
@@ -3515,7 +3552,7 @@ const CandidatesTab: React.FC<{
                   textOverflow: 'ellipsis',
                   maxWidth: '100%',
                 }}>
-                  {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '⚡ Immediate' : `⏱ In ${c.availableInDays ?? c.available_in_days}d`}
+                  {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? 'Immediate' : `In ${c.availableInDays ?? c.available_in_days}d`}
                 </div>
 
                 {/* Skill Badges Row */}

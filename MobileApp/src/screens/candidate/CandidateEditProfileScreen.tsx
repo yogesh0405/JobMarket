@@ -55,6 +55,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [requiresBus, setRequiresBus] = useState(!!(user?.requiresBus || user?.requires_bus));
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
   const [availableInDays, setAvailableInDays] = useState<number>(user?.availableInDays ?? (user as any)?.available_in_days ?? 0);
+  const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -645,6 +646,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             setAvailableInDays={setAvailableInDays}
             onOpenExpModal={() => setExpModalOpen(true)}
             onOpenShiftModal={() => setShiftModalOpen(true)}
+            onOpenAvailabilityModal={() => setAvailabilityModalOpen(true)}
             onRemoveExperience={handleRemoveExperience}
           />
         ) : null}
@@ -716,6 +718,19 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
           setPreferredShift(s);
           setShiftModalOpen(false);
         }}
+        availabilityModalOpen={availabilityModalOpen}
+        onCloseAvailabilityModal={() => setAvailabilityModalOpen(false)}
+        onSelectAvailability={(days) => {
+          if (days === -1) {
+            if ([0, 7, 15, 30, 45, 60, 90].includes(availableInDays)) {
+              setAvailableInDays(10);
+            }
+          } else {
+            setAvailableInDays(days);
+          }
+          setAvailabilityModalOpen(false);
+        }}
+        selectedAvailabilityDays={availableInDays}
         expModalOpen={expModalOpen}
         onCloseExpModal={() => setExpModalOpen(false)}
         expTitle={expTitle}

@@ -82,7 +82,21 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
   const midcZone = parseStringOrObject(user?.midc_zone || user?.midcZone || user?.preferred_location, 'Waluj / Shendra MIDC');
   const requiresBus = user?.requires_bus || user?.requiresBus;
   const requiresAccommodation = user?.requires_accommodation || user?.requiresAccommodation;
-  const availableDays = Number(user?.availableInDays ?? user?.available_in_days ?? 0);
+  const rawAvailDays = user?.availableInDays ?? user?.available_in_days ?? (selectedApplicant as any)?.availableInDays ?? (selectedApplicant as any)?.available_in_days;
+  const availableDays = (() => {
+    if (rawAvailDays !== undefined && rawAvailDays !== null) {
+      const parsed = Number(rawAvailDays);
+      if (!isNaN(parsed)) return Math.max(0, parsed);
+    }
+    const notice = String(user?.notice_period || (selectedApplicant as any)?.notice_period || '').toLowerCase();
+    if (notice.includes('immediate') || notice.includes('0 day') || notice.includes('0d')) return 0;
+    if (notice.includes('7 day') || notice.includes('1 week')) return 7;
+    if (notice.includes('15 day') || notice.includes('2 week')) return 15;
+    if (notice.includes('1 month') || notice.includes('30 day')) return 30;
+    if (notice.includes('45 day')) return 45;
+    if (notice.includes('2 month') || notice.includes('60 day')) return 60;
+    return 0;
+  })();
 
   const bioText = typeof user?.bio === 'string' ? user.bio.trim() : (typeof user?.about === 'string' ? user.about.trim() : '');
 
@@ -361,12 +375,12 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
           {/* Joining Availability */}
           <View style={styles.specRowItem}>
             <View style={styles.specIconBox}>
-              <Calendar size={15} color="#1764E8" strokeWidth={1.8} />
+              <Calendar size={15} color="#475569" strokeWidth={1.8} />
             </View>
             <View style={styles.specTextCol}>
               <Text style={styles.specGridLabel}>Joining Availability / Notice Period</Text>
               <Text style={styles.specGridValue}>
-                {availableDays === 0 ? 'Available Immediately (0 Days)' : `Available in ${availableDays} Days`}
+                {availableDays === 0 ? 'Immediate Joiner (0 Days)' : `Available in ${availableDays} Days`}
               </Text>
             </View>
           </View>

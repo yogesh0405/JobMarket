@@ -57,8 +57,8 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
           Number(item.availableInDays ?? item.available_in_days ?? 0) === 0 ? styles.availTextImmediate : styles.availTextDays
         ]} numberOfLines={1}>
           {Number(item.availableInDays ?? item.available_in_days ?? 0) === 0
-            ? '⚡ Immediate'
-            : `⏱ In ${item.availableInDays ?? item.available_in_days}d`}
+            ? 'Immediate'
+            : `In ${item.availableInDays ?? item.available_in_days}d`}
         </Text>
       </View>
 

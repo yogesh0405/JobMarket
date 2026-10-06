@@ -20,7 +20,8 @@ import {
   Clock,
   Bus,
   Home,
-  ExternalLink
+  ExternalLink,
+  Calendar
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { shareContent, getInitials } from '../../utils/helpers';
@@ -151,6 +152,8 @@ export const PublicProfilePage: React.FC = () => {
             preferred_shift: currentUser.preferredShift,
             requires_bus: currentUser.requiresBus,
             requires_accommodation: currentUser.requiresAccommodation,
+            available_in_days: (currentUser as any).availableInDays ?? (currentUser as any).available_in_days,
+            availableInDays: (currentUser as any).availableInDays ?? (currentUser as any).available_in_days,
             profile_picture_url: currentUser.profilePictureUrl,
             resume: currentUser.resume,
             created_at: currentUser.createdAt,
@@ -176,6 +179,8 @@ export const PublicProfilePage: React.FC = () => {
               preferred_shift: foundCandidate.preferredShift,
               requires_bus: foundCandidate.requiresBus,
               requires_accommodation: foundCandidate.requiresAccommodation,
+              available_in_days: foundCandidate.availableInDays ?? foundCandidate.available_in_days,
+              availableInDays: foundCandidate.availableInDays ?? foundCandidate.available_in_days,
               profile_picture_url: foundCandidate.profilePictureUrl,
               resume: foundCandidate.resume,
               created_at: foundCandidate.createdAt || new Date().toISOString(),
@@ -252,6 +257,21 @@ export const PublicProfilePage: React.FC = () => {
   const shift = profileUser.preferred_shift || profileUser.shift_preference || profileUser.shift_timing || 'Day Shift';
   const requiresBus = profileUser.requires_bus ?? profileUser.requiresBus;
   const requiresAccommodation = profileUser.requires_accommodation ?? profileUser.requiresAccommodation;
+  const rawAvail = profileUser.availableInDays ?? profileUser.available_in_days;
+  const availableInDays = (() => {
+    if (rawAvail !== undefined && rawAvail !== null) {
+      const parsed = Number(rawAvail);
+      if (!isNaN(parsed)) return Math.max(0, parsed);
+    }
+    const notice = String(profileUser.notice_period || profileUser.noticePeriod || '').toLowerCase();
+    if (notice.includes('immediate') || notice.includes('0 day') || notice.includes('0d')) return 0;
+    if (notice.includes('7 day') || notice.includes('1 week')) return 7;
+    if (notice.includes('15 day') || notice.includes('2 week')) return 15;
+    if (notice.includes('1 month') || notice.includes('30 day')) return 30;
+    if (notice.includes('45 day')) return 45;
+    if (notice.includes('2 month') || notice.includes('60 day')) return 60;
+    return 0;
+  })();
 
   // Format skills list
   const rawSkills = safeJsonParse(profileUser.skills, profileUser.skills);
@@ -719,6 +739,23 @@ export const PublicProfilePage: React.FC = () => {
                 <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Hostel / Accommodation</div>
                 <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>
                   {requiresAccommodation ? 'Accommodation Assistance Required' : 'Self-Arranged Local Residence'}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* Joining Availability */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Calendar size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Joining Availability / Notice Period</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>
+                  {availableInDays === 0
+                    ? 'Immediate Joiner (0 Days)'
+                    : `Available in ${availableInDays} Days`}
                 </div>
               </div>
             </div>

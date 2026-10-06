@@ -105,6 +105,8 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
   const applicantData = {
     ...candidate,
     id: candidate.id || candidateId,
+    availableInDays: candidate.availableInDays ?? candidate.available_in_days ?? (candidate.user?.availableInDays ?? candidate.user?.available_in_days),
+    available_in_days: candidate.available_in_days ?? candidate.availableInDays ?? (candidate.user?.available_in_days ?? candidate.user?.availableInDays),
     user: {
       ...candidate,
       ...(candidate as any)?.user,
@@ -122,6 +124,8 @@ export const EmployerCandidateDetailScreen: React.FC<Props> = ({ navigation, rou
       requires_bus: candidate.requires_bus || candidate.requiresBus,
       requires_accommodation: candidate.requires_accommodation || candidate.requiresAccommodation,
       notice_period: candidate.notice_period,
+      availableInDays: candidate.availableInDays ?? candidate.available_in_days ?? (candidate.user?.availableInDays ?? candidate.user?.available_in_days),
+      available_in_days: candidate.available_in_days ?? candidate.availableInDays ?? (candidate.user?.available_in_days ?? candidate.user?.availableInDays),
       resume_url: resumeInfo.url || candidate.resume_url || candidate.resumeUrl || candidate.resume,
       profile_picture_url: photoUrl,
     },

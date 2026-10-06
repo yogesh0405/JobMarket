@@ -46,17 +46,12 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
 
         <View style={styles.availabilityDisplayBox}>
           <View style={styles.availabilityIconBox}>
-            <Clock size={18} color={COLORS.primary} />
+            <Clock size={18} color="#475569" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text
-              style={[
-                styles.availabilityTitleText,
-                safeAvailabilityDays === 0 && { color: '#16A34A' },
-              ]}
-            >
+            <Text style={styles.availabilityTitleText}>
               {safeAvailabilityDays === 0
-                ? '⚡ Immediate Joiner (0 Days)'
+                ? 'Immediate Joiner (0 Days)'
                 : `Available in ${safeAvailabilityDays} Days`}
             </Text>
             <Text style={styles.availabilitySubtitleText}>
@@ -480,12 +475,12 @@ const styles = StyleSheet.create({
   availabilityIconBox: {
     width: 38,
     height: 38,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E2E8F0',
   },
   availabilityTitleText: {
     fontSize: 13.5,

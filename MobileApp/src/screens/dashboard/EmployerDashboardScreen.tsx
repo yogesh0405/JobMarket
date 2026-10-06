@@ -345,7 +345,7 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                           styles.dashAvailPillText,
                           Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? styles.dashAvailPillTextImm : styles.dashAvailPillTextDays
                         ]}>
-                          {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '⚡ Immediate' : `⏱ In ${c.availableInDays ?? c.available_in_days}d`}
+                          {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? 'Immediate' : `In ${c.availableInDays ?? c.available_in_days}d`}
                         </Text>
                       </View>
                     </View>

@@ -37,3 +37,14 @@ export const QUICK_YEARS = [
   String(CURRENT_YEAR - 6),
   String(CURRENT_YEAR - 7),
 ];
+
+export const AVAILABILITY_OPTIONS = [
+  { label: 'Immediate (0 Days / Available Now)', days: 0 },
+  { label: 'Within 7 Days (1 Week)', days: 7 },
+  { label: 'Within 15 Days (2 Weeks)', days: 15 },
+  { label: 'Within 30 Days (1 Month)', days: 30 },
+  { label: 'Within 45 Days', days: 45 },
+  { label: 'Within 60 Days (2 Months)', days: 60 },
+  { label: 'Within 90 Days (3 Months)', days: 90 },
+  { label: 'Custom Days...', days: -1 },
+];

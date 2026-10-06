@@ -349,18 +349,9 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                       ) || 0
                     );
                     return (
-                      <Text
-                        style={[
-                          styles.fieldValueText,
-                          {
-                            fontWeight: '700',
-                            color: heroAvailabilityDays === 0 ? '#16A34A' : COLORS.primary,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
+                      <Text style={styles.fieldValueText} numberOfLines={1}>
                         {heroAvailabilityDays === 0
-                          ? '⚡ Immediate Joiner (0 Days)'
+                          ? 'Immediate Joiner (0 Days)'
                           : `Available in ${heroAvailabilityDays} Days`}
                       </Text>
                     );

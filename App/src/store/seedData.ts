@@ -288,7 +288,8 @@ export const initialUsers: User[] = [
     experience: [{ title: 'CNC Operator', company: 'Bajaj Auto Ltd', duration: '2020 - Present', description: 'Operated CNC VMC machines.' }],
     education: [{ degree: 'ITI Machinist', institution: 'Govt ITI Sambhajinagar', year: '2018 - 2020' }],
     skills: ['CNC Operating', 'VMC', 'Fanuc', 'Shop Safety'],
-    aadhaarVerified: true, tradeSpecialization: 'CNC Machinist'
+    aadhaarVerified: true, tradeSpecialization: 'CNC Machinist',
+    availableInDays: 30, available_in_days: 30
   },
   {
     id: 'u2', name: 'Amitabh Verma', email: 'amitabh.verma@demo.com',
@@ -300,7 +301,8 @@ export const initialUsers: User[] = [
     experience: [{ title: 'VMC Programmer', company: 'Wockhardt Ltd', duration: '2021 - Present', description: 'VMC Programming & CAD design.' }],
     education: [{ degree: 'Diploma Mech', institution: 'Government Polytechnic', year: '2018 - 2021' }],
     skills: ['VMC Programming', 'AutoCAD', 'Mastercam'],
-    aadhaarVerified: true, tradeSpecialization: 'VMC Programmer'
+    aadhaarVerified: true, tradeSpecialization: 'VMC Programmer',
+    availableInDays: 0, available_in_days: 0
   },
   {
     id: 'u3', name: 'Sunil Deshmukh', email: 'sunil.deshmukh@demo.com',
@@ -312,7 +314,8 @@ export const initialUsers: User[] = [
     experience: [{ title: 'Electrician', company: 'Siemens Limited', duration: '2019 - Present', description: 'HT/LT panel wiring & PLC.' }],
     education: [{ degree: 'ITI Electrician', institution: 'Govt ITI Sambhajinagar', year: '2017 - 2019' }],
     skills: ['PLC Maintenance', 'Siemens TIA', 'Wiring'],
-    aadhaarVerified: true, tradeSpecialization: 'Industrial Electrician'
+    aadhaarVerified: true, tradeSpecialization: 'Industrial Electrician',
+    availableInDays: 0, available_in_days: 0
   },
   {
     id: 'u4', name: 'Vikram Kulkarni', email: 'vikram.kulkarni@demo.com',
@@ -322,7 +325,8 @@ export const initialUsers: User[] = [
     location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
     skills: ['CMM Inspection', 'IATF 16949', 'Metrology'],
-    aadhaarVerified: true, tradeSpecialization: 'Quality Assurance'
+    aadhaarVerified: true, tradeSpecialization: 'Quality Assurance',
+    availableInDays: 15, available_in_days: 15
   },
   {
     id: 'u5', name: 'Pradeep Shinde', email: 'pradeep.shinde@demo.com',
@@ -332,7 +336,8 @@ export const initialUsers: User[] = [
     location: 'Paithan MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
     skills: ['MIG Welding', 'TIG Welding', 'Fabrication'],
-    aadhaarVerified: true, tradeSpecialization: 'MIG/TIG Welder'
+    aadhaarVerified: true, tradeSpecialization: 'MIG/TIG Welder',
+    availableInDays: 0, available_in_days: 0
   },
   {
     id: 'u6', name: 'Sachin Joshi', email: 'sachin.joshi@demo.com',
@@ -342,7 +347,8 @@ export const initialUsers: User[] = [
     location: 'Chikalthana MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
     skills: ['SAP MM', 'Inventory Control', 'Dispatch'],
-    aadhaarVerified: true, tradeSpecialization: 'Store Keeper'
+    aadhaarVerified: true, tradeSpecialization: 'Store Keeper',
+    availableInDays: 15, available_in_days: 15
   },
   {
     id: 'u7', name: 'Anil Gavhane', email: 'anil.gavhane@demo.com',
@@ -352,7 +358,8 @@ export const initialUsers: User[] = [
     location: 'Railway Station MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
     skills: ['Hydraulics', 'Pneumatics', 'Maintenance'],
-    aadhaarVerified: true, tradeSpecialization: 'Plant Maintenance'
+    aadhaarVerified: true, tradeSpecialization: 'Plant Maintenance',
+    availableInDays: 7, available_in_days: 7
   },
   {
     id: 'u8', name: 'Manoj Jadhav', email: 'manoj.jadhav@demo.com',
@@ -362,7 +369,8 @@ export const initialUsers: User[] = [
     location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80',
     skills: ['Forklift Operating', 'Material Loading', 'Safety Checklists'],
-    aadhaarVerified: true, tradeSpecialization: 'Forklift Driver'
+    aadhaarVerified: true, tradeSpecialization: 'Forklift Driver',
+    availableInDays: 7, available_in_days: 7
   },
   {
     id: 'u9', name: 'Sanjay Pawar', email: 'sanjay.pawar@demo.com',
@@ -372,7 +380,8 @@ export const initialUsers: User[] = [
     location: 'Shendra MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
     skills: ['Production Planning', '5S & Kaizen', 'Shift Management'],
-    aadhaarVerified: true, tradeSpecialization: 'Assembly Line Supervisor'
+    aadhaarVerified: true, tradeSpecialization: 'Assembly Line Supervisor',
+    availableInDays: 30, available_in_days: 30
   },
   {
     id: 'u10', name: 'Vijay Kale', email: 'vijay.kale@demo.com',
@@ -382,6 +391,7 @@ export const initialUsers: User[] = [
     location: 'Waluj MIDC, Chhatrapati Sambhajinagar',
     profilePictureUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
     skills: ['Die Fitting', 'Tool Room', 'Grinding Machine'],
-    aadhaarVerified: true, tradeSpecialization: 'Tool & Die Fitter'
+    aadhaarVerified: true, tradeSpecialization: 'Tool & Die Fitter',
+    availableInDays: 45, available_in_days: 45
   }
 ];

@@ -24,6 +24,7 @@ import {
   MapPin,
   Wrench,
   RotateCcw,
+  Calendar,
 } from 'lucide-react-native';
 import { apiFetch } from '../../api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -263,9 +264,10 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
       if (!matchesExperience(item, draftExp)) return false;
       if (!matchesLocation(item, draftLocation)) return false;
       if (!matchesTrade(item, draftTrade)) return false;
+      if (!matchesAvailability(item, draftAvailability)) return false;
       return true;
     }).length;
-  }, [candidates, draftIndustry, draftEducation, draftExp, draftLocation, draftTrade]);
+  }, [candidates, draftIndustry, draftEducation, draftExp, draftLocation, draftTrade, draftAvailability]);
 
   // Main filtered list
   const filteredCandidates = useMemo(() => {
@@ -327,7 +329,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
   const quickPillOptions = [
     { label: 'All Candidates', active: !hasActiveFilters, onPress: handleResetAllFilters },
     {
-      label: '⚡ Immediate (0d)',
+      label: 'Immediate (0d)',
       active: activeAvailabilityFilter === 'Immediate (0 Days)',
       onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Immediate (0 Days)' ? null : 'Immediate (0 Days)'),
     },
@@ -490,6 +492,18 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
                     {activeTradeFilter}
                   </Text>
                   <TouchableOpacity onPress={() => setActiveTradeFilter(null)}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {activeAvailabilityFilter ? (
+                <View style={styles.activeFilterTag}>
+                  <Calendar size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    {activeAvailabilityFilter}
+                  </Text>
+                  <TouchableOpacity onPress={() => setActiveAvailabilityFilter(null)}>
                     <X size={12} color={COLORS.primary} />
                   </TouchableOpacity>
                 </View>

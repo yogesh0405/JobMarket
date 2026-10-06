@@ -1829,7 +1829,7 @@ export const ProfilePage: React.FC = () => {
                   color: userAvailabilityDays === 0 ? '#16A34A' : '#1B4FDF',
                 }}>
                   {userAvailabilityDays === 0
-                    ? '⚡ Immediate Joiner (0 Days)'
+                    ? 'Immediate Joiner (0 Days)'
                     : `Available in ${userAvailabilityDays} Days`}
                 </div>
               </div>
@@ -1984,7 +1984,7 @@ export const ProfilePage: React.FC = () => {
                       color: userAvailabilityDays === 0 ? '#16A34A' : '#0F172A',
                     }}>
                       {userAvailabilityDays === 0
-                        ? '⚡ Immediate Joiner (0 Days Notice)'
+                        ? 'Immediate Joiner (0 Days Notice)'
                         : `Available in ${userAvailabilityDays} Days`}
                     </div>
                     <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
@@ -2775,41 +2775,48 @@ export const ProfilePage: React.FC = () => {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">Available to Join In (Days)</label>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                    {[
-                      { label: 'Immediate (0d)', days: 0 },
-                      { label: '7 Days', days: 7 },
-                      { label: '15 Days', days: 15 },
-                      { label: '30 Days', days: 30 },
-                      { label: '45 Days', days: 45 },
-                      { label: '60 Days', days: 60 }
-                    ].map(o => (
-                      <button
-                        key={o.days}
-                        type="button"
-                        className={`btn btn-sm ${tempAvailableInDays === o.days ? 'btn-primary' : 'btn-ghost'}`}
-                        style={{ border: '1px solid #cbd5e1', padding: '4px 8px', fontSize: '11.5px' }}
-                        onClick={() => setTempAvailableInDays(o.days)}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="180"
-                      className="form-input"
-                      style={{ width: '90px' }}
-                      value={tempAvailableInDays}
-                      onChange={(e) => setTempAvailableInDays(Math.max(0, parseInt(e.target.value) || 0))}
-                    />
-                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
-                      Days ({tempAvailableInDays === 0 ? 'Immediately Available' : `Available in ${tempAvailableInDays} Days`})
-                    </span>
-                  </div>
+                  <label className="form-label">Available to Join In (Notice Period)</label>
+                  <select
+                    className="form-select"
+                    value={[0, 7, 15, 30, 45, 60, 90].includes(tempAvailableInDays) ? String(tempAvailableInDays) : 'custom'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'custom') {
+                        if ([0, 7, 15, 30, 45, 60, 90].includes(tempAvailableInDays)) {
+                          setTempAvailableInDays(10);
+                        }
+                      } else {
+                        setTempAvailableInDays(parseInt(val, 10) || 0);
+                      }
+                    }}
+                    style={{ width: '100%', cursor: 'pointer' }}
+                  >
+                    <option value="0">Immediate (0 Days / Available Now)</option>
+                    <option value="7">Within 7 Days (1 Week)</option>
+                    <option value="15">Within 15 Days (2 Weeks)</option>
+                    <option value="30">Within 30 Days (1 Month)</option>
+                    <option value="45">Within 45 Days</option>
+                    <option value="60">Within 60 Days (2 Months)</option>
+                    <option value="90">Within 90 Days (3 Months)</option>
+                    <option value="custom">Custom Days (Enter specific number)...</option>
+                  </select>
+
+                  {![0, 7, 15, 30, 45, 60, 90].includes(tempAvailableInDays) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="180"
+                        className="form-input"
+                        style={{ width: '90px' }}
+                        value={tempAvailableInDays}
+                        onChange={(e) => setTempAvailableInDays(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      />
+                      <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+                        Custom Notice Days
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

@@ -309,20 +309,56 @@ export const matchesTrade = (candidate: ExtendedCandidate, filter: string | null
   }
 };
 
+export const getCandidateAvailabilityDays = (candidate: any): number => {
+  if (candidate?.availableInDays !== undefined && candidate?.availableInDays !== null) {
+    const parsed = Number(candidate.availableInDays);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.available_in_days !== undefined && candidate?.available_in_days !== null) {
+    const parsed = Number(candidate.available_in_days);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.user?.availableInDays !== undefined && candidate?.user?.availableInDays !== null) {
+    const parsed = Number(candidate.user.availableInDays);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+  if (candidate?.user?.available_in_days !== undefined && candidate?.user?.available_in_days !== null) {
+    const parsed = Number(candidate.user.available_in_days);
+    if (!isNaN(parsed)) return Math.max(0, parsed);
+  }
+
+  const notice = String(candidate?.notice_period || candidate?.noticePeriod || '').toLowerCase();
+  if (notice.includes('immediate') || notice.includes('0 day') || notice.includes('0d')) return 0;
+  if (notice.includes('7 day') || notice.includes('1 week')) return 7;
+  if (notice.includes('15 day') || notice.includes('2 week')) return 15;
+  if (notice.includes('1 month') || notice.includes('30 day')) return 30;
+  if (notice.includes('45 day')) return 45;
+  if (notice.includes('2 month') || notice.includes('60 day')) return 60;
+  if (notice.includes('3 month') || notice.includes('90 day')) return 90;
+
+  return 0;
+};
+
 export const matchesAvailability = (candidate: ExtendedCandidate, filter: string | null): boolean => {
   if (!filter || filter === 'All Availability') return true;
-  const days = Number(candidate.availableInDays ?? candidate.available_in_days ?? 0);
+  const days = getCandidateAvailabilityDays(candidate);
   switch (filter) {
     case 'Immediate (0 Days)':
     case 'Immediate Joiner (0 Days)':
+    case 'Immediate (0d)':
+    case 'Immediate':
       return days === 0;
     case 'Within 7 Days':
+    case '≤ 7 Days':
       return days <= 7;
     case 'Within 15 Days':
+    case '≤ 15 Days':
       return days <= 15;
     case 'Within 30 Days':
+    case '≤ 30 Days':
       return days <= 30;
     case 'Within 60 Days':
+    case '≤ 60 Days':
       return days <= 60;
     default:
       return true;
@@ -357,7 +393,9 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     aadhaar_verified: true,
     verified: true,
     preferred_shift: 'Day Shift',
-    notice_period: 'Immediate (15 Days)',
+    notice_period: '15 Days',
+    availableInDays: 15,
+    available_in_days: 15,
     bio: 'Certified ITI Machinist with 6+ years experience operating CNC & VMC machines in automotive manufacturing units in Waluj MIDC.',
   },
   {
@@ -381,6 +419,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Rotational Shift',
     notice_period: '1 Month',
+    availableInDays: 30,
+    available_in_days: 30,
     bio: 'Experienced VMC programmer proficient in Mastercam and 3D G-code generation for precision component manufacturing.',
   },
   {
@@ -404,6 +444,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Day Shift',
     notice_period: 'Immediate',
+    availableInDays: 0,
+    available_in_days: 0,
     bio: 'Senior plant electrician with 8 years experience in Siemens PLC troubleshooting, motor drives, and factory electrical wiring.',
   },
   {
@@ -427,6 +469,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Rotational Shift',
     notice_period: '15 Days',
+    availableInDays: 15,
+    available_in_days: 15,
     bio: 'Mechanical Quality Engineer specialized in CMM machine programming and automotive part inspection per IATF standards.',
   },
   {
@@ -450,6 +494,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Day Shift',
     notice_period: 'Immediate',
+    availableInDays: 0,
+    available_in_days: 0,
     bio: 'Certified X-Ray welder with 7 years expertise in heavy chassis fabrication, stainless steel TIG, and CO2 welding.',
   },
   {
@@ -473,6 +519,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Day Shift',
     notice_period: '15 Days',
+    availableInDays: 15,
+    available_in_days: 15,
     bio: 'Store supervisor managing industrial raw material inventory, SAP MM transactions, and dispatch logistics.',
   },
   {
@@ -495,7 +543,9 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     aadhaar_verified: true,
     verified: true,
     preferred_shift: 'Rotational Shift',
-    notice_period: 'Immediate',
+    notice_period: 'Within 7 Days',
+    availableInDays: 7,
+    available_in_days: 7,
     bio: 'Maintenance expert specializing in hydraulic press overhauls, pneumatic valve manifolds, and breakdown reduction.',
   },
   {
@@ -519,6 +569,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Day Shift',
     notice_period: 'Immediate',
+    availableInDays: 0,
+    available_in_days: 0,
     bio: 'Motivated chemistry graduate seeking Entry-level QC Chemist / Formulation Trainee role in pharmaceutical or chemical manufacturing plants.',
   },
   {
@@ -542,6 +594,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Rotational Shift',
     notice_period: 'Immediate',
+    availableInDays: 0,
+    available_in_days: 0,
     bio: 'Fresh ITI Fitter looking to kickstart industrial career as Machine Assembler or Production Trainee.',
   },
   {
@@ -565,6 +619,8 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     verified: true,
     preferred_shift: 'Rotational Shift',
     notice_period: '15 Days',
+    availableInDays: 15,
+    available_in_days: 15,
     bio: 'Skilled injection moulding operator with 3 years hands-on experience on Toshiba & Engel machines.',
   },
   {
@@ -587,7 +643,9 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     aadhaar_verified: true,
     verified: true,
     preferred_shift: 'Day Shift',
-    notice_period: 'Immediate',
+    notice_period: 'Within 45 Days',
+    availableInDays: 45,
+    available_in_days: 45,
     bio: 'Packaging operator with FMCG line experience in automated bottle capping, labeling, and shrink wrapping.',
   },
   {
@@ -610,7 +668,9 @@ export const SEED_CANDIDATES: ExtendedCandidate[] = [
     aadhaar_verified: true,
     verified: true,
     preferred_shift: 'Day Shift',
-    notice_period: 'Immediate',
+    notice_period: 'Within 60 Days',
+    availableInDays: 60,
+    available_in_days: 60,
     bio: 'Garment and textile machine operator skilled in heavy denim and industrial safety suit manufacturing.',
   },
 ];

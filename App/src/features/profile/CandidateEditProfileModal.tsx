@@ -1230,67 +1230,74 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
                   Shift & Facility Preferences
                 </h4>
 
-                {/* Availability to Join (Notice Period) */}
+                {/* Availability to Join (Notice Period) Dropdown */}
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>
-                    Available to Join In (Days) <span style={{ color: '#DC2626' }}>*</span>
+                    Available to Join In (Notice Period) <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <p style={{ margin: '0 0 8px 0', fontSize: '11.5px', color: '#64748B' }}>
-                    How many days will you take to join after job selection? (0 = Immediately Available).
+                    Select how many days you will take to join after job selection.
                   </p>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                    {[
-                      { label: 'Immediate (0d)', days: 0 },
-                      { label: '7 Days', days: 7 },
-                      { label: '15 Days', days: 15 },
-                      { label: '30 Days', days: 30 },
-                      { label: '45 Days', days: 45 },
-                      { label: '60 Days', days: 60 },
-                    ].map((opt) => (
-                      <button
-                        key={opt.days}
-                        type="button"
-                        onClick={() => setAvailableInDays(opt.days)}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: '0px',
-                          fontSize: '12px',
-                          fontWeight: availableInDays === opt.days ? '700' : '500',
-                          border: availableInDays === opt.days ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
-                          backgroundColor: availableInDays === opt.days ? '#EFF6FF' : '#FFFFFF',
-                          color: availableInDays === opt.days ? '#1D4ED8' : '#334155',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                  <select
+                    value={[0, 7, 15, 30, 45, 60, 90].includes(availableInDays) ? String(availableInDays) : 'custom'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'custom') {
+                        if ([0, 7, 15, 30, 45, 60, 90].includes(availableInDays)) {
+                          setAvailableInDays(10);
+                        }
+                      } else {
+                        setAvailableInDays(parseInt(val, 10) || 0);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '0px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '13px',
+                      color: '#0F172A',
+                      backgroundColor: '#FFFFFF',
+                      outline: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="0">Immediate (0 Days / Available Now)</option>
+                    <option value="7">Within 7 Days (1 Week)</option>
+                    <option value="15">Within 15 Days (2 Weeks)</option>
+                    <option value="30">Within 30 Days (1 Month)</option>
+                    <option value="45">Within 45 Days</option>
+                    <option value="60">Within 60 Days (2 Months)</option>
+                    <option value="90">Within 90 Days (3 Months)</option>
+                    <option value="custom">Custom Days (Enter specific number)...</option>
+                  </select>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="180"
-                      value={availableInDays}
-                      onChange={(e) => setAvailableInDays(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="e.g. 15"
-                      style={{
-                        width: '90px',
-                        padding: '8px 10px',
-                        border: '1px solid #CBD5E1',
-                        borderRadius: '0px',
-                        fontSize: '13px',
-                        color: '#0F172A',
-                        outline: 'none',
-                        backgroundColor: '#FFFFFF'
-                      }}
-                    />
-                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
-                      Days ({availableInDays === 0 ? 'Immediately Available' : `Available in ${availableInDays} Days`})
-                    </span>
-                  </div>
+                  {![0, 7, 15, 30, 45, 60, 90].includes(availableInDays) && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="180"
+                        value={availableInDays}
+                        onChange={(e) => setAvailableInDays(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        placeholder="e.g. 10"
+                        style={{
+                          width: '90px',
+                          padding: '8px 10px',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '0px',
+                          fontSize: '13px',
+                          color: '#0F172A',
+                          outline: 'none',
+                          backgroundColor: '#FFFFFF',
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+                        Custom Notice Days
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div>

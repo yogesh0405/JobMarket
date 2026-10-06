@@ -146,7 +146,7 @@ export const CandidateFilterScreen: React.FC = () => {
       if (!matchesAvailability(item, draftAvailability)) return false;
       return true;
     }).length;
-  }, [candidatesList, totalCandidates, draftIndustry, draftEducation, draftTrade, draftExp, draftLocation]);
+  }, [candidatesList, totalCandidates, draftIndustry, draftEducation, draftTrade, draftExp, draftLocation, draftAvailability]);
 
   const renderTabContent = () => {
     switch (activeFilterTab) {

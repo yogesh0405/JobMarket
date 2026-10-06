@@ -118,11 +118,11 @@ export const CandidateDashboardAnalyticsSection: React.FC<CandidateDashboardAnal
         onPress={() => navigation.navigate('CandidateEditProfile')}
       >
         <View style={styles.availabilityLeft}>
-          <Clock size={14} color={COLORS.primary} />
+          <Clock size={14} color="#64748B" />
           <Text style={styles.availabilityLabel}>Joining Availability:</Text>
           <Text style={styles.availabilityValue}>
             {(Math.max(0, parseInt(String(availableInDays ?? 0), 10) || 0) === 0)
-              ? '⚡ Immediate Joiner (0d)'
+              ? 'Immediate Joiner (0d)'
               : `Available in ${Math.max(0, parseInt(String(availableInDays ?? 0), 10) || 0)} Days`}
           </Text>
         </View>
@@ -252,9 +252,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
     borderRadius: 0,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -269,12 +269,12 @@ const styles = StyleSheet.create({
   availabilityLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0369A1',
+    color: '#64748B',
   },
   availabilityValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0284C7',
+    color: '#0F172A',
   },
   availabilityActionText: {
     fontSize: 11,

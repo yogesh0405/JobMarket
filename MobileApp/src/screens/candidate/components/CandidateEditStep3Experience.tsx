@@ -14,6 +14,7 @@ interface CandidateEditStep3ExperienceProps {
   setAvailableInDays: (val: number) => void;
   onOpenExpModal: () => void;
   onOpenShiftModal: () => void;
+  onOpenAvailabilityModal: () => void;
   onRemoveExperience: (index: number) => void;
 }
 
@@ -28,6 +29,7 @@ export const CandidateEditStep3Experience: React.FC<CandidateEditStep3Experience
   setAvailableInDays,
   onOpenExpModal,
   onOpenShiftModal,
+  onOpenAvailabilityModal,
   onRemoveExperience,
 }) => {
   return (
@@ -111,59 +113,58 @@ export const CandidateEditStep3Experience: React.FC<CandidateEditStep3Experience
             <Switch value={requiresAccommodation} onValueChange={setRequiresAccommodation} trackColor={{ true: COLORS.primary }} />
           </View>
 
-          {/* Availability to Join in Days */}
+          {/* Availability to Join Dropdown Menu */}
           <View style={{ marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
             <Text style={styles.inputLabel}>
-              Available to Join In (Days) <Text style={{ color: '#DC2626' }}>*</Text>
+              Available to Join In (Notice Period) <Text style={{ color: '#DC2626' }}>*</Text>
             </Text>
             <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, marginBottom: 8 }}>
-              How many days will you take to join after job selection? (0 = Immediately Available).
+              Select how many days you will take to join after job selection.
             </Text>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-              {[
-                { label: 'Immediate (0d)', days: 0 },
-                { label: '7 Days', days: 7 },
-                { label: '15 Days', days: 15 },
-                { label: '30 Days', days: 30 },
-                { label: '45 Days', days: 45 },
-                { label: '60 Days', days: 60 },
-              ].map((opt) => {
-                const isSelected = availableInDays === opt.days;
-                return (
-                  <TouchableOpacity
-                    key={opt.days}
-                    activeOpacity={0.7}
-                    onPress={() => setAvailableInDays(opt.days)}
-                    style={[
-                      styles.availChip,
-                      isSelected && styles.availChipSelected,
-                    ]}
-                  >
-                    <Text style={[styles.availChipText, isSelected && styles.availChipTextSelected]}>
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TextInput
-                keyboardType="numeric"
-                value={String(availableInDays)}
-                onChangeText={(text) => {
-                  const cleaned = text.replace(/[^0-9]/g, '');
-                  setAvailableInDays(cleaned ? Math.min(180, parseInt(cleaned, 10)) : 0);
-                }}
-                placeholder="0"
-                placeholderTextColor="#94A3B8"
-                style={styles.daysInput}
-              />
-              <Text style={{ fontSize: 12.5, color: '#334155', fontWeight: '600' }}>
-                Days ({availableInDays === 0 ? 'Immediately Available' : `Available in ${availableInDays} Days`})
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.dropdownPickerRow}
+              onPress={onOpenAvailabilityModal}
+            >
+              <Text style={styles.dropdownPickerText}>
+                {availableInDays === 0
+                  ? 'Immediate (0 Days / Available Now)'
+                  : availableInDays === 7
+                  ? 'Within 7 Days (1 Week)'
+                  : availableInDays === 15
+                  ? 'Within 15 Days (2 Weeks)'
+                  : availableInDays === 30
+                  ? 'Within 30 Days (1 Month)'
+                  : availableInDays === 45
+                  ? 'Within 45 Days'
+                  : availableInDays === 60
+                  ? 'Within 60 Days (2 Months)'
+                  : availableInDays === 90
+                  ? 'Within 90 Days (3 Months)'
+                  : `Custom (${availableInDays} Days)`}
               </Text>
-            </View>
+              <ChevronDown size={16} color="#94A3B8" />
+            </TouchableOpacity>
+
+            {![0, 7, 15, 30, 45, 60, 90].includes(availableInDays) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <TextInput
+                  keyboardType="numeric"
+                  value={String(availableInDays)}
+                  onChangeText={(text) => {
+                    const cleaned = text.replace(/[^0-9]/g, '');
+                    setAvailableInDays(cleaned ? Math.min(180, parseInt(cleaned, 10)) : 0);
+                  }}
+                  placeholder="0"
+                  placeholderTextColor="#94A3B8"
+                  style={styles.daysInput}
+                />
+                <Text style={{ fontSize: 12.5, color: '#334155', fontWeight: '600' }}>
+                  Custom Notice Days
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>

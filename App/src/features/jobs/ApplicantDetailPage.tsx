@@ -327,6 +327,21 @@ export const ApplicantDetailPage: React.FC = () => {
   const candidateMidc = toSafeString(user?.midc_zone || user?.midcZone || user?.preferred_location, 'Waluj / Shendra MIDC');
   const requiresBus = Boolean(user?.requires_bus || user?.requiresBus);
   const requiresAccommodation = Boolean(user?.requires_accommodation || user?.requiresAccommodation);
+  const rawAvailDays = user?.availableInDays ?? user?.available_in_days ?? applicant?.availableInDays ?? applicant?.available_in_days;
+  const candidateAvailabilityDays = (() => {
+    if (rawAvailDays !== undefined && rawAvailDays !== null) {
+      const parsed = Number(rawAvailDays);
+      if (!isNaN(parsed)) return Math.max(0, parsed);
+    }
+    const notice = String(user?.notice_period || applicant?.notice_period || '').toLowerCase();
+    if (notice.includes('immediate') || notice.includes('0 day') || notice.includes('0d')) return 0;
+    if (notice.includes('7 day') || notice.includes('1 week')) return 7;
+    if (notice.includes('15 day') || notice.includes('2 week')) return 15;
+    if (notice.includes('1 month') || notice.includes('30 day')) return 30;
+    if (notice.includes('45 day')) return 45;
+    if (notice.includes('2 month') || notice.includes('60 day')) return 60;
+    return 0;
+  })();
   const bioText = toSafeString(user?.bio || user?.about, '');
 
   const rawSkills = tryParseJson(user?.skills);
@@ -1051,6 +1066,20 @@ export const ApplicantDetailPage: React.FC = () => {
                     <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Hostel / Accommodation</div>
                     <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#102A5C', marginTop: '1px' }}>
                       {requiresAccommodation ? 'Accommodation Assistance Required' : 'Self-Arranged Local Residence'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Calendar size={15} color="#1764E8" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: 500 }}>Joining Availability / Notice Period</div>
+                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#102A5C', marginTop: '1px' }}>
+                      {candidateAvailabilityDays === 0
+                        ? 'Immediate Joiner (0 Days)'
+                        : `Available in ${candidateAvailabilityDays} Days`}
                     </div>
                   </div>
                 </div>
