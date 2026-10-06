@@ -979,7 +979,15 @@ export class JobController {
         return;
       }
 
-      const data = await UserRepository.getAllCandidates();
+      let data = await UserRepository.getAllCandidates();
+      const maxDaysParam = req.query.availableWithinDays || req.query.maxDays || req.query.availableInDays;
+      if (maxDaysParam !== undefined && maxDaysParam !== null && maxDaysParam !== '') {
+        const maxDays = Number(maxDaysParam);
+        if (!isNaN(maxDays)) {
+          data = data.filter((c: any) => (c.availableInDays ?? c.available_in_days ?? 0) <= maxDays);
+        }
+      }
+
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

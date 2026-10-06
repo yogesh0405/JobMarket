@@ -332,6 +332,42 @@ export const CandidateProfileHeroCard: React.FC<CandidateProfileHeroCardProps> =
                 </View>
               </View>
 
+              {/* Joining Availability / Notice Period */}
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Joining Availability / Notice Period</Text>
+                <View style={styles.fieldValueBox}>
+                  {(() => {
+                    const heroAvailabilityDays = Math.max(
+                      0,
+                      parseInt(
+                        String(
+                          user?.availableInDays !== undefined && user?.availableInDays !== null
+                            ? user.availableInDays
+                            : (user?.available_in_days ?? 0)
+                        ),
+                        10
+                      ) || 0
+                    );
+                    return (
+                      <Text
+                        style={[
+                          styles.fieldValueText,
+                          {
+                            fontWeight: '700',
+                            color: heroAvailabilityDays === 0 ? '#16A34A' : COLORS.primary,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {heroAvailabilityDays === 0
+                          ? '⚡ Immediate Joiner (0 Days)'
+                          : `Available in ${heroAvailabilityDays} Days`}
+                      </Text>
+                    );
+                  })()}
+                </View>
+              </View>
+
               {/* Registered Email */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Registered Email</Text>

@@ -47,6 +47,8 @@ import {
   matchesExperience,
   matchesLocation,
   matchesTrade,
+  matchesAvailability,
+  AVAILABILITY_FILTER_OPTIONS,
 } from './components/CandidatesUtils';
 import { CandidateCardItem } from './components/CandidateCardItem';
 
@@ -55,7 +57,7 @@ interface CandidatesScreenProps {
   route?: any;
 }
 
-type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE';
+type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE' | 'AVAILABILITY';
 
 export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
@@ -89,6 +91,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
   const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
   const [activeLocationFilter, setActiveLocationFilter] = useState<string | null>(null);
   const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
+  const [activeAvailabilityFilter, setActiveAvailabilityFilter] = useState<string | null>(null);
 
   // Modal draft filters
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -98,6 +101,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
   const [draftExp, setDraftExp] = useState<string | null>(null);
   const [draftLocation, setDraftLocation] = useState<string | null>(null);
   const [draftTrade, setDraftTrade] = useState<string | null>(null);
+  const [draftAvailability, setDraftAvailability] = useState<string | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -174,6 +178,8 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
             verified: true,
             preferred_shift: safeString(item.preferredShift || item.preferred_shift, 'Day Shift'),
             notice_period: safeString(item.noticePeriod || item.notice_period, 'Immediate'),
+            availableInDays: Number(item.availableInDays ?? item.available_in_days ?? 0),
+            available_in_days: Number(item.availableInDays ?? item.available_in_days ?? 0),
             bio: typeof item.bio === 'string' ? item.bio : (typeof item.about === 'string' ? item.about : ''),
             resume_url: resolvedResume,
             resumeUrl: resolvedResume,
@@ -211,6 +217,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
         exp: activeExpFilter,
         location: activeLocationFilter,
         trade: activeTradeFilter,
+        availability: activeAvailabilityFilter,
       },
       defaultTab,
       totalCount: candidates.length,
@@ -221,6 +228,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
         setActiveExpFilter(applied.exp);
         setActiveLocationFilter(applied.location);
         setActiveTradeFilter(applied.trade);
+        setActiveAvailabilityFilter(applied.availability);
       },
     });
   };
@@ -232,6 +240,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
     setDraftExp(null);
     setDraftLocation(null);
     setDraftTrade(null);
+    setDraftAvailability(null);
   };
 
   // Reset all active filters
@@ -242,6 +251,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
     setActiveExpFilter(null);
     setActiveLocationFilter(null);
     setActiveTradeFilter(null);
+    setActiveAvailabilityFilter(null);
     handleResetDraftFilters();
   };
 
@@ -282,6 +292,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
       if (!matchesExperience(item, activeExpFilter)) return false;
       if (!matchesLocation(item, activeLocationFilter)) return false;
       if (!matchesTrade(item, activeTradeFilter)) return false;
+      if (!matchesAvailability(item, activeAvailabilityFilter)) return false;
 
       return true;
     });
@@ -293,6 +304,7 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
     activeExpFilter,
     activeLocationFilter,
     activeTradeFilter,
+    activeAvailabilityFilter,
   ]);
 
   const activeFiltersCount =
@@ -300,7 +312,8 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
     (activeEducationFilter ? 1 : 0) +
     (activeExpFilter ? 1 : 0) +
     (activeLocationFilter ? 1 : 0) +
-    (activeTradeFilter ? 1 : 0);
+    (activeTradeFilter ? 1 : 0) +
+    (activeAvailabilityFilter ? 1 : 0);
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -313,6 +326,16 @@ export const CandidatesScreen: React.FC<CandidatesScreenProps> = ({ navigation, 
   // Quick preset bar data
   const quickPillOptions = [
     { label: 'All Candidates', active: !hasActiveFilters, onPress: handleResetAllFilters },
+    {
+      label: '⚡ Immediate (0d)',
+      active: activeAvailabilityFilter === 'Immediate (0 Days)',
+      onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Immediate (0 Days)' ? null : 'Immediate (0 Days)'),
+    },
+    {
+      label: '≤ 15 Days',
+      active: activeAvailabilityFilter === 'Within 15 Days',
+      onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Within 15 Days' ? null : 'Within 15 Days'),
+    },
     {
       label: 'Freshers (0 Yrs)',
       active: activeExpFilter === 'Fresher (0 Yrs)',

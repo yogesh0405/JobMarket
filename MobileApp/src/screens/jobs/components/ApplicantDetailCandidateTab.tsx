@@ -20,6 +20,7 @@ import {
   ExternalLink,
   GraduationCap,
   Share2,
+  Calendar,
 } from 'lucide-react-native';
 import { JobApplication } from '../../../types';
 import { WhatsAppIcon } from '../../../components/common/WhatsAppIcon';
@@ -81,6 +82,7 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
   const midcZone = parseStringOrObject(user?.midc_zone || user?.midcZone || user?.preferred_location, 'Waluj / Shendra MIDC');
   const requiresBus = user?.requires_bus || user?.requiresBus;
   const requiresAccommodation = user?.requires_accommodation || user?.requiresAccommodation;
+  const availableDays = Number(user?.availableInDays ?? user?.available_in_days ?? 0);
 
   const bioText = typeof user?.bio === 'string' ? user.bio.trim() : (typeof user?.about === 'string' ? user.about.trim() : '');
 
@@ -350,6 +352,21 @@ export const ApplicantDetailCandidateTab: React.FC<ApplicantDetailCandidateTabPr
               <Text style={styles.specGridLabel}>Hostel / Accommodation</Text>
               <Text style={styles.specGridValue}>
                 {requiresAccommodation ? 'Accommodation Assistance Required' : 'Self-Arranged Local Residence'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.rowDivider} />
+
+          {/* Joining Availability */}
+          <View style={styles.specRowItem}>
+            <View style={styles.specIconBox}>
+              <Calendar size={15} color="#1764E8" strokeWidth={1.8} />
+            </View>
+            <View style={styles.specTextCol}>
+              <Text style={styles.specGridLabel}>Joining Availability / Notice Period</Text>
+              <Text style={styles.specGridValue}>
+                {availableDays === 0 ? 'Available Immediately (0 Days)' : `Available in ${availableDays} Days`}
               </Text>
             </View>
           </View>

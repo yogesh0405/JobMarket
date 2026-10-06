@@ -24,6 +24,9 @@ export interface User {
   preferred_shift?: string;
   requires_bus?: boolean;
   requires_accommodation?: boolean;
+  requiresAccommodation?: boolean;
+  available_in_days?: number;
+  availableInDays?: number;
   is_resume_public?: boolean;
   resume?: any;
   experience?: any[];
@@ -74,6 +77,7 @@ export class UserRepository {
         SELECT id, email, password_hash, name, phone, role, company_name, gst_number, aadhaar_verified, 
                trade_specialization, status, created_at, updated_at, headline, location, bio, midc_zone, skills, 
                preferred_shift, requires_bus, requires_accommodation, resume, experience, education, profile_picture_url,
+               COALESCE(available_in_days, 0) as available_in_days,
                COALESCE(is_resume_public, true) as is_resume_public,
                COALESCE(is_two_factor_enabled, false) as is_two_factor_enabled
         FROM users 
@@ -82,6 +86,8 @@ export class UserRepository {
       const result = await pool.query(query, [id]);
       if (result.rows.length === 0) return null;
       const user = result.rows[0] as User;
+      user.available_in_days = Number(user.available_in_days ?? 0);
+      user.availableInDays = Number(user.available_in_days ?? 0);
       user.resume = safeJsonParse(user.resume, null);
       user.experience = safeJsonParse(user.experience, []);
       user.education = safeJsonParse(user.education, []);
@@ -221,6 +227,10 @@ export class UserRepository {
       requiresBus: 'requires_bus',
       requires_accommodation: 'requires_accommodation',
       requiresAccommodation: 'requires_accommodation',
+      available_in_days: 'available_in_days',
+      availableInDays: 'available_in_days',
+      available_days: 'available_in_days',
+      availability_days: 'available_in_days',
       is_resume_public: 'is_resume_public',
       isResumePublic: 'is_resume_public',
       resume: 'resume',
@@ -248,6 +258,10 @@ export class UserRepository {
           fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}::jsonb`);
           const jsonVal = typeof value === 'string' ? value : JSON.stringify(value);
           values.push(value ? jsonVal : null);
+        } else if (dbColumn === 'available_in_days') {
+          fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}`);
+          const parsedDays = Math.max(0, parseInt(String(value), 10) || 0);
+          values.push(parsedDays);
         } else {
           fieldsToUpdate.push(`${dbColumn} = $${paramIndex++}`);
           values.push(value);
@@ -272,6 +286,15 @@ export class UserRepository {
     values.push(userId);
     const result = await client.query(query, values);
     const updatedUser = result.rows[0];
+
+    if (updatedUser) {
+      updatedUser.available_in_days = Number(updatedUser.available_in_days ?? 0);
+      updatedUser.availableInDays = Number(updatedUser.available_in_days ?? 0);
+      updatedUser.resume = safeJsonParse(updatedUser.resume, null);
+      updatedUser.experience = safeJsonParse(updatedUser.experience, []);
+      updatedUser.education = safeJsonParse(updatedUser.education, []);
+      updatedUser.skills = safeJsonParse(updatedUser.skills, []);
+    }
 
     // If user is employer, sync logo and company name to companies table and active jobs in real-time
     if (updatedUser && (updatedUser.role === 'employer' || updatedUser.role === 'admin')) {
@@ -314,6 +337,7 @@ export class UserRepository {
         SELECT id, email, name, phone, role, status, created_at, updated_at,
                headline, location, skills, preferred_shift, requires_bus,
                requires_accommodation, resume, experience, education, profile_picture_url,
+               COALESCE(available_in_days, 0) as "availableInDays",
                trade_specialization as "tradeSpecialization",
                aadhaar_verified as "aadhaarVerified",
                COALESCE(is_resume_public, true) as "isResumePublic"
@@ -337,6 +361,8 @@ export class UserRepository {
         preferredShift: row.preferred_shift,
         requiresBus: row.requires_bus,
         requiresAccommodation: row.requires_accommodation,
+        availableInDays: Number(row.availableInDays ?? 0),
+        available_in_days: Number(row.availableInDays ?? 0),
         isResumePublic: row.isResumePublic !== false,
         resume: safeJsonParse(row.resume, null),
         experience: safeJsonParse(row.experience, []),

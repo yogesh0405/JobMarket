@@ -18,6 +18,7 @@ import {
   Wrench,
   Check,
   RotateCcw,
+  Calendar,
 } from 'lucide-react-native';
 import { COLORS } from '../../constants/theme';
 import {
@@ -26,9 +27,11 @@ import {
   matchesExperience,
   matchesLocation,
   matchesTrade,
+  matchesAvailability,
+  AVAILABILITY_FILTER_OPTIONS,
 } from './components/CandidatesUtils';
 
-export type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'TRADE' | 'EXPERIENCE' | 'LOCATION';
+export type FilterTabKey = 'INDUSTRY' | 'EDUCATION' | 'TRADE' | 'EXPERIENCE' | 'LOCATION' | 'AVAILABILITY';
 
 export const INDUSTRY_FILTER_OPTIONS = [
   'All Industries',
@@ -107,6 +110,7 @@ export const CandidateFilterScreen: React.FC = () => {
   const [draftTrade, setDraftTrade] = useState<string | null>(initialFilters.trade || null);
   const [draftExp, setDraftExp] = useState<string | null>(initialFilters.exp || null);
   const [draftLocation, setDraftLocation] = useState<string | null>(initialFilters.location || null);
+  const [draftAvailability, setDraftAvailability] = useState<string | null>(initialFilters.availability || null);
 
   const handleResetFilters = () => {
     setDraftIndustry(null);
@@ -114,6 +118,7 @@ export const CandidateFilterScreen: React.FC = () => {
     setDraftTrade(null);
     setDraftExp(null);
     setDraftLocation(null);
+    setDraftAvailability(null);
   };
 
   const handleApplyFilters = () => {
@@ -124,6 +129,7 @@ export const CandidateFilterScreen: React.FC = () => {
         trade: draftTrade,
         exp: draftExp,
         location: draftLocation,
+        availability: draftAvailability,
       });
     }
     navigation.goBack();
@@ -137,6 +143,7 @@ export const CandidateFilterScreen: React.FC = () => {
       if (!matchesTrade(item, draftTrade)) return false;
       if (!matchesExperience(item, draftExp)) return false;
       if (!matchesLocation(item, draftLocation)) return false;
+      if (!matchesAvailability(item, draftAvailability)) return false;
       return true;
     }).length;
   }, [candidatesList, totalCandidates, draftIndustry, draftEducation, draftTrade, draftExp, draftLocation]);
@@ -235,6 +242,26 @@ export const CandidateFilterScreen: React.FC = () => {
             >
               <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                 {loc}
+              </Text>
+              <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+              </View>
+            </TouchableOpacity>
+          );
+        });
+
+      case 'AVAILABILITY':
+        return AVAILABILITY_FILTER_OPTIONS.map((avail) => {
+          const isSelected = avail === 'All Availability' ? !draftAvailability || draftAvailability === 'All Availability' : draftAvailability === avail;
+          return (
+            <TouchableOpacity
+              key={avail}
+              style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+              onPress={() => setDraftAvailability(avail === 'All Availability' ? null : isSelected ? null : avail)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {avail}
               </Text>
               <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
                 {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
@@ -381,6 +408,27 @@ export const CandidateFilterScreen: React.FC = () => {
                   Location
                 </Text>
                 {draftLocation && draftLocation !== 'All Locations' && (
+                  <View style={styles.tabActiveDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* 6. Availability */}
+            <TouchableOpacity
+              style={[styles.tabItem, activeFilterTab === 'AVAILABILITY' && styles.tabItemActive]}
+              onPress={() => setActiveFilterTab('AVAILABILITY')}
+              activeOpacity={0.8}
+            >
+              <Calendar
+                size={18}
+                color={activeFilterTab === 'AVAILABILITY' ? COLORS.primary : '#64748B'}
+                strokeWidth={activeFilterTab === 'AVAILABILITY' ? 2.2 : 1.8}
+              />
+              <View style={styles.tabTextGroup}>
+                <Text style={[styles.tabTitle, activeFilterTab === 'AVAILABILITY' && styles.tabTitleActive]}>
+                  Availability
+                </Text>
+                {draftAvailability && draftAvailability !== 'All Availability' && (
                   <View style={styles.tabActiveDot} />
                 )}
               </View>

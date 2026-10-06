@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, TextInput, StyleSheet } from 'react-native';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 
@@ -10,6 +10,8 @@ interface CandidateEditStep3ExperienceProps {
   setRequiresBus: (val: boolean) => void;
   requiresAccommodation: boolean;
   setRequiresAccommodation: (val: boolean) => void;
+  availableInDays: number;
+  setAvailableInDays: (val: number) => void;
   onOpenExpModal: () => void;
   onOpenShiftModal: () => void;
   onRemoveExperience: (index: number) => void;
@@ -22,6 +24,8 @@ export const CandidateEditStep3Experience: React.FC<CandidateEditStep3Experience
   setRequiresBus,
   requiresAccommodation,
   setRequiresAccommodation,
+  availableInDays,
+  setAvailableInDays,
   onOpenExpModal,
   onOpenShiftModal,
   onRemoveExperience,
@@ -105,6 +109,61 @@ export const CandidateEditStep3Experience: React.FC<CandidateEditStep3Experience
               <Text style={styles.toggleDesc}>Accommodation / Hostel room facility needed</Text>
             </View>
             <Switch value={requiresAccommodation} onValueChange={setRequiresAccommodation} trackColor={{ true: COLORS.primary }} />
+          </View>
+
+          {/* Availability to Join in Days */}
+          <View style={{ marginTop: 6, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
+            <Text style={styles.inputLabel}>
+              Available to Join In (Days) <Text style={{ color: '#DC2626' }}>*</Text>
+            </Text>
+            <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2, marginBottom: 8 }}>
+              How many days will you take to join after job selection? (0 = Immediately Available).
+            </Text>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+              {[
+                { label: 'Immediate (0d)', days: 0 },
+                { label: '7 Days', days: 7 },
+                { label: '15 Days', days: 15 },
+                { label: '30 Days', days: 30 },
+                { label: '45 Days', days: 45 },
+                { label: '60 Days', days: 60 },
+              ].map((opt) => {
+                const isSelected = availableInDays === opt.days;
+                return (
+                  <TouchableOpacity
+                    key={opt.days}
+                    activeOpacity={0.7}
+                    onPress={() => setAvailableInDays(opt.days)}
+                    style={[
+                      styles.availChip,
+                      isSelected && styles.availChipSelected,
+                    ]}
+                  >
+                    <Text style={[styles.availChipText, isSelected && styles.availChipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput
+                keyboardType="numeric"
+                value={String(availableInDays)}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, '');
+                  setAvailableInDays(cleaned ? Math.min(180, parseInt(cleaned, 10)) : 0);
+                }}
+                placeholder="0"
+                placeholderTextColor="#94A3B8"
+                style={styles.daysInput}
+              />
+              <Text style={{ fontSize: 12.5, color: '#334155', fontWeight: '600' }}>
+                Days ({availableInDays === 0 ? 'Immediately Available' : `Available in ${availableInDays} Days`})
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -247,5 +306,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  availChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  availChipSelected: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+  availChipText: {
+    fontSize: 11.5,
+    color: '#334155',
+    fontWeight: '500',
+  },
+  availChipTextSelected: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  daysInput: {
+    width: 72,
+    height: 38,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
+    paddingHorizontal: 8,
+    fontSize: 13.5,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
 });

@@ -19,6 +19,8 @@ export class UpdateProfileService {
     preferredShift?: string;
     requiresBus?: boolean;
     requiresAccommodation?: boolean;
+    availableInDays?: number;
+    available_in_days?: number;
     resume?: any;
     experience?: any[];
     education?: any[];

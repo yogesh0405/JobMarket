@@ -330,11 +330,24 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.candidateTradeText} numberOfLines={1}>
                       {tradeText}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <MapPin size={11} color="#64748B" />
-                      <Text style={styles.candidateLocationText} numberOfLines={1}>
-                        {locationText}
-                      </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <MapPin size={11} color="#64748B" />
+                        <Text style={styles.candidateLocationText} numberOfLines={1}>
+                          {locationText}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.dashAvailPill,
+                        Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? styles.dashAvailPillImm : styles.dashAvailPillDays
+                      ]}>
+                        <Text style={[
+                          styles.dashAvailPillText,
+                          Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? styles.dashAvailPillTextImm : styles.dashAvailPillTextDays
+                        ]}>
+                          {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '⚡ Immediate' : `⏱ In ${c.availableInDays ?? c.available_in_days}d`}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                   <ChevronRight size={16} color="#94A3B8" />
@@ -609,6 +622,30 @@ const styles = StyleSheet.create({
   candidateLocationText: {
     fontSize: 10.5,
     color: '#64748B',
+  },
+  dashAvailPill: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 0,
+    borderWidth: 1,
+  },
+  dashAvailPillImm: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  dashAvailPillDays: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  dashAvailPillText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+  },
+  dashAvailPillTextImm: {
+    color: '#059669',
+  },
+  dashAvailPillTextDays: {
+    color: '#1D4ED8',
   },
   emptyCandidatesCard: {
     backgroundColor: '#FFFFFF',

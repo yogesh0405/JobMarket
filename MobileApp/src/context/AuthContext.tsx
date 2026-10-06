@@ -102,8 +102,22 @@ const normalizeUserData = (rawUser: any): User => {
     safeResume = null;
   }
 
+  const availDays = Math.max(
+    0,
+    parseInt(
+      String(
+        rawUser.availableInDays !== undefined && rawUser.availableInDays !== null
+          ? rawUser.availableInDays
+          : (rawUser.available_in_days ?? 0)
+      ),
+      10
+    ) || 0
+  );
+
   const normalized = {
     ...rawUser,
+    available_in_days: availDays,
+    availableInDays: availDays,
     skills: safeSkills,
     experience: safeExperience,
     education: safeEducation,

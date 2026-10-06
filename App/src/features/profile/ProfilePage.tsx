@@ -44,6 +44,7 @@ import {
   Trash2,
   User,
   Award,
+  Clock,
 } from 'lucide-react';
 import companyHeaderBg from '../../assets/company_header_bg.jpg';
 import employeeHeaderBg from '../../assets/employee_header_bg.jpg';
@@ -114,6 +115,19 @@ export const ProfilePage: React.FC = () => {
   const [tempShift, setTempShift] = useState('');
   const [tempBus, setTempBus] = useState(false);
   const [tempAccommodation, setTempAccommodation] = useState(false);
+  const [tempAvailableInDays, setTempAvailableInDays] = useState(0);
+
+  const userAvailabilityDays = Math.max(
+    0,
+    parseInt(
+      String(
+        currentUser?.availableInDays !== undefined && currentUser?.availableInDays !== null
+          ? currentUser.availableInDays
+          : ((currentUser as any)?.available_in_days ?? 0)
+      ),
+      10
+    ) || 0
+  );
 
   // Profile Form Edit Fields
   const [name, setName] = useState('');
@@ -559,6 +573,7 @@ export const ProfilePage: React.FC = () => {
     setTempShift(currentUser.preferredShift || '');
     setTempBus(!!currentUser.requiresBus);
     setTempAccommodation(!!currentUser.requiresAccommodation);
+    setTempAvailableInDays(userAvailabilityDays);
     setPrefModalOpen(true);
   };
 
@@ -578,7 +593,9 @@ export const ProfilePage: React.FC = () => {
         tradeSpecialization: finalTrade,
         preferredShift: tempShift,
         requiresBus: tempBus,
-        requiresAccommodation: tempAccommodation
+        requiresAccommodation: tempAccommodation,
+        availableInDays: Number(tempAvailableInDays) || 0,
+        available_in_days: Number(tempAvailableInDays) || 0
       });
       if (result.success) {
         showToast('Job preferences saved successfully', 'success');
@@ -1796,6 +1813,27 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Joining Availability / Notice Period */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Joining Availability / Notice Period</label>
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  height: '32px',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: userAvailabilityDays === 0 ? '#16A34A' : '#1B4FDF',
+                }}>
+                  {userAvailabilityDays === 0
+                    ? '⚡ Immediate Joiner (0 Days)'
+                    : `Available in ${userAvailabilityDays} Days`}
+                </div>
+              </div>
+
               {/* Registered Email */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Registered Email</label>
@@ -1876,6 +1914,88 @@ export const ProfilePage: React.FC = () => {
           {/* TAB 2: PROFESSIONAL DETAILS SECTIONS */}
           {activeCandidateTab === 'PROFESSIONAL' && (
             <>
+              {/* 0. JOINING AVAILABILITY & NOTICE PERIOD CARD */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '7px',
+                border: '1px solid #CBD5E1',
+                padding: '11px 13px',
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h2 style={{
+                    margin: 0,
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    color: '#0F172A',
+                    letterSpacing: '-0.1px',
+                  }}>
+                    Joining Availability & Notice Period
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempAvailableInDays(userAvailabilityDays);
+                      setPrefModalOpen(true);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#1B4FDF',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '5px',
+                  padding: '9px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '5px',
+                    backgroundColor: '#EFF6FF',
+                    border: '1px solid #DBEAFE',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Clock size={16} color="#1B4FDF" />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      color: userAvailabilityDays === 0 ? '#16A34A' : '#0F172A',
+                    }}>
+                      {userAvailabilityDays === 0
+                        ? '⚡ Immediate Joiner (0 Days Notice)'
+                        : `Available in ${userAvailabilityDays} Days`}
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
+                      {userAvailabilityDays === 0
+                        ? 'Ready to report for duty on day 1 upon hire.'
+                        : `Serving or required notice period of ${userAvailabilityDays} days before joining.`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* 1. SKILLS & EXPERTISE CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
@@ -2653,6 +2773,44 @@ export const ProfilePage: React.FC = () => {
                     />
                   </div>
                 )}
+
+                <div className="form-group">
+                  <label className="form-label">Available to Join In (Days)</label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {[
+                      { label: 'Immediate (0d)', days: 0 },
+                      { label: '7 Days', days: 7 },
+                      { label: '15 Days', days: 15 },
+                      { label: '30 Days', days: 30 },
+                      { label: '45 Days', days: 45 },
+                      { label: '60 Days', days: 60 }
+                    ].map(o => (
+                      <button
+                        key={o.days}
+                        type="button"
+                        className={`btn btn-sm ${tempAvailableInDays === o.days ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ border: '1px solid #cbd5e1', padding: '4px 8px', fontSize: '11.5px' }}
+                        onClick={() => setTempAvailableInDays(o.days)}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="180"
+                      className="form-input"
+                      style={{ width: '90px' }}
+                      value={tempAvailableInDays}
+                      onChange={(e) => setTempAvailableInDays(Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+                      Days ({tempAvailableInDays === 0 ? 'Immediately Available' : `Available in ${tempAvailableInDays} Days`})
+                    </span>
+                  </div>
+                </div>
 
                 <div className="form-group">
                   <label className="form-label">Preferred Shift</label>

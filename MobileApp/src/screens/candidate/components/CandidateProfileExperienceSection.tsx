@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { FileText, ExternalLink } from 'lucide-react-native';
+import { FileText, ExternalLink, Clock } from 'lucide-react-native';
 import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateProfileExperienceSectionProps {
@@ -9,7 +9,9 @@ interface CandidateProfileExperienceSectionProps {
   education: any[];
   resumeUrl: string;
   resumeName: string;
+  availableInDays?: number | null;
   onOpenPdf: () => void;
+  onEditAvailability?: () => void;
 }
 
 export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperienceSectionProps> = ({
@@ -18,17 +20,55 @@ export const CandidateProfileExperienceSection: React.FC<CandidateProfileExperie
   education,
   resumeUrl,
   resumeName,
+  availableInDays,
   onOpenPdf,
+  onEditAvailability,
 }) => {
   const safeSkills: string[] = Array.isArray(skills)
     ? skills
     : (typeof skills === 'string' ? (skills as string).split(',').map((s: string) => s.trim()).filter(Boolean) : []);
   const safeExp: any[] = Array.isArray(experience) ? experience : [];
   const safeEdu: any[] = Array.isArray(education) ? education : [];
+  const safeAvailabilityDays = Math.max(0, parseInt(String(availableInDays ?? 0), 10) || 0);
 
   return (
     <>
-      {/* 1. SKILLS CARD */}
+      {/* 1. JOINING AVAILABILITY & NOTICE PERIOD CARD */}
+      <View style={styles.sectionCard}>
+        <View style={styles.cardHeaderWithAction}>
+          <Text style={styles.serifCardTitle}>Joining Availability & Notice Period</Text>
+          {onEditAvailability && (
+            <TouchableOpacity onPress={onEditAvailability} activeOpacity={0.7}>
+              <Text style={styles.editActionText}>Edit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.availabilityDisplayBox}>
+          <View style={styles.availabilityIconBox}>
+            <Clock size={18} color={COLORS.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.availabilityTitleText,
+                safeAvailabilityDays === 0 && { color: '#16A34A' },
+              ]}
+            >
+              {safeAvailabilityDays === 0
+                ? '⚡ Immediate Joiner (0 Days)'
+                : `Available in ${safeAvailabilityDays} Days`}
+            </Text>
+            <Text style={styles.availabilitySubtitleText}>
+              {safeAvailabilityDays === 0
+                ? 'Ready to report immediately upon job offer.'
+                : `Serving or required notice period of ${safeAvailabilityDays} days before joining.`}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 2. SKILLS CARD */}
       <View style={styles.sectionCard}>
         <Text style={styles.serifCardTitle}>Skills & Expertise</Text>
 
@@ -415,5 +455,46 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.textWhite,
+  },
+  cardHeaderWithAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  editActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  availabilityDisplayBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    gap: 12,
+    borderRadius: 0,
+  },
+  availabilityIconBox: {
+    width: 38,
+    height: 38,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  availabilityTitleText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  availabilitySubtitleText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
   },
 });

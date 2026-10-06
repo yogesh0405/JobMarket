@@ -36,6 +36,8 @@ export interface User {
   notice_period?: string;
   preferred_shift?: string;
   preferredShift?: string;
+  availableInDays?: number;
+  available_in_days?: number;
   requiresBus?: boolean;
   requires_bus?: boolean;
   is_two_factor_enabled?: boolean;

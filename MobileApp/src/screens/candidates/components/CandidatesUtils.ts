@@ -23,6 +23,8 @@ export interface ExtendedCandidate extends Partial<User> {
   resume?: string;
   notice_period?: string;
   preferred_shift?: string;
+  availableInDays?: number;
+  available_in_days?: number;
 }
 
 export const INDUSTRY_FILTER_OPTIONS = [
@@ -99,6 +101,15 @@ export const TRADE_FILTER_OPTIONS = [
   'Plant Maintenance',
   'Store Keeper / Supervisor',
   'Assembly Operator',
+];
+
+export const AVAILABILITY_FILTER_OPTIONS = [
+  'All Availability',
+  'Immediate (0 Days)',
+  'Within 7 Days',
+  'Within 15 Days',
+  'Within 30 Days',
+  'Within 60 Days',
 ];
 
 export const safeString = (val: any, fallback: string = ''): string => {
@@ -295,6 +306,26 @@ export const matchesTrade = (candidate: ExtendedCandidate, filter: string | null
       return /assembly|operator|production/i.test(combined);
     default:
       return combined.includes(filter.toLowerCase());
+  }
+};
+
+export const matchesAvailability = (candidate: ExtendedCandidate, filter: string | null): boolean => {
+  if (!filter || filter === 'All Availability') return true;
+  const days = Number(candidate.availableInDays ?? candidate.available_in_days ?? 0);
+  switch (filter) {
+    case 'Immediate (0 Days)':
+    case 'Immediate Joiner (0 Days)':
+      return days === 0;
+    case 'Within 7 Days':
+      return days <= 7;
+    case 'Within 15 Days':
+      return days <= 15;
+    case 'Within 30 Days':
+      return days <= 30;
+    case 'Within 60 Days':
+      return days <= 60;
+    default:
+      return true;
   }
 };
 

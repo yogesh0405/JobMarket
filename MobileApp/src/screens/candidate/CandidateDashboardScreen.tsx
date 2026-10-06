@@ -221,6 +221,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
         savedCount={savedJobs.length}
         shortlistedCount={shortlistedCount}
         skillsCount={skillsCount}
+        availableInDays={user?.availableInDays !== undefined ? user.availableInDays : user?.available_in_days}
         navigation={navigation}
       />
 

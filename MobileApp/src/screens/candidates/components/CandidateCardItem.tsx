@@ -47,6 +47,21 @@ export const CandidateCardItem: React.FC<CandidateCardItemProps> = ({ item, onSe
         </Text>
       </View>
 
+      {/* Availability Tag */}
+      <View style={[
+        styles.gridAvailabilityBadge,
+        Number(item.availableInDays ?? item.available_in_days ?? 0) === 0 ? styles.availBadgeImmediate : styles.availBadgeDays
+      ]}>
+        <Text style={[
+          styles.gridAvailabilityText,
+          Number(item.availableInDays ?? item.available_in_days ?? 0) === 0 ? styles.availTextImmediate : styles.availTextDays
+        ]} numberOfLines={1}>
+          {Number(item.availableInDays ?? item.available_in_days ?? 0) === 0
+            ? '⚡ Immediate'
+            : `⏱ In ${item.availableInDays ?? item.available_in_days}d`}
+        </Text>
+      </View>
+
       {/* Uniform Skills Row */}
       <View style={styles.gridSkillsRow}>
         {item.skills && item.skills.length > 0 ? (
@@ -131,6 +146,32 @@ const styles = StyleSheet.create({
     marginTop: 1,
     textAlign: 'center',
     width: '100%',
+  },
+  gridAvailabilityBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 0,
+    borderWidth: 1,
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  availBadgeImmediate: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  availBadgeDays: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  gridAvailabilityText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+  },
+  availTextImmediate: {
+    color: '#059669',
+  },
+  availTextDays: {
+    color: '#1D4ED8',
   },
   gridSkillsRow: {
     flexDirection: 'row',

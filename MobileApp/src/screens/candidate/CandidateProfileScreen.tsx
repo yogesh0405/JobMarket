@@ -228,7 +228,9 @@ export const CandidateProfileScreen: React.FC<Props> = ({ navigation }) => {
               education={education}
               resumeUrl={resumeUrl}
               resumeName={resumeName}
+              availableInDays={user?.availableInDays !== undefined ? user.availableInDays : user?.available_in_days}
               onOpenPdf={() => setShowPdfModal(true)}
+              onEditAvailability={() => navigation.navigate('CandidateEditProfile')}
             />
           </View>
         )}

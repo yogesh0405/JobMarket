@@ -77,6 +77,8 @@ export function sanitizeUserForResponse(user: any) {
   safeUser.has_password = hasPassword;
   safeUser.hasPassword = hasPassword;
   safeUser.auth_provider = user.auth_provider || (user.google_id || !hasPassword ? 'google' : 'email');
+  safeUser.available_in_days = Number(user.available_in_days ?? user.availableInDays ?? 0);
+  safeUser.availableInDays = Number(user.availableInDays ?? user.available_in_days ?? 0);
 
   return safeUser;
 }

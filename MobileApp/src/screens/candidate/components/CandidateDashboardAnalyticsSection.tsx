@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { BarChart2, TrendingUp } from 'lucide-react-native';
+import { BarChart2, TrendingUp, Clock } from 'lucide-react-native';
 import { COLORS } from '../../../constants/theme';
 
 interface WeeklyGraphItem {
@@ -16,6 +16,7 @@ interface CandidateDashboardAnalyticsSectionProps {
   savedCount: number;
   shortlistedCount: number;
   skillsCount: number;
+  availableInDays?: number | null;
   navigation: any;
 }
 
@@ -25,6 +26,7 @@ export const CandidateDashboardAnalyticsSection: React.FC<CandidateDashboardAnal
   savedCount,
   shortlistedCount,
   skillsCount,
+  availableInDays,
   navigation,
 }) => {
   return (
@@ -108,6 +110,24 @@ export const CandidateDashboardAnalyticsSection: React.FC<CandidateDashboardAnal
           <Text style={styles.kpiLabelText}>Skills</Text>
         </TouchableOpacity>
       </View>
+
+      {/* JOINING AVAILABILITY STATUS PILL */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={styles.availabilityRow}
+        onPress={() => navigation.navigate('CandidateEditProfile')}
+      >
+        <View style={styles.availabilityLeft}>
+          <Clock size={14} color={COLORS.primary} />
+          <Text style={styles.availabilityLabel}>Joining Availability:</Text>
+          <Text style={styles.availabilityValue}>
+            {(Math.max(0, parseInt(String(availableInDays ?? 0), 10) || 0) === 0)
+              ? '⚡ Immediate Joiner (0d)'
+              : `Available in ${Math.max(0, parseInt(String(availableInDays ?? 0), 10) || 0)} Days`}
+          </Text>
+        </View>
+        <Text style={styles.availabilityActionText}>Update →</Text>
+      </TouchableOpacity>
     </>
   );
 };
@@ -227,5 +247,38 @@ const styles = StyleSheet.create({
     width: 1,
     height: 20,
     backgroundColor: '#CBD5E1',
+  },
+  availabilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  availabilityLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  availabilityLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0369A1',
+  },
+  availabilityValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  availabilityActionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
 });

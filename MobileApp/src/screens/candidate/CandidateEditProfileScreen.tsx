@@ -54,6 +54,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
   const [preferredShift, setPreferredShift] = useState(user?.preferredShift || user?.preferred_shift || 'Day Shift');
   const [requiresBus, setRequiresBus] = useState(!!(user?.requiresBus || user?.requires_bus));
   const [requiresAccommodation, setRequiresAccommodation] = useState(!!(user?.requiresAccommodation || user?.requires_accommodation));
+  const [availableInDays, setAvailableInDays] = useState<number>(user?.availableInDays ?? (user as any)?.available_in_days ?? 0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -502,6 +503,8 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
         requires_bus: requiresBus,
         requiresAccommodation,
         requires_accommodation: requiresAccommodation,
+        availableInDays: Number(availableInDays) || 0,
+        available_in_days: Number(availableInDays) || 0,
         skills: cleanSkills,
         experience: cleanExp,
         education: cleanEdu,
@@ -638,6 +641,8 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
             setRequiresBus={setRequiresBus}
             requiresAccommodation={requiresAccommodation}
             setRequiresAccommodation={setRequiresAccommodation}
+            availableInDays={availableInDays}
+            setAvailableInDays={setAvailableInDays}
             onOpenExpModal={() => setExpModalOpen(true)}
             onOpenShiftModal={() => setShiftModalOpen(true)}
             onRemoveExperience={handleRemoveExperience}

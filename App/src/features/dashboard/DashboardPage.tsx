@@ -727,6 +727,20 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
               </div>
               <div className="stat-info"><h3>{(Array.isArray(currentUser.skills) ? currentUser.skills : (typeof currentUser.skills === 'string' ? safeJsonParse(currentUser.skills, []) : [])).length}</h3><p>Skills / Trades</p></div>
             </div>
+            <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setTab('profile')}>
+              <div className="stat-icon info">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="stat-info">
+                <h3>{Number(currentUser.availableInDays ?? (currentUser as any)?.available_in_days ?? 0) === 0 ? 'Immediate (0d)' : `In ${currentUser.availableInDays ?? (currentUser as any)?.available_in_days} Days`}</h3>
+                <p>Joining Availability</p>
+              </div>
+            </div>
           </div>
 
           <div className="dashboard-section">
@@ -1824,6 +1838,23 @@ const CandidateProfileDetailView: React.FC<{
                 </div>
               </div>
             </div>
+
+            <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
+
+            {/* Joining Availability */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Calendar size={15} color="#1764E8" strokeWidth={1.8} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '10.5px', color: '#657796', fontWeight: '600' }}>Joining Availability / Notice Period</div>
+                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#102A5C', marginTop: '1px' }}>
+                  {Number(candidate.availableInDays ?? candidate.available_in_days ?? 0) === 0
+                    ? 'Available Immediately (0 Days)'
+                    : `Available in ${candidate.availableInDays ?? candidate.available_in_days} Days`}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 6. TECHNICAL SKILLS & COMPETENCIES */}
@@ -2221,7 +2252,35 @@ const matchesTrade = (candidate: any, filter: string | null): boolean => {
   }
 };
 
-type FilterCategoryKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE';
+export const AVAILABILITY_FILTER_OPTIONS = [
+  'All Availability',
+  'Immediate Joiner (0 Days)',
+  'Within 7 Days',
+  'Within 15 Days',
+  'Within 30 Days',
+  'Within 60 Days',
+];
+
+const matchesAvailability = (candidate: any, filter: string | null): boolean => {
+  if (!filter || filter === 'All Availability') return true;
+  const days = Number(candidate.availableInDays ?? candidate.available_in_days ?? 0);
+  switch (filter) {
+    case 'Immediate Joiner (0 Days)':
+      return days === 0;
+    case 'Within 7 Days':
+      return days <= 7;
+    case 'Within 15 Days':
+      return days <= 15;
+    case 'Within 30 Days':
+      return days <= 30;
+    case 'Within 60 Days':
+      return days <= 60;
+    default:
+      return true;
+  }
+};
+
+type FilterCategoryKey = 'INDUSTRY' | 'EDUCATION' | 'EXPERIENCE' | 'LOCATION' | 'TRADE' | 'AVAILABILITY';
 
 const CandidatesTab: React.FC<{
   showToast: any;
@@ -2243,6 +2302,7 @@ const CandidatesTab: React.FC<{
   const [activeExpFilter, setActiveExpFilter] = useState<string | null>(null);
   const [activeLocationFilter, setActiveLocationFilter] = useState<string | null>(null);
   const [activeTradeFilter, setActiveTradeFilter] = useState<string | null>(null);
+  const [activeAvailabilityFilter, setActiveAvailabilityFilter] = useState<string | null>(null);
 
   // Filter Modal / Drawer State
   const [filterModalOpen, setFilterModalOpen] = useState<boolean>(false);
@@ -2252,6 +2312,7 @@ const CandidatesTab: React.FC<{
   const [draftExp, setDraftExp] = useState<string | null>(null);
   const [draftLocation, setDraftLocation] = useState<string | null>(null);
   const [draftTrade, setDraftTrade] = useState<string | null>(null);
+  const [draftAvailability, setDraftAvailability] = useState<string | null>(null);
 
   // Responsive detection: Mobile vs Desktop Drawer
   const [isMobile, setIsMobile] = useState<boolean>(() => {
@@ -2317,6 +2378,7 @@ const CandidatesTab: React.FC<{
     setDraftExp(activeExpFilter);
     setDraftLocation(activeLocationFilter);
     setDraftTrade(activeTradeFilter);
+    setDraftAvailability(activeAvailabilityFilter);
     setActiveFilterTab(tabKey);
     setFilterModalOpen(true);
   };
@@ -2327,6 +2389,7 @@ const CandidatesTab: React.FC<{
     setActiveExpFilter(draftExp);
     setActiveLocationFilter(draftLocation);
     setActiveTradeFilter(draftTrade);
+    setActiveAvailabilityFilter(draftAvailability);
     setFilterModalOpen(false);
   };
 
@@ -2336,11 +2399,13 @@ const CandidatesTab: React.FC<{
     setActiveExpFilter(null);
     setActiveLocationFilter(null);
     setActiveTradeFilter(null);
+    setActiveAvailabilityFilter(null);
     setDraftIndustry(null);
     setDraftEducation(null);
     setDraftExp(null);
     setDraftLocation(null);
     setDraftTrade(null);
+    setDraftAvailability(null);
     setSearchQuery('');
   };
 
@@ -2349,7 +2414,8 @@ const CandidatesTab: React.FC<{
     (activeEducationFilter ? 1 : 0) +
     (activeExpFilter ? 1 : 0) +
     (activeLocationFilter ? 1 : 0) +
-    (activeTradeFilter ? 1 : 0);
+    (activeTradeFilter ? 1 : 0) +
+    (activeAvailabilityFilter ? 1 : 0);
 
   const hasActiveFilters = activeFiltersCount > 0 || searchQuery.trim() !== '';
 
@@ -2358,7 +2424,8 @@ const CandidatesTab: React.FC<{
     (draftEducation && draftEducation !== 'All Education Levels' ? 1 : 0) +
     (draftExp && draftExp !== 'All Experience' ? 1 : 0) +
     (draftLocation && draftLocation !== 'All Locations' ? 1 : 0) +
-    (draftTrade && draftTrade !== 'All Trades' ? 1 : 0);
+    (draftTrade && draftTrade !== 'All Trades' ? 1 : 0) +
+    (draftAvailability && draftAvailability !== 'All Availability' ? 1 : 0);
 
   const filteredCandidates = (candidates || []).filter(c => {
     if (!c) return false;
@@ -2388,6 +2455,7 @@ const CandidatesTab: React.FC<{
     if (!matchesExperience(c, activeExpFilter)) return false;
     if (!matchesLocation(c, activeLocationFilter)) return false;
     if (!matchesTrade(c, activeTradeFilter)) return false;
+    if (!matchesAvailability(c, activeAvailabilityFilter)) return false;
 
     return true;
   });
@@ -2395,6 +2463,16 @@ const CandidatesTab: React.FC<{
   // Quick preset bar options matching Mobile App
   const quickPillOptions = [
     { label: 'All Candidates', active: !activeFiltersCount && !searchQuery, onPress: handleResetAllFilters },
+    {
+      label: '⚡ Immediate (0d)',
+      active: activeAvailabilityFilter === 'Immediate Joiner (0 Days)',
+      onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Immediate Joiner (0 Days)' ? null : 'Immediate Joiner (0 Days)'),
+    },
+    {
+      label: '≤ 15 Days',
+      active: activeAvailabilityFilter === 'Within 15 Days',
+      onPress: () => setActiveAvailabilityFilter(activeAvailabilityFilter === 'Within 15 Days' ? null : 'Within 15 Days'),
+    },
     {
       label: 'Freshers (0 Yrs)',
       active: activeExpFilter === 'Fresher (0 Yrs)',
@@ -2897,6 +2975,7 @@ const CandidatesTab: React.FC<{
                   { key: 'EXPERIENCE', label: 'Experience', icon: Briefcase, activeVal: draftExp },
                   { key: 'LOCATION', label: 'Location', icon: MapPin, activeVal: draftLocation },
                   { key: 'TRADE', label: 'Trade', icon: Wrench, activeVal: draftTrade },
+                  { key: 'AVAILABILITY', label: 'Availability', icon: Calendar, activeVal: draftAvailability },
                 ].map((cat) => {
                   const isSelected = activeFilterTab === cat.key;
                   const Icon = cat.icon;
@@ -3159,6 +3238,42 @@ const CandidatesTab: React.FC<{
                     })}
                   </div>
                 )}
+
+                {activeFilterTab === 'AVAILABILITY' && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr',
+                      gap: '6px',
+                    }}
+                  >
+                    {AVAILABILITY_FILTER_OPTIONS.map((opt) => {
+                      const isChecked = (draftAvailability === opt) || (!draftAvailability && opt === 'All Availability');
+                      return (
+                        <div
+                          key={opt}
+                          onClick={() => setDraftAvailability(opt === 'All Availability' ? null : opt)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: '5px',
+                            backgroundColor: isChecked ? '#EFF6FF' : '#FFFFFF',
+                            border: isChecked ? '1px solid #1764E8' : '1px solid #E2E8F0',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '11px', fontWeight: isChecked ? 600 : 400, color: isChecked ? '#1764E8' : '#1E293B' }}>
+                            {opt}
+                          </span>
+                          {isChecked && <Check size={14} color="#1764E8" strokeWidth={2.5} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3381,6 +3496,26 @@ const CandidatesTab: React.FC<{
                   lineHeight: '1.2'
                 }}>
                   {c.location || 'MIDC Zone'}
+                </div>
+
+                {/* Availability Badge */}
+                <div style={{
+                  margin: '3px 0 2px 0',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 6px',
+                  backgroundColor: Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '#ECFDF5' : '#EFF6FF',
+                  border: Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '1px solid #A7F3D0' : '1px solid #BFDBFE',
+                  borderRadius: '4px',
+                  color: Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '#059669' : '#1D4ED8',
+                  fontSize: '9.5px',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}>
+                  {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '⚡ Immediate' : `⏱ In ${c.availableInDays ?? c.available_in_days}d`}
                 </div>
 
                 {/* Skill Badges Row */}

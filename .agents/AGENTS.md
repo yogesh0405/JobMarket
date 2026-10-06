@@ -1,8 +1,8 @@
 # Workspace Rules
 
 - **Do Not Push**: Do not run `git push` automatically. Always leave git push actions for the user unless explicitly instructed.
-- **Mobile Application Only**: All updates, code changes, and task execution must focus strictly on the mobile application frontend (`MobileApp/`). Do NOT touch backend code (`backend/`) or web application code (`App/`).
-- **Preserve Business Logic**: Never alter backend logic, business logic, API integration, or state handling when updating frontend UI.
+- **Full Stack Development**: Support full stack feature implementation across mobile application frontend (`MobileApp/`), web application frontend (`App/`), and backend services (`backend/`).
+- **Preserve Business Logic**: Maintain robust backend logic, API contracts, and consistent state handling.
 - **UI Design System**:
   - **Professional & Industry-Standard**: Clean, modern, enterprise-grade aesthetic.
   - **No Nested Cards**: Never put cards inside cards. Use a single card container per element with inner content structured using sub-layouts or soft dividers.

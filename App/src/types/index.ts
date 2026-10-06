@@ -83,6 +83,8 @@ export interface User {
   preferredShift?: string;
   requiresBus?: boolean;
   requiresAccommodation?: boolean;
+  availableInDays?: number;
+  available_in_days?: number;
   isResumePublic?: boolean;
   // Employer / Company Fields
   companyDescription?: string;
