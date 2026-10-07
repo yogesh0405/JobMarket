@@ -22,7 +22,8 @@ import {
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { BackendStatusProvider } from './src/context/BackendStatusContext';
-import { BackendStatusBanner } from './src/components/common/BackendStatusBanner';
+import { NetworkProvider } from './src/context/NetworkContext';
+import { NoInternetScreen } from './src/components/common/NoInternetScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { SplashScreen } from './src/components/common/SplashScreen';
 import { MaintenanceModal } from './src/components/common/MaintenanceModal';
@@ -227,7 +228,7 @@ function MainAppContent() {
         <StatusBar style="dark" />
         <AppNavigator />
       </NavigationContainer>
-      <BackendStatusBanner />
+      <NoInternetScreen />
       {showSplash && (
         <SplashScreen
           onFinish={() => setShowSplash(false)}
@@ -241,13 +242,15 @@ function MainAppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <BackendStatusProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <MainAppContent />
-          </AuthProvider>
-        </ToastProvider>
-      </BackendStatusProvider>
+      <NetworkProvider>
+        <BackendStatusProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <MainAppContent />
+            </AuthProvider>
+          </ToastProvider>
+        </BackendStatusProvider>
+      </NetworkProvider>
     </SafeAreaProvider>
   );
 }

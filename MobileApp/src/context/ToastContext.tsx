@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, FONTS } from '../constants/theme';
 
+import { isAppOffline } from './NetworkContext';
+
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastMessage {
@@ -17,11 +19,32 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType>({} as ToastContextType);
 
+const isConnectivityMessage = (msg: string): boolean => {
+  if (!msg) return false;
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes('internet') ||
+    lower.includes('network error') ||
+    lower.includes('network request failed') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('offline') ||
+    lower.includes('no connection') ||
+    lower.includes('connectivity') ||
+    lower.includes('network unavailable')
+  );
+};
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
 
   const showToast = useCallback((message: string, type: ToastType = 'success', durationMs?: number) => {
+    // Suppress toast notifications for no internet or connectivity errors
+    // (A dedicated full-screen overlay handles no internet connection)
+    if (isConnectivityMessage(message) || (isAppOffline() && type === 'error')) {
+      return;
+    }
+
     const id = Date.now().toString();
     setToast({ id, message, type });
 

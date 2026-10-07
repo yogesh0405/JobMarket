@@ -12,6 +12,10 @@ import {
   reportBackendHealthy,
   reportBackendError,
 } from '../context/BackendStatusContext';
+import {
+  reportNetworkOffline,
+  reportNetworkOnline,
+} from '../context/NetworkContext';
 import { API_BASE_URL } from './config';
 
 export { API_BASE_URL };
@@ -72,6 +76,7 @@ async function fetchWithTimeout(
       reportBackendWarmingUp(true);
     } else if (res.ok) {
       reportBackendHealthy();
+      reportNetworkOnline();
     }
     return res;
   } catch (netErr: any) {
@@ -83,10 +88,12 @@ async function fetchWithTimeout(
       const retryRes = await fetch(url, options);
       if (retryRes.ok) {
         reportBackendHealthy();
+        reportNetworkOnline();
       }
       return retryRes;
     } catch (retryErr: any) {
       reportBackendError('Please check your internet connection.');
+      reportNetworkOffline();
       throw new Error('Network error. Please check your internet connection.');
     }
   }
