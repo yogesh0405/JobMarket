@@ -84,7 +84,18 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
                 canPreventDefault: true,
               });
 
-              if (!isFocused && !event.defaultPrevented) {
+              if (event.defaultPrevented) {
+                return;
+              }
+
+              if (route.name === 'CandidateJobsTab') {
+                navigation.navigate('CandidateJobsTab', {
+                  screen: 'CandidateJobSearch',
+                });
+                return;
+              }
+
+              if (!isFocused) {
                 navigation.navigate(route.name);
               }
             };
@@ -161,7 +172,17 @@ export const CandidateTabNavigator: React.FC = () => {
     >
       <Tab.Screen name="CandidateHomeTab" component={CandidateHomeScreen} />
       <Tab.Screen name="CandidateSavedTab" component={CandidateCompaniesScreen} />
-      <Tab.Screen name="CandidateJobsTab" component={CandidateJobsStackNavigator} />
+      <Tab.Screen
+        name="CandidateJobsTab"
+        component={CandidateJobsStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('CandidateJobsTab', {
+              screen: 'CandidateJobSearch',
+            });
+          },
+        })}
+      />
       <Tab.Screen name="NotificationsTab" component={NotificationScreen} />
       <Tab.Screen name="CandidateAppliedTab" component={CandidateAppliedJobsScreen} />
     </Tab.Navigator>

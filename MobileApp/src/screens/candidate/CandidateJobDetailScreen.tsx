@@ -10,6 +10,7 @@ import {
   Share,
   Platform,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import {
   CheckCircle2,
@@ -305,13 +306,43 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     });
   };
 
-  const handleBackNavigation = () => {
-    if (navigation.canGoBack()) {
+  const fromHomeHorizontal = Boolean(
+    route?.params?.fromHomeHorizontal ||
+    route?.params?.fromHome ||
+    route?.params?.fromHorizontalMenu
+  );
+
+  const handleBackNavigation = useCallback(() => {
+    if (fromHomeHorizontal) {
+      navigation.navigate('CandidateJobsTab', {
+        screen: 'CandidateJobSearch',
+      });
+      return;
+    }
+
+    const state = navigation.getState?.();
+    const canGoBackInCurrentStack = state ? state.index > 0 : false;
+
+    if (canGoBackInCurrentStack) {
       navigation.goBack();
     } else {
-      navigation.navigate('CandidateTab', { screen: 'CandidateHomeTab' });
+      navigation.navigate('CandidateJobsTab', {
+        screen: 'CandidateJobSearch',
+      });
     }
-  };
+  }, [fromHomeHorizontal, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        handleBackNavigation();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [handleBackNavigation])
+  );
 
   if (loading) {
     return (

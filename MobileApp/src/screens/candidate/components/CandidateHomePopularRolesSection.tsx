@@ -105,7 +105,12 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
                 onPress={() =>
                   navigation.navigate('CandidateJobsTab', {
                     screen: 'CandidateJobDetail',
-                    params: { jobId: job.id, job: job },
+                    params: {
+                      jobId: job.id,
+                      job: job,
+                      fromHomeHorizontal: true,
+                    },
+                    initial: false,
                   })
                 }
               >

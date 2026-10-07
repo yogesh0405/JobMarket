@@ -276,7 +276,11 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
       apiFetch(`/api/v1/home/advertisements/${banner.id}/click`, { method: 'POST' }).catch(() => {});
     }
     if (banner.linked_job_id) {
-      navigation.navigate('CandidateJobDetail', { jobId: banner.linked_job_id });
+      navigation.navigate('CandidateJobsTab', {
+        screen: 'CandidateJobDetail',
+        params: { jobId: banner.linked_job_id, fromHomeHorizontal: true },
+        initial: false,
+      });
     } else if (banner.redirect_url) {
       handleQuickTradeSearch(banner.redirect_url);
     } else {

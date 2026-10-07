@@ -262,7 +262,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                 key={job.id}
                 activeOpacity={0.88}
                 style={styles.squaredJobCard}
-                onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, fromHomeHorizontal: true })}
               >
                 {/* Top Badges Row */}
                 <View style={styles.cardTopBadgeRow}>
@@ -317,7 +317,7 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
                 <TouchableOpacity
                   activeOpacity={0.8}
                   style={styles.squaredCardBtn}
-                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id })}
+                  onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, fromHomeHorizontal: true })}
                 >
                   <Text style={styles.squaredCardBtnText}>View Job Details</Text>
                 </TouchableOpacity>
