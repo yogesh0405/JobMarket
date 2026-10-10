@@ -63,10 +63,29 @@ export class JobController {
       const results = await SearchService.searchJobs({
         q: req.query.q as string,
         industry: req.query.industry as string,
+        industries: req.query.industries
+          ? (Array.isArray(req.query.industries) ? req.query.industries : String(req.query.industries).split(','))
+          : undefined,
         midcZone: (req.query.midcZone || req.query.location) as string,
+        locations: req.query.locations
+          ? (Array.isArray(req.query.locations) ? req.query.locations : String(req.query.locations).split(','))
+          : undefined,
         jobType: req.query.jobType as string,
+        jobTypes: req.query.jobTypes
+          ? (Array.isArray(req.query.jobTypes) ? req.query.jobTypes : String(req.query.jobTypes).split(','))
+          : undefined,
         workMode: req.query.workMode as string,
+        workModes: req.query.workModes
+          ? (Array.isArray(req.query.workModes) ? req.query.workModes : String(req.query.workModes).split(','))
+          : undefined,
         trade: req.query.trade as string,
+        jobRoles: req.query.jobRoles
+          ? (Array.isArray(req.query.jobRoles) ? req.query.jobRoles : String(req.query.jobRoles).split(','))
+          : undefined,
+        education: req.query.education as string,
+        educations: req.query.educations
+          ? (Array.isArray(req.query.educations) ? req.query.educations : String(req.query.educations).split(','))
+          : undefined,
         page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 20,
       });

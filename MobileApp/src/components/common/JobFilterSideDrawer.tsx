@@ -34,13 +34,19 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export interface FilterOptions {
   industry: string;
+  industries?: string[];
   education?: string;
+  educations?: string[];
   jobRole?: string;
+  jobRoles?: string[];
   jobType: string;
+  jobTypes?: string[];
   workMode: string;
+  workModes?: string[];
   minExperience: string;
   salaryMin: number;
   midcZone: string;
+  locations?: string[];
   distance?: string;
   busFacility: boolean;
   canteen: boolean;
@@ -135,6 +141,114 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
     onResetFilters();
   };
 
+  const toggleIndustry = (ind: string) => {
+    if (ind === 'All Industries') {
+      setFilters({ ...filters, industry: 'All Industries', industries: [] });
+      return;
+    }
+    const current = filters.industries && filters.industries.length > 0 
+      ? [...filters.industries] 
+      : (filters.industry && filters.industry !== 'All Industries' ? [filters.industry] : []);
+    const exists = current.includes(ind);
+    const updated = exists ? current.filter(x => x !== ind) : [...current, ind];
+    setFilters({
+      ...filters,
+      industry: updated.length > 0 ? updated[0] : 'All Industries',
+      industries: updated,
+    });
+  };
+
+  const isIndustryActive = (ind: string) => {
+    if (ind === 'All Industries') {
+      return (!filters.industries || filters.industries.length === 0) && (!filters.industry || filters.industry === 'All Industries');
+    }
+    if (filters.industries && filters.industries.length > 0) {
+      return filters.industries.includes(ind);
+    }
+    return filters.industry === ind;
+  };
+
+  const toggleEducation = (edu: string) => {
+    if (edu === 'All Education Levels') {
+      setFilters({ ...filters, education: 'All Education Levels', educations: [] });
+      return;
+    }
+    const current = filters.educations && filters.educations.length > 0
+      ? [...filters.educations]
+      : (filters.education && filters.education !== 'All Education Levels' ? [filters.education] : []);
+    const exists = current.includes(edu);
+    const updated = exists ? current.filter(x => x !== edu) : [...current, edu];
+    setFilters({
+      ...filters,
+      education: updated.length > 0 ? updated[0] : 'All Education Levels',
+      educations: updated,
+    });
+  };
+
+  const isEducationActive = (edu: string) => {
+    if (edu === 'All Education Levels') {
+      return (!filters.educations || filters.educations.length === 0) && (!filters.education || filters.education === 'All Education Levels');
+    }
+    if (filters.educations && filters.educations.length > 0) {
+      return filters.educations.includes(edu);
+    }
+    return filters.education === edu;
+  };
+
+  const toggleMidcZone = (zone: string) => {
+    if (zone === 'All MIDC Zones') {
+      setFilters({ ...filters, midcZone: 'All MIDC Zones', locations: [] });
+      return;
+    }
+    const current = filters.locations && filters.locations.length > 0
+      ? [...filters.locations]
+      : (filters.midcZone && filters.midcZone !== 'All MIDC Zones' ? [filters.midcZone] : []);
+    const exists = current.includes(zone);
+    const updated = exists ? current.filter(x => x !== zone) : [...current, zone];
+    setFilters({
+      ...filters,
+      midcZone: updated.length > 0 ? updated[0] : 'All MIDC Zones',
+      locations: updated,
+    });
+  };
+
+  const isZoneActive = (zone: string) => {
+    if (zone === 'All MIDC Zones') {
+      return (!filters.locations || filters.locations.length === 0) && (!filters.midcZone || filters.midcZone === 'All MIDC Zones');
+    }
+    if (filters.locations && filters.locations.length > 0) {
+      return filters.locations.includes(zone);
+    }
+    return filters.midcZone === zone;
+  };
+
+  const toggleWorkMode = (wm: string) => {
+    if (wm === 'All Modes') {
+      setFilters({ ...filters, workMode: 'All Modes', workModes: [] });
+      return;
+    }
+    const current = filters.workModes && filters.workModes.length > 0
+      ? [...filters.workModes]
+      : (filters.workMode && filters.workMode !== 'All Modes' ? [filters.workMode] : []);
+    const exists = current.includes(wm);
+    const updated = exists ? current.filter(x => x !== wm) : [...current, wm];
+    setFilters({
+      ...filters,
+      workMode: updated.length > 0 ? updated[0] : 'All Modes',
+      workModes: updated,
+    });
+  };
+
+  const isWorkModeActive = (wm: string) => {
+    if (wm === 'All Modes') {
+      return (!filters.workModes || filters.workModes.length === 0) && (!filters.workMode || filters.workMode === 'All Modes');
+    }
+    if (filters.workModes && filters.workModes.length > 0) {
+      return filters.workModes.includes(wm);
+    }
+    return filters.workMode === wm;
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.fullScreenContainer} edges={['top', 'bottom']}>
@@ -166,16 +280,16 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
         >
           {/* SECTION 1: INDUSTRY SECTOR */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>INDUSTRY SECTOR</Text>
+            <Text style={styles.groupHeaderLabel}>INDUSTRY SECTOR (MULTI-SELECT)</Text>
             {INDUSTRIES.map((ind, idx) => {
-              const isActive = filters.industry === ind;
+              const isActive = isIndustryActive(ind);
               const isLast = idx === INDUSTRIES.length - 1;
               return (
                 <TouchableOpacity
                   key={ind}
                   activeOpacity={0.7}
                   style={[styles.cleanOptionRow, !isLast && styles.cleanRowBorder]}
-                  onPress={() => setFilters({ ...filters, industry: ind })}
+                  onPress={() => toggleIndustry(ind)}
                 >
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {ind}
@@ -189,16 +303,16 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
 
           {/* SECTION 2: MINIMUM EDUCATION & DEGREE */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>MINIMUM EDUCATION & DEGREE</Text>
+            <Text style={styles.groupHeaderLabel}>MINIMUM EDUCATION & DEGREE (MULTI-SELECT)</Text>
             {EDUCATIONS.map((edu, idx) => {
-              const isActive = (filters.education || 'All Education Levels') === edu;
+              const isActive = isEducationActive(edu);
               const isLast = idx === EDUCATIONS.length - 1;
               return (
                 <TouchableOpacity
                   key={edu}
                   activeOpacity={0.7}
                   style={[styles.cleanOptionRow, !isLast && styles.cleanRowBorder]}
-                  onPress={() => setFilters({ ...filters, education: edu })}
+                  onPress={() => toggleEducation(edu)}
                 >
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {edu}
@@ -212,16 +326,16 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
 
           {/* SECTION 3: MIDC INDUSTRIAL ZONE */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>MIDC INDUSTRIAL ZONE</Text>
+            <Text style={styles.groupHeaderLabel}>MIDC INDUSTRIAL ZONE (MULTI-SELECT)</Text>
             {MIDC_ZONES.map((zone, idx) => {
-              const isActive = filters.midcZone === zone;
+              const isActive = isZoneActive(zone);
               const isLast = idx === MIDC_ZONES.length - 1;
               return (
                 <TouchableOpacity
                   key={zone}
                   activeOpacity={0.7}
                   style={[styles.cleanOptionRow, !isLast && styles.cleanRowBorder]}
-                  onPress={() => setFilters({ ...filters, midcZone: zone })}
+                  onPress={() => toggleMidcZone(zone)}
                 >
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {zone}
@@ -233,7 +347,7 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
           </View>
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 3: EMPLOYMENT TYPE */}
+          {/* SECTION 4: EMPLOYMENT TYPE */}
           <View style={styles.sectionContainer}>
             <Text style={styles.groupHeaderLabel}>EMPLOYMENT TYPE</Text>
             {JOB_TYPES.map((jt, idx) => {
@@ -256,18 +370,18 @@ export const JobFilterSideDrawer: React.FC<JobFilterSideDrawerProps> = ({
           </View>
           <View style={styles.sectionDivider} />
 
-          {/* SECTION 4: WORK MODE */}
+          {/* SECTION 5: WORK MODE */}
           <View style={styles.sectionContainer}>
-            <Text style={styles.groupHeaderLabel}>WORK MODE</Text>
+            <Text style={styles.groupHeaderLabel}>WORK MODE (MULTI-SELECT)</Text>
             {WORK_MODES.map((wm, idx) => {
-              const isActive = filters.workMode === wm;
+              const isActive = isWorkModeActive(wm);
               const isLast = idx === WORK_MODES.length - 1;
               return (
                 <TouchableOpacity
                   key={wm}
                   activeOpacity={0.7}
                   style={[styles.cleanOptionRow, !isLast && styles.cleanRowBorder]}
-                  onPress={() => setFilters({ ...filters, workMode: wm })}
+                  onPress={() => toggleWorkMode(wm)}
                 >
                   <Text style={[styles.cleanOptionText, isActive && styles.cleanOptionTextActive]}>
                     {wm}

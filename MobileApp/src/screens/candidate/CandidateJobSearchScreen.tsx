@@ -36,7 +36,7 @@ import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
-import { evaluateJobMatchesFilter } from './utils/jobFilterEngine';
+import { evaluateJobMatchesFilter, rankAndFilterJobs } from './utils/jobFilterEngine';
 import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
 import { jobsApi } from '../../api/jobsApi';
 import { CATEGORIES } from './components/CandidateJobSearchUtils';
@@ -510,37 +510,67 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   }, [jobs, showToast]);
 
   const filteredJobs = useMemo(() => {
-    return jobs.filter((job) =>
-      evaluateJobMatchesFilter(job, activeFilters, searchQuery, selectedCategory)
-    );
+    return rankAndFilterJobs(jobs, activeFilters, searchQuery, selectedCategory);
   }, [jobs, searchQuery, selectedCategory, activeFilters]);
 
   const activeFilterCount = useMemo(() => {
-    return [
-      Boolean(activeFilters.industry && activeFilters.industry !== 'All Industries'),
-      Boolean(activeFilters.education && activeFilters.education !== 'All Education Levels'),
-      Boolean(activeFilters.jobRole && activeFilters.jobRole !== 'All Roles'),
-      Boolean(activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones'),
-      Boolean(activeFilters.jobType && activeFilters.jobType !== 'All Types'),
-      Boolean(activeFilters.workMode && activeFilters.workMode !== 'All Modes'),
-      Boolean(activeFilters.minExperience && activeFilters.minExperience !== 'All Experience'),
-      Boolean(activeFilters.salaryMin && activeFilters.salaryMin > 0),
-      Boolean(activeFilters.busFacility),
-      Boolean(activeFilters.canteen),
-      Boolean(activeFilters.accommodation),
-      Boolean(activeFilters.overtime),
-    ].filter(Boolean).length;
+    let count = 0;
+    if (activeFilters.industries && activeFilters.industries.length > 0) {
+      count += activeFilters.industries.length;
+    } else if (activeFilters.industry && activeFilters.industry !== 'All Industries') {
+      count += 1;
+    }
+
+    if (activeFilters.educations && activeFilters.educations.length > 0) {
+      count += activeFilters.educations.length;
+    } else if (activeFilters.education && activeFilters.education !== 'All Education Levels') {
+      count += 1;
+    }
+
+    if (activeFilters.jobRoles && activeFilters.jobRoles.length > 0) {
+      count += activeFilters.jobRoles.length;
+    } else if (activeFilters.jobRole && activeFilters.jobRole !== 'All Roles') {
+      count += 1;
+    }
+
+    if (activeFilters.locations && activeFilters.locations.length > 0) {
+      count += activeFilters.locations.length;
+    } else if (activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones') {
+      count += 1;
+    }
+
+    if (activeFilters.workModes && activeFilters.workModes.length > 0) {
+      count += activeFilters.workModes.length;
+    } else if (activeFilters.workMode && activeFilters.workMode !== 'All Modes') {
+      count += 1;
+    }
+
+    if (activeFilters.jobType && activeFilters.jobType !== 'All Types') count++;
+    if (activeFilters.minExperience && activeFilters.minExperience !== 'All Experience') count++;
+    if (activeFilters.salaryMin && activeFilters.salaryMin > 0) count++;
+    if (activeFilters.busFacility) count++;
+    if (activeFilters.canteen) count++;
+    if (activeFilters.accommodation) count++;
+    if (activeFilters.overtime) count++;
+
+    return count;
   }, [activeFilters]);
 
   const resetAllFilters = useCallback(() => {
     setActiveFilters({
       industry: 'All Industries',
+      industries: [],
       education: 'All Education Levels',
+      educations: [],
+      jobRole: 'All Roles',
+      jobRoles: [],
       jobType: 'All Types',
       workMode: 'All Modes',
+      workModes: [],
       minExperience: 'All Experience',
       salaryMin: 0,
       midcZone: 'All MIDC Zones',
+      locations: [],
       busFacility: false,
       canteen: false,
       accommodation: false,
@@ -548,6 +578,61 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     });
     setSelectedCategory('All Jobs');
     setSearchQuery('');
+  }, []);
+
+  const removeIndustry = useCallback((ind: string) => {
+    setActiveFilters((prev) => {
+      const next = (prev.industries || []).filter((i) => i !== ind);
+      return {
+        ...prev,
+        industries: next,
+        industry: next.length > 0 ? next[0] : 'All Industries',
+      };
+    });
+  }, []);
+
+  const removeEducation = useCallback((edu: string) => {
+    setActiveFilters((prev) => {
+      const next = (prev.educations || []).filter((e) => e !== edu);
+      return {
+        ...prev,
+        educations: next,
+        education: next.length > 0 ? next[0] : 'All Education Levels',
+      };
+    });
+  }, []);
+
+  const removeJobRole = useCallback((role: string) => {
+    setActiveFilters((prev) => {
+      const next = (prev.jobRoles || []).filter((r) => r !== role);
+      return {
+        ...prev,
+        jobRoles: next,
+        jobRole: next.length > 0 ? next[0] : 'All Roles',
+      };
+    });
+  }, []);
+
+  const removeLocation = useCallback((loc: string) => {
+    setActiveFilters((prev) => {
+      const next = (prev.locations || []).filter((l) => l !== loc);
+      return {
+        ...prev,
+        locations: next,
+        midcZone: next.length > 0 ? next[0] : 'All MIDC Zones',
+      };
+    });
+  }, []);
+
+  const removeWorkMode = useCallback((wm: string) => {
+    setActiveFilters((prev) => {
+      const next = (prev.workModes || []).filter((m) => m !== wm);
+      return {
+        ...prev,
+        workModes: next,
+        workMode: next.length > 0 ? next[0] : 'All Modes',
+      };
+    });
   }, []);
 
   const handleOpenFilterDrawer = useCallback(() => {
@@ -632,42 +717,132 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       {activeFilterCount > 0 ? (
         <View style={styles.activeTagsRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}>
-            {activeFilters.industry && activeFilters.industry !== 'All Industries' && (
-              <View style={styles.activeFilterTag}>
-                <Building2 size={11} color={COLORS.primary} />
-                <Text style={styles.activeFilterTagText} numberOfLines={1}>
-                  {activeFilters.industry}
-                </Text>
-                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, industry: 'All Industries' }))}>
-                  <X size={12} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Industries */}
+            {activeFilters.industries && activeFilters.industries.length > 0
+              ? activeFilters.industries.map((ind) => (
+                  <View key={`ind-${ind}`} style={styles.activeFilterTag}>
+                    <Building2 size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {ind}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeIndustry(ind)}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              : activeFilters.industry && activeFilters.industry !== 'All Industries' && (
+                  <View style={styles.activeFilterTag}>
+                    <Building2 size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {activeFilters.industry}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, industry: 'All Industries' }))}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
 
-            {activeFilters.education && activeFilters.education !== 'All Education Levels' && (
-              <View style={styles.activeFilterTag}>
-                <GraduationCap size={11} color={COLORS.primary} />
-                <Text style={styles.activeFilterTagText} numberOfLines={1}>
-                  {activeFilters.education}
-                </Text>
-                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, education: 'All Education Levels' }))}>
-                  <X size={12} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Educations */}
+            {activeFilters.educations && activeFilters.educations.length > 0
+              ? activeFilters.educations.map((edu) => (
+                  <View key={`edu-${edu}`} style={styles.activeFilterTag}>
+                    <GraduationCap size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {edu}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeEducation(edu)}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              : activeFilters.education && activeFilters.education !== 'All Education Levels' && (
+                  <View style={styles.activeFilterTag}>
+                    <GraduationCap size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {activeFilters.education}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, education: 'All Education Levels' }))}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
 
-            {activeFilters.jobRole && activeFilters.jobRole !== 'All Roles' && (
-              <View style={styles.activeFilterTag}>
-                <Wrench size={11} color={COLORS.primary} />
-                <Text style={styles.activeFilterTagText} numberOfLines={1}>
-                  {activeFilters.jobRole}
-                </Text>
-                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, jobRole: 'All Roles' }))}>
-                  <X size={12} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Job Roles */}
+            {activeFilters.jobRoles && activeFilters.jobRoles.length > 0
+              ? activeFilters.jobRoles.map((role) => (
+                  <View key={`role-${role}`} style={styles.activeFilterTag}>
+                    <Wrench size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {role}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeJobRole(role)}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              : activeFilters.jobRole && activeFilters.jobRole !== 'All Roles' && (
+                  <View style={styles.activeFilterTag}>
+                    <Wrench size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {activeFilters.jobRole}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, jobRole: 'All Roles' }))}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
 
+            {/* Locations */}
+            {activeFilters.locations && activeFilters.locations.length > 0
+              ? activeFilters.locations.map((loc) => (
+                  <View key={`loc-${loc}`} style={styles.activeFilterTag}>
+                    <MapPin size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {loc}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeLocation(loc)}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              : activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones' && (
+                  <View style={styles.activeFilterTag}>
+                    <MapPin size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {activeFilters.midcZone}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, midcZone: 'All MIDC Zones' }))}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+            {/* Work Modes */}
+            {activeFilters.workModes && activeFilters.workModes.length > 0
+              ? activeFilters.workModes.map((wm) => (
+                  <View key={`wm-${wm}`} style={styles.activeFilterTag}>
+                    <SlidersHorizontal size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {wm}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeWorkMode(wm)}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              : activeFilters.workMode && activeFilters.workMode !== 'All Modes' && (
+                  <View style={styles.activeFilterTag}>
+                    <SlidersHorizontal size={11} color={COLORS.primary} />
+                    <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                      {activeFilters.workMode}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, workMode: 'All Modes' }))}>
+                      <X size={12} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+            {/* Experience */}
             {activeFilters.minExperience && activeFilters.minExperience !== 'All Experience' && (
               <View style={styles.activeFilterTag}>
                 <Briefcase size={11} color={COLORS.primary} />
@@ -680,18 +855,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
               </View>
             )}
 
-            {activeFilters.midcZone && activeFilters.midcZone !== 'All MIDC Zones' && (
-              <View style={styles.activeFilterTag}>
-                <MapPin size={11} color={COLORS.primary} />
-                <Text style={styles.activeFilterTagText} numberOfLines={1}>
-                  {activeFilters.midcZone}
-                </Text>
-                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, midcZone: 'All MIDC Zones' }))}>
-                  <X size={12} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
-
+            {/* Job Type */}
             {activeFilters.jobType && activeFilters.jobType !== 'All Types' && (
               <View style={styles.activeFilterTag}>
                 <Clock size={11} color={COLORS.primary} />
@@ -699,18 +863,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
                   {activeFilters.jobType}
                 </Text>
                 <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, jobType: 'All Types' }))}>
-                  <X size={12} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {activeFilters.workMode && activeFilters.workMode !== 'All Modes' && (
-              <View style={styles.activeFilterTag}>
-                <SlidersHorizontal size={11} color={COLORS.primary} />
-                <Text style={styles.activeFilterTagText} numberOfLines={1}>
-                  {activeFilters.workMode}
-                </Text>
-                <TouchableOpacity onPress={() => setActiveFilters((prev) => ({ ...prev, workMode: 'All Modes' }))}>
                   <X size={12} color={COLORS.primary} />
                 </TouchableOpacity>
               </View>

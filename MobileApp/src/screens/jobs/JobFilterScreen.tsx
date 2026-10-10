@@ -9,6 +9,7 @@ import {
   Platform,
   Switch,
   DeviceEventEmitter,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -24,6 +25,8 @@ import {
   RotateCcw,
   SlidersHorizontal,
   Wrench,
+  Search,
+  X,
 } from 'lucide-react-native';
 import { COLORS, RADIUS } from '../../constants/theme';
 import { FilterOptions } from '../../components/common/JobFilterSideDrawer';
@@ -335,17 +338,55 @@ export const JobFilterScreen: React.FC = () => {
   }, []);
 
   const [activeFilterTab, setActiveFilterTab] = useState<JobFilterTabKey>(initialTab);
-  const [draftIndustry, setDraftIndustry] = useState<string>(currentFilters.industry || 'All Industries');
-  const [draftEducation, setDraftEducation] = useState<string>(currentFilters.education || 'All Education Levels');
+  const [tabSearchQuery, setTabSearchQuery] = useState<string>('');
+
+  const [draftIndustries, setDraftIndustries] = useState<string[]>(
+    currentFilters.industries && currentFilters.industries.length > 0
+      ? currentFilters.industries
+      : currentFilters.industry && currentFilters.industry !== 'All Industries'
+      ? [currentFilters.industry]
+      : []
+  );
+  const [draftEducations, setDraftEducations] = useState<string[]>(
+    currentFilters.educations && currentFilters.educations.length > 0
+      ? currentFilters.educations
+      : currentFilters.education && currentFilters.education !== 'All Education Levels'
+      ? [currentFilters.education]
+      : []
+  );
+  const [draftJobRoles, setDraftJobRoles] = useState<string[]>(
+    currentFilters.jobRoles && currentFilters.jobRoles.length > 0
+      ? currentFilters.jobRoles
+      : currentFilters.jobRole && currentFilters.jobRole !== 'All Roles'
+      ? [currentFilters.jobRole]
+      : []
+  );
+  const [draftLocations, setDraftLocations] = useState<string[]>(
+    currentFilters.locations && currentFilters.locations.length > 0
+      ? currentFilters.locations
+      : currentFilters.midcZone && currentFilters.midcZone !== 'All MIDC Zones'
+      ? [currentFilters.midcZone]
+      : []
+  );
+  const [draftWorkModes, setDraftWorkModes] = useState<string[]>(
+    currentFilters.workModes && currentFilters.workModes.length > 0
+      ? currentFilters.workModes
+      : currentFilters.workMode && currentFilters.workMode !== 'All Modes'
+      ? [currentFilters.workMode]
+      : []
+  );
+
   const [draftExp, setDraftExp] = useState<string>(currentFilters.minExperience || 'All Experience');
-  const [draftZone, setDraftZone] = useState<string>(currentFilters.midcZone || 'All MIDC Zones');
   const [draftJobType, setDraftJobType] = useState<string>(currentFilters.jobType || 'All Types');
-  const [draftWorkMode, setDraftWorkMode] = useState<string>(currentFilters.workMode || 'All Modes');
   const [draftBus, setDraftBus] = useState<boolean>(Boolean(currentFilters.busFacility));
   const [draftCanteen, setDraftCanteen] = useState<boolean>(Boolean(currentFilters.canteen));
   const [draftAccommodation, setDraftAccommodation] = useState<boolean>(Boolean(currentFilters.accommodation));
   const [draftOvertime, setDraftOvertime] = useState<boolean>(Boolean(currentFilters.overtime));
-  const [draftJobRole, setDraftJobRole] = useState<string>(currentFilters.jobRole || 'All Roles');
+
+  // Reset tab search query when tab switches
+  React.useEffect(() => {
+    setTabSearchQuery('');
+  }, [activeFilterTab]);
 
   // Dynamic Categories from backend API
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -369,20 +410,27 @@ export const JobFilterScreen: React.FC = () => {
     return Array.from(new Set(['All Industries', ...availableCategories, ...JOB_INDUSTRIES])).filter(Boolean);
   }, [availableCategories]);
 
-  // Dynamically compute available job roles based on selected Industry + dynamically discovered from loaded jobs
+  // Dynamically compute available job roles based on ALL selected Industries
   const availableJobRoles = useMemo(() => {
-    const baseRoles = INDUSTRY_JOB_ROLES[draftIndustry] || INDUSTRY_JOB_ROLES['All Industries'] || [];
+    const activeInds = draftIndustries.length > 0 ? draftIndustries : ['All Industries'];
+    const baseRoles = new Set<string>();
+
+    activeInds.forEach((ind) => {
+      const roles = INDUSTRY_JOB_ROLES[ind] || INDUSTRY_JOB_ROLES['All Industries'] || [];
+      roles.forEach((r) => baseRoles.add(r));
+    });
+
     const customRoles = new Set<string>();
 
     if (loadedJobs && loadedJobs.length > 0) {
       loadedJobs.forEach((job) => {
         const jobInd = (job.industry || '').toLowerCase();
-        const targetInd = (draftIndustry || '').toLowerCase();
         const matchesIndustry =
-          !draftIndustry ||
-          draftIndustry === 'All Industries' ||
-          jobInd.includes(targetInd.slice(0, 5)) ||
-          targetInd.includes(jobInd.slice(0, 5));
+          draftIndustries.length === 0 ||
+          draftIndustries.some((targetInd) => {
+            const t = targetInd.toLowerCase();
+            return jobInd.includes(t.slice(0, 5)) || t.includes(jobInd.slice(0, 5));
+          });
 
         if (matchesIndustry) {
           if (job.trade && job.trade.trim().length >= 2) {
@@ -396,7 +444,7 @@ export const JobFilterScreen: React.FC = () => {
     }
 
     const uniqueList: string[] = ['All Roles'];
-    baseRoles.forEach((role) => {
+    Array.from(baseRoles).forEach((role) => {
       if (role !== 'All Roles' && !uniqueList.some((r) => r.toLowerCase() === role.toLowerCase())) {
         uniqueList.push(role);
       }
@@ -409,59 +457,176 @@ export const JobFilterScreen: React.FC = () => {
     });
 
     return uniqueList;
-  }, [draftIndustry, loadedJobs]);
+  }, [draftIndustries, loadedJobs]);
 
-  // Auto-reset job role when industry changes and current role is not in new list
-  const prevIndustryRef = React.useRef(draftIndustry);
-  React.useEffect(() => {
-    if (prevIndustryRef.current !== draftIndustry) {
-      prevIndustryRef.current = draftIndustry;
-      if (!availableJobRoles.includes(draftJobRole)) {
-        setDraftJobRole('All Roles');
-      }
+  const filteredIndustries = useMemo(() => {
+    if (!tabSearchQuery.trim()) return displayedIndustries;
+    const q = tabSearchQuery.toLowerCase().trim();
+    return displayedIndustries.filter(
+      (opt) => opt === 'All Industries' || opt.toLowerCase().includes(q)
+    );
+  }, [displayedIndustries, tabSearchQuery]);
+
+  const filteredEducations = useMemo(() => {
+    if (!tabSearchQuery.trim()) return JOB_EDUCATIONS;
+    const q = tabSearchQuery.toLowerCase().trim();
+    return JOB_EDUCATIONS.filter(
+      (opt) => opt === 'All Education Levels' || opt.toLowerCase().includes(q)
+    );
+  }, [tabSearchQuery]);
+
+  const filteredJobRoles = useMemo(() => {
+    if (!tabSearchQuery.trim()) return availableJobRoles;
+    const q = tabSearchQuery.toLowerCase().trim();
+    return availableJobRoles.filter(
+      (opt) => opt === 'All Roles' || opt.toLowerCase().includes(q)
+    );
+  }, [availableJobRoles, tabSearchQuery]);
+
+  const filteredLocations = useMemo(() => {
+    if (!tabSearchQuery.trim()) return JOB_MIDC_ZONES;
+    const q = tabSearchQuery.toLowerCase().trim();
+    return JOB_MIDC_ZONES.filter(
+      (opt) => opt === 'All MIDC Zones' || opt.toLowerCase().includes(q)
+    );
+  }, [tabSearchQuery]);
+
+  const filteredWorkModes = useMemo(() => {
+    if (!tabSearchQuery.trim()) return JOB_WORK_MODES;
+    const q = tabSearchQuery.toLowerCase().trim();
+    return JOB_WORK_MODES.filter(
+      (opt) => opt === 'All Modes' || opt.toLowerCase().includes(q)
+    );
+  }, [tabSearchQuery]);
+
+  const toggleDraftIndustry = (option: string) => {
+    if (option === 'All Industries') {
+      setDraftIndustries([]);
+      return;
     }
-  }, [draftIndustry, availableJobRoles, draftJobRole]);
+    setDraftIndustries((prev) =>
+      prev.includes(option) ? prev.filter((i) => i !== option) : [...prev, option]
+    );
+  };
+
+  const toggleDraftEducation = (option: string) => {
+    if (option === 'All Education Levels') {
+      setDraftEducations([]);
+      return;
+    }
+    setDraftEducations((prev) =>
+      prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]
+    );
+  };
+
+  const toggleDraftJobRole = (option: string) => {
+    if (option === 'All Roles') {
+      setDraftJobRoles([]);
+      return;
+    }
+    setDraftJobRoles((prev) =>
+      prev.includes(option) ? prev.filter((r) => r !== option) : [...prev, option]
+    );
+  };
+
+  const toggleDraftLocation = (option: string) => {
+    if (option === 'All MIDC Zones') {
+      setDraftLocations([]);
+      return;
+    }
+    setDraftLocations((prev) =>
+      prev.includes(option) ? prev.filter((l) => l !== option) : [...prev, option]
+    );
+  };
+
+  const toggleDraftWorkMode = (option: string) => {
+    if (option === 'All Modes') {
+      setDraftWorkModes([]);
+      return;
+    }
+    setDraftWorkModes((prev) =>
+      prev.includes(option) ? prev.filter((m) => m !== option) : [...prev, option]
+    );
+  };
 
   const handleResetFilters = () => {
-    setDraftIndustry('All Industries');
-    setDraftEducation('All Education Levels');
-    setDraftJobRole('All Roles');
+    setDraftIndustries([]);
+    setDraftEducations([]);
+    setDraftJobRoles([]);
+    setDraftLocations([]);
+    setDraftWorkModes([]);
     setDraftExp('All Experience');
-    setDraftZone('All MIDC Zones');
     setDraftJobType('All Types');
-    setDraftWorkMode('All Modes');
     setDraftBus(false);
     setDraftCanteen(false);
     setDraftAccommodation(false);
     setDraftOvertime(false);
+    setTabSearchQuery('');
   };
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (draftIndustry && draftIndustry !== 'All Industries') count++;
-    if (draftEducation && draftEducation !== 'All Education Levels') count++;
-    if (draftJobRole && draftJobRole !== 'All Roles') count++;
+    count += draftIndustries.length;
+    count += draftEducations.length;
+    count += draftJobRoles.length;
+    count += draftLocations.length;
+    count += draftWorkModes.length;
     if (draftExp && draftExp !== 'All Experience') count++;
-    if (draftZone && draftZone !== 'All MIDC Zones') count++;
     if (draftJobType && draftJobType !== 'All Types') count++;
-    if (draftWorkMode && draftWorkMode !== 'All Modes') count++;
     if (draftBus) count++;
     if (draftCanteen) count++;
     if (draftAccommodation) count++;
     if (draftOvertime) count++;
     return count;
   }, [
-    draftIndustry,
-    draftEducation,
-    draftJobRole,
+    draftIndustries,
+    draftEducations,
+    draftJobRoles,
+    draftLocations,
+    draftWorkModes,
     draftExp,
-    draftZone,
     draftJobType,
-    draftWorkMode,
     draftBus,
     draftCanteen,
     draftAccommodation,
     draftOvertime,
+  ]);
+
+  const perksCount = (draftBus ? 1 : 0) + (draftCanteen ? 1 : 0) + (draftAccommodation ? 1 : 0) + (draftOvertime ? 1 : 0);
+
+  const currentDraftFilterOptions = useMemo<FilterOptions>(() => {
+    return {
+      industry: draftIndustries.length > 0 ? draftIndustries[0] : 'All Industries',
+      industries: draftIndustries,
+      education: draftEducations.length > 0 ? draftEducations[0] : 'All Education Levels',
+      educations: draftEducations,
+      jobRole: draftJobRoles.length > 0 ? draftJobRoles[0] : undefined,
+      jobRoles: draftJobRoles,
+      minExperience: draftExp,
+      midcZone: draftLocations.length > 0 ? draftLocations[0] : 'All MIDC Zones',
+      locations: draftLocations,
+      jobType: draftJobType,
+      workMode: draftWorkModes.length > 0 ? draftWorkModes[0] : 'All Modes',
+      workModes: draftWorkModes,
+      salaryMin: currentFilters.salaryMin || 0,
+      busFacility: draftBus,
+      canteen: draftCanteen,
+      accommodation: draftAccommodation,
+      overtime: draftOvertime,
+    };
+  }, [
+    draftIndustries,
+    draftEducations,
+    draftJobRoles,
+    draftLocations,
+    draftWorkModes,
+    draftExp,
+    draftJobType,
+    draftBus,
+    draftCanteen,
+    draftAccommodation,
+    draftOvertime,
+    currentFilters.salaryMin,
   ]);
 
   // Real-time matching jobs calculation using unified industry-grade engine
@@ -471,54 +636,13 @@ export const JobFilterScreen: React.FC = () => {
       return route.params?.totalMatchingJobsCount ?? 0;
     }
 
-    const draftFilters: FilterOptions = {
-      industry: draftIndustry,
-      education: draftEducation,
-      jobRole: draftJobRole !== 'All Roles' ? draftJobRole : undefined,
-      minExperience: draftExp,
-      midcZone: draftZone,
-      jobType: draftJobType,
-      workMode: draftWorkMode,
-      salaryMin: currentFilters.salaryMin || 0,
-      busFacility: draftBus,
-      canteen: draftCanteen,
-      accommodation: draftAccommodation,
-      overtime: draftOvertime,
-    };
-
-    return listToFilter.filter((job) => evaluateJobMatchesFilter(job, draftFilters)).length;
-  }, [
-    loadedJobs,
-    initialJobsList,
-    draftIndustry,
-    draftEducation,
-    draftJobRole,
-    draftExp,
-    draftZone,
-    draftJobType,
-    draftWorkMode,
-    draftBus,
-    draftCanteen,
-    draftAccommodation,
-    draftOvertime,
-    route.params?.totalMatchingJobsCount,
-  ]);
+    return listToFilter.filter((job) =>
+      evaluateJobMatchesFilter(job, currentDraftFilterOptions)
+    ).length;
+  }, [loadedJobs, initialJobsList, currentDraftFilterOptions, route.params?.totalMatchingJobsCount]);
 
   const handleApplyFilters = () => {
-    const applied: FilterOptions = {
-      industry: draftIndustry,
-      education: draftEducation,
-      jobRole: draftJobRole !== 'All Roles' ? draftJobRole : undefined,
-      minExperience: draftExp,
-      midcZone: draftZone,
-      jobType: draftJobType,
-      workMode: draftWorkMode,
-      salaryMin: currentFilters.salaryMin || 0,
-      busFacility: draftBus,
-      canteen: draftCanteen,
-      accommodation: draftAccommodation,
-      overtime: draftOvertime,
-    };
+    const applied: FilterOptions = currentDraftFilterOptions;
 
     // 1. Broadcast event so target screens update their filter state synchronously
     DeviceEventEmitter.emit('APPLY_JOB_FILTERS', applied);
@@ -549,85 +673,172 @@ export const JobFilterScreen: React.FC = () => {
 
   const renderTabContent = () => {
     switch (activeFilterTab) {
-      case 'INDUSTRY':
+      case 'INDUSTRY': {
+        const isAll = draftIndustries.length === 0;
         return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {displayedIndustries.map((option) => {
-              const isSelected = draftIndustry === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                  onPress={() => setDraftIndustry(option)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
-                    {option}
-                  </Text>
-                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        );
-
-      case 'EDUCATION':
-        return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {JOB_EDUCATIONS.map((option) => {
-              const isSelected = draftEducation === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                  onPress={() => setDraftEducation(option)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
-                    {option}
-                  </Text>
-                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        );
-
-      case 'JOB_ROLE':
-        return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {draftIndustry !== 'All Industries' && (
-              <View style={styles.roleHintRow}>
-                <Building2 size={13} color="#64748B" strokeWidth={1.8} />
-                <Text style={styles.roleHintText}>
-                  Roles for: {draftIndustry.split('&')[0].trim()}
-                </Text>
+          <View style={styles.tabContentWrapper}>
+            <View style={styles.searchHeaderBox}>
+              <View style={styles.tabSearchBar}>
+                <Search size={15} color="#94A3B8" />
+                <TextInput
+                  style={styles.tabSearchInput}
+                  placeholder="Search industries..."
+                  placeholderTextColor="#94A3B8"
+                  value={tabSearchQuery}
+                  onChangeText={setTabSearchQuery}
+                  autoCorrect={false}
+                />
+                {tabSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setTabSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <X size={15} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
-            {availableJobRoles.map((option) => {
-              const isSelected = draftJobRole === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                  onPress={() => setDraftJobRole(option)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
-                    {option}
-                  </Text>
-                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+              <View style={styles.tabStatusRow}>
+                <Text style={styles.tabStatusText}>
+                  {draftIndustries.length > 0 ? `${draftIndustries.length} selected` : 'Any Industry'}
+                </Text>
+                {draftIndustries.length > 0 && (
+                  <TouchableOpacity onPress={() => setDraftIndustries([])}>
+                    <Text style={styles.tabClearAction}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+              {filteredIndustries.map((option) => {
+                const isOptionAll = option === 'All Industries';
+                const isSelected = isOptionAll ? isAll : draftIndustries.includes(option);
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleDraftIndustry(option)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
+                      {option}
+                    </Text>
+                    <View style={[styles.checkBoxSquare, isSelected && styles.checkBoxSquareSelected]}>
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         );
+      }
+
+      case 'EDUCATION': {
+        const isAll = draftEducations.length === 0;
+        return (
+          <View style={styles.tabContentWrapper}>
+            <View style={styles.searchHeaderBox}>
+              <View style={styles.tabStatusRow}>
+                <Text style={styles.tabStatusText}>
+                  {draftEducations.length > 0 ? `${draftEducations.length} selected` : 'Any Education'}
+                </Text>
+                {draftEducations.length > 0 && (
+                  <TouchableOpacity onPress={() => setDraftEducations([])}>
+                    <Text style={styles.tabClearAction}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+              {filteredEducations.map((option) => {
+                const isOptionAll = option === 'All Education Levels';
+                const isSelected = isOptionAll ? isAll : draftEducations.includes(option);
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleDraftEducation(option)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
+                      {option}
+                    </Text>
+                    <View style={[styles.checkBoxSquare, isSelected && styles.checkBoxSquareSelected]}>
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        );
+      }
+
+      case 'JOB_ROLE': {
+        const isAll = draftJobRoles.length === 0;
+        return (
+          <View style={styles.tabContentWrapper}>
+            <View style={styles.searchHeaderBox}>
+              <View style={styles.tabSearchBar}>
+                <Search size={15} color="#94A3B8" />
+                <TextInput
+                  style={styles.tabSearchInput}
+                  placeholder="Search job roles..."
+                  placeholderTextColor="#94A3B8"
+                  value={tabSearchQuery}
+                  onChangeText={setTabSearchQuery}
+                  autoCorrect={false}
+                />
+                {tabSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setTabSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <X size={15} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {draftIndustries.length > 0 && (
+                <View style={styles.roleHintRow}>
+                  <Building2 size={13} color="#64748B" strokeWidth={1.8} />
+                  <Text style={styles.roleHintText} numberOfLines={1}>
+                    Roles for: {draftIndustries.slice(0, 2).map((i) => i.split('&')[0].trim()).join(', ')}
+                    {draftIndustries.length > 2 ? ` +${draftIndustries.length - 2}` : ''}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.tabStatusRow}>
+                <Text style={styles.tabStatusText}>
+                  {draftJobRoles.length > 0 ? `${draftJobRoles.length} selected` : 'Any Role'}
+                </Text>
+                {draftJobRoles.length > 0 && (
+                  <TouchableOpacity onPress={() => setDraftJobRoles([])}>
+                    <Text style={styles.tabClearAction}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+              {filteredJobRoles.map((option) => {
+                const isOptionAll = option === 'All Roles';
+                const isSelected = isOptionAll ? isAll : draftJobRoles.includes(option);
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleDraftJobRole(option)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
+                      {option}
+                    </Text>
+                    <View style={[styles.checkBoxSquare, isSelected && styles.checkBoxSquareSelected]}>
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        );
+      }
 
       case 'EXPERIENCE':
         return (
@@ -653,29 +864,63 @@ export const JobFilterScreen: React.FC = () => {
           </ScrollView>
         );
 
-      case 'LOCATION':
+      case 'LOCATION': {
+        const isAll = draftLocations.length === 0;
         return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {JOB_MIDC_ZONES.map((option) => {
-              const isSelected = draftZone === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                  onPress={() => setDraftZone(option)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
-                    {option}
-                  </Text>
-                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <View style={styles.tabContentWrapper}>
+            <View style={styles.searchHeaderBox}>
+              <View style={styles.tabSearchBar}>
+                <Search size={15} color="#94A3B8" />
+                <TextInput
+                  style={styles.tabSearchInput}
+                  placeholder="Search MIDC / city..."
+                  placeholderTextColor="#94A3B8"
+                  value={tabSearchQuery}
+                  onChangeText={setTabSearchQuery}
+                  autoCorrect={false}
+                />
+                {tabSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setTabSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <X size={15} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.tabStatusRow}>
+                <Text style={styles.tabStatusText}>
+                  {draftLocations.length > 0 ? `${draftLocations.length} selected` : 'Any Location'}
+                </Text>
+                {draftLocations.length > 0 && (
+                  <TouchableOpacity onPress={() => setDraftLocations([])}>
+                    <Text style={styles.tabClearAction}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+              {filteredLocations.map((option) => {
+                const isOptionAll = option === 'All MIDC Zones';
+                const isSelected = isOptionAll ? isAll : draftLocations.includes(option);
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleDraftLocation(option)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]} numberOfLines={2}>
+                      {option}
+                    </Text>
+                    <View style={[styles.checkBoxSquare, isSelected && styles.checkBoxSquareSelected]}>
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         );
+      }
 
       case 'JOB_TYPE':
         return (
@@ -701,29 +946,47 @@ export const JobFilterScreen: React.FC = () => {
           </ScrollView>
         );
 
-      case 'WORK_MODE':
+      case 'WORK_MODE': {
+        const isAll = draftWorkModes.length === 0;
         return (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
-            {JOB_WORK_MODES.map((option) => {
-              const isSelected = draftWorkMode === option;
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                  onPress={() => setDraftWorkMode(option)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                    {option}
-                  </Text>
-                  <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
-                    {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={2.8} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <View style={styles.tabContentWrapper}>
+            <View style={styles.searchHeaderBox}>
+              <View style={styles.tabStatusRow}>
+                <Text style={styles.tabStatusText}>
+                  {draftWorkModes.length > 0 ? `${draftWorkModes.length} selected` : 'Any Work Mode'}
+                </Text>
+                {draftWorkModes.length > 0 && (
+                  <TouchableOpacity onPress={() => setDraftWorkModes([])}>
+                    <Text style={styles.tabClearAction}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContainer}>
+              {filteredWorkModes.map((option) => {
+                const isOptionAll = option === 'All Modes';
+                const isSelected = isOptionAll ? isAll : draftWorkModes.includes(option);
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                    onPress={() => toggleDraftWorkMode(option)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                    <View style={[styles.checkBoxSquare, isSelected && styles.checkBoxSquareSelected]}>
+                      {isSelected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         );
+      }
 
       case 'AMENITIES':
         return (
@@ -851,9 +1114,11 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'INDUSTRY' && styles.tabTitleActive]}>
                   Industry
                 </Text>
-                {draftIndustry !== 'All Industries' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftIndustries.length > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{draftIndustries.length}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
@@ -872,9 +1137,11 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'EDUCATION' && styles.tabTitleActive]}>
                   Education
                 </Text>
-                {draftEducation !== 'All Education Levels' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftEducations.length > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{draftEducations.length}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
@@ -893,9 +1160,11 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'JOB_ROLE' && styles.tabTitleActive]}>
                   Job Roles
                 </Text>
-                {draftJobRole !== 'All Roles' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftJobRoles.length > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{draftJobRoles.length}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
@@ -914,13 +1183,15 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'EXPERIENCE' && styles.tabTitleActive]}>
                   Experience
                 </Text>
-                {draftExp !== 'All Experience' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftExp !== 'All Experience' ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>1</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
-            {/* 4. Location / MIDC */}
+            {/* 5. Location / MIDC */}
             <TouchableOpacity
               style={[styles.tabItem, activeFilterTab === 'LOCATION' && styles.tabItemActive]}
               onPress={() => setActiveFilterTab('LOCATION')}
@@ -935,13 +1206,15 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'LOCATION' && styles.tabTitleActive]}>
                   Location
                 </Text>
-                {draftZone !== 'All MIDC Zones' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftLocations.length > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{draftLocations.length}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
-            {/* 5. Job Type */}
+            {/* 6. Job Type */}
             <TouchableOpacity
               style={[styles.tabItem, activeFilterTab === 'JOB_TYPE' && styles.tabItemActive]}
               onPress={() => setActiveFilterTab('JOB_TYPE')}
@@ -956,13 +1229,15 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'JOB_TYPE' && styles.tabTitleActive]}>
                   Job Type
                 </Text>
-                {draftJobType !== 'All Types' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftJobType !== 'All Types' ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>1</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
-            {/* 6. Work Mode */}
+            {/* 7. Work Mode */}
             <TouchableOpacity
               style={[styles.tabItem, activeFilterTab === 'WORK_MODE' && styles.tabItemActive]}
               onPress={() => setActiveFilterTab('WORK_MODE')}
@@ -977,13 +1252,15 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'WORK_MODE' && styles.tabTitleActive]}>
                   Work Mode
                 </Text>
-                {draftWorkMode !== 'All Modes' && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {draftWorkModes.length > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{draftWorkModes.length}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
 
-            {/* 7. Amenities */}
+            {/* 8. Amenities */}
             <TouchableOpacity
               style={[styles.tabItem, activeFilterTab === 'AMENITIES' && styles.tabItemActive]}
               onPress={() => setActiveFilterTab('AMENITIES')}
@@ -998,9 +1275,11 @@ export const JobFilterScreen: React.FC = () => {
                 <Text style={[styles.tabTitle, activeFilterTab === 'AMENITIES' && styles.tabTitleActive]}>
                   Perks
                 </Text>
-                {(draftBus || draftCanteen || draftAccommodation || draftOvertime) && (
-                  <View style={styles.tabActiveDot} />
-                )}
+                {perksCount > 0 ? (
+                  <View style={styles.tabCountBadge}>
+                    <Text style={styles.tabCountBadgeText}>{perksCount}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
           </ScrollView>
@@ -1118,9 +1397,68 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: COLORS.primary,
   },
+  tabCountBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 17,
+    height: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 2,
+  },
+  tabCountBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   rightOptionsColumn: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  tabContentWrapper: {
+    flex: 1,
+  },
+  searchHeaderBox: {
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+  },
+  tabSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 8,
+  },
+  tabSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+    paddingVertical: 0,
+  },
+  tabStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  tabStatusText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabClearAction: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   optionsListContainer: {
     padding: 12,
@@ -1177,6 +1515,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkCircleSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkBoxSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 2,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkBoxSquareSelected: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },

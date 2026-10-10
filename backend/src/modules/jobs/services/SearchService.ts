@@ -5,11 +5,17 @@ import { logger } from '../../../utils/logger';
 export interface SearchJobsParams {
   q?: string;
   industry?: string;
+  industries?: string[];
   midcZone?: string;
+  locations?: string[];
   jobType?: string;
+  jobTypes?: string[];
   workMode?: string;
+  workModes?: string[];
   trade?: string;
+  jobRoles?: string[];
   education?: string;
+  educations?: string[];
   minExperience?: number;
   page?: number;
   limit?: number;
@@ -26,6 +32,35 @@ export interface SearchJobsResult {
 
 export class SearchService {
   /**
+   * Helper to normalize single strings, comma-delimited strings, or arrays into string arrays
+   */
+  private static parseList(arr?: string[] | string, single?: string, allToken?: string): string[] {
+    const result = new Set<string>();
+    const processVal = (val?: string[] | string) => {
+      if (!val) return;
+      if (Array.isArray(val)) {
+        val.forEach((item) => {
+          const s = String(item).trim();
+          if (s && s !== allToken && !s.toLowerCase().startsWith('all ')) {
+            result.add(s);
+          }
+        });
+      } else if (typeof val === 'string') {
+        val.split(',').forEach((item) => {
+          const s = item.trim();
+          if (s && s !== allToken && !s.toLowerCase().startsWith('all ')) {
+            result.add(s);
+          }
+        });
+      }
+    };
+
+    processVal(arr);
+    processVal(single);
+    return Array.from(result);
+  }
+
+  /**
    * Search jobs with Redis Caching, Typesense In-Memory Search Engine, and PostgreSQL Full-Text Fallback
    */
   public static async searchJobs(params: SearchJobsParams): Promise<SearchJobsResult> {
@@ -34,19 +69,21 @@ export class SearchService {
     const offset = (page - 1) * limit;
 
     const normalizedQ = (params.q || '').trim().toLowerCase();
-    const normalizedIndustry = (params.industry || '').trim();
-    const normalizedZone = (params.midcZone || '').trim();
-    const normalizedType = (params.jobType || '').trim();
-    const normalizedMode = (params.workMode || '').trim();
+    const industries = this.parseList(params.industries, params.industry, 'All Industries');
+    const locations = this.parseList(params.locations, params.midcZone, 'All MIDC Zones');
+    const workModes = this.parseList(params.workModes, params.workMode, 'All Modes');
+    const jobRoles = this.parseList(params.jobRoles, params.trade, 'All Roles');
+    const educations = this.parseList(params.educations, params.education, 'All Education Levels');
+    const jobTypes = this.parseList(params.jobTypes, params.jobType, 'All Types');
 
     // Cache key for Redis with normalized filters
-    const cacheKey = `search:jobs:q=${encodeURIComponent(normalizedQ)}:ind=${encodeURIComponent(normalizedIndustry)}:zone=${encodeURIComponent(normalizedZone)}:type=${encodeURIComponent(normalizedType)}:mode=${encodeURIComponent(normalizedMode)}:p=${page}:l=${limit}`;
+    const cacheKey = `search:jobs:q=${encodeURIComponent(normalizedQ)}:ind=${encodeURIComponent(industries.sort().join(','))}:loc=${encodeURIComponent(locations.sort().join(','))}:mode=${encodeURIComponent(workModes.sort().join(','))}:roles=${encodeURIComponent(jobRoles.sort().join(','))}:edu=${encodeURIComponent(educations.sort().join(','))}:types=${encodeURIComponent(jobTypes.sort().join(','))}:p=${page}:l=${limit}`;
 
     return await CacheService.getOrSet<SearchJobsResult>(cacheKey, 180, async () => {
       // 1. Try Typesense if configured
       if (process.env.TYPESENSE_HOST && process.env.TYPESENSE_API_KEY) {
         try {
-          const typesenseResult = await this.queryTypesense(params, page, limit, offset);
+          const typesenseResult = await this.queryTypesense(params, industries, locations, workModes, jobRoles, jobTypes, page, limit, offset);
           if (typesenseResult) {
             return typesenseResult;
           }
@@ -56,7 +93,18 @@ export class SearchService {
       }
 
       // 2. High-Performance PostgreSQL Full-Text Search Fallback
-      return await this.queryPostgresFullText(params, page, limit, offset);
+      return await this.queryPostgresFullText(
+        params,
+        industries,
+        locations,
+        workModes,
+        jobRoles,
+        educations,
+        jobTypes,
+        page,
+        limit,
+        offset
+      );
     });
   }
 
@@ -65,6 +113,12 @@ export class SearchService {
    */
   private static async queryPostgresFullText(
     params: SearchJobsParams,
+    industries: string[],
+    locations: string[],
+    workModes: string[],
+    jobRoles: string[],
+    educations: string[],
+    jobTypes: string[],
     page: number,
     limit: number,
     offset: number
@@ -87,28 +141,52 @@ export class SearchService {
       paramIndex++;
     }
 
-    if (params.industry && params.industry !== 'All Industries' && params.industry !== 'All') {
-      conditions.push(`j.industry ILIKE $${paramIndex}`);
-      values.push(`%${params.industry}%`);
-      paramIndex++;
+    if (industries.length > 0) {
+      const indClauses = industries.map((ind) => {
+        values.push(`%${ind}%`);
+        return `j.industry ILIKE $${paramIndex++}`;
+      });
+      conditions.push(`(${indClauses.join(' OR ')})`);
     }
 
-    if (params.midcZone && params.midcZone !== 'All MIDC Zones' && params.midcZone !== 'All Locations') {
-      conditions.push(`(j.location ILIKE $${paramIndex} OR j.midc_zone ILIKE $${paramIndex})`);
-      values.push(`%${params.midcZone}%`);
-      paramIndex++;
+    if (locations.length > 0) {
+      const locClauses = locations.map((loc) => {
+        values.push(`%${loc}%`);
+        return `(j.location ILIKE $${paramIndex} OR j.midc_zone ILIKE $${paramIndex++})`;
+      });
+      conditions.push(`(${locClauses.join(' OR ')})`);
     }
 
-    if (params.jobType && params.jobType !== 'All Types') {
-      conditions.push(`(j.job_type = $${paramIndex} OR j.jobType = $${paramIndex})`);
-      values.push(params.jobType);
-      paramIndex++;
+    if (jobRoles.length > 0) {
+      const roleClauses = jobRoles.map((role) => {
+        values.push(`%${role}%`);
+        return `(j.trade ILIKE $${paramIndex} OR j.title ILIKE $${paramIndex++})`;
+      });
+      conditions.push(`(${roleClauses.join(' OR ')})`);
     }
 
-    if (params.workMode && params.workMode !== 'All Modes') {
-      conditions.push(`(j.work_mode = $${paramIndex} OR j.workMode = $${paramIndex})`);
-      values.push(params.workMode);
-      paramIndex++;
+    if (workModes.length > 0) {
+      const wmClauses = workModes.map((wm) => {
+        values.push(`%${wm}%`);
+        return `(j.work_mode ILIKE $${paramIndex} OR j.workMode ILIKE $${paramIndex++})`;
+      });
+      conditions.push(`(${wmClauses.join(' OR ')})`);
+    }
+
+    if (jobTypes.length > 0) {
+      const jtClauses = jobTypes.map((jt) => {
+        values.push(`%${jt}%`);
+        return `(j.job_type ILIKE $${paramIndex} OR j.jobType ILIKE $${paramIndex++})`;
+      });
+      conditions.push(`(${jtClauses.join(' OR ')})`);
+    }
+
+    if (educations.length > 0) {
+      const eduClauses = educations.map((edu) => {
+        values.push(`%${edu}%`);
+        return `(j.title ILIKE $${paramIndex} OR j.description ILIKE $${paramIndex} OR j.requirements::text ILIKE $${paramIndex} OR j.education_requirement ILIKE $${paramIndex++})`;
+      });
+      conditions.push(`(${eduClauses.join(' OR ')})`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -150,6 +228,11 @@ export class SearchService {
    */
   private static async queryTypesense(
     params: SearchJobsParams,
+    industries: string[],
+    locations: string[],
+    workModes: string[],
+    jobRoles: string[],
+    jobTypes: string[],
     page: number,
     limit: number,
     offset: number
@@ -170,14 +253,17 @@ export class SearchService {
       });
 
       const filters: string[] = [];
-      if (params.industry && params.industry !== 'All Industries') {
-        filters.push(`industry:=[${params.industry}]`);
+      if (industries.length > 0) {
+        filters.push(`industry:=[${industries.join(',')}]`);
       }
-      if (params.jobType && params.jobType !== 'All Types') {
-        filters.push(`job_type:=[${params.jobType}]`);
+      if (jobTypes.length > 0) {
+        filters.push(`job_type:=[${jobTypes.join(',')}]`);
       }
-      if (params.workMode && params.workMode !== 'All Modes') {
-        filters.push(`work_mode:=[${params.workMode}]`);
+      if (workModes.length > 0) {
+        filters.push(`work_mode:=[${workModes.join(',')}]`);
+      }
+      if (jobRoles.length > 0) {
+        filters.push(`trade:=[${jobRoles.join(',')}]`);
       }
       if (filters.length > 0) {
         queryParams.set('filter_by', filters.join(' && '));

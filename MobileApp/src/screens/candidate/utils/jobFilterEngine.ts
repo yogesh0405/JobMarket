@@ -10,9 +10,9 @@ function normalizeAlphanumeric(val: string): string {
 }
 
 /**
- * Checks if a candidate's industry selection matches a given job
+ * Checks if a candidate's single industry selection matches a given job
  */
-function matchIndustry(job: Job, targetIndustry: string): boolean {
+function matchSingleIndustry(job: Job, targetIndustry: string): boolean {
   if (!targetIndustry || targetIndustry === 'All Industries') return true;
 
   const rawTarget = targetIndustry.toLowerCase().trim();
@@ -234,9 +234,23 @@ function matchIndustry(job: Job, targetIndustry: string): boolean {
 }
 
 /**
- * Checks if a candidate's education selection matches a given job
+ * Checks if a candidate's industry selection (single or multi-select) matches a given job
  */
-function matchEducation(job: Job, targetEducation: string): boolean {
+function matchIndustry(job: Job, targetIndustry?: string, targetIndustries?: string[]): boolean {
+  if (Array.isArray(targetIndustries) && targetIndustries.length > 0) {
+    const valid = targetIndustries.filter(
+      (ind) => ind && ind.trim() !== 'All Industries' && ind.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((ind) => matchSingleIndustry(job, ind));
+  }
+  return matchSingleIndustry(job, targetIndustry || 'All Industries');
+}
+
+/**
+ * Checks if a candidate's single education selection matches a given job
+ */
+function matchSingleEducation(job: Job, targetEducation: string): boolean {
   if (!targetEducation || targetEducation === 'All Education Levels') return true;
 
   const target = targetEducation.toLowerCase().trim();
@@ -362,9 +376,23 @@ function matchEducation(job: Job, targetEducation: string): boolean {
 }
 
 /**
- * Checks if a candidate's job role matches a given job
+ * Checks if a candidate's education selection (single or multi-select) matches a given job
  */
-function matchJobRole(job: Job, targetRole?: string): boolean {
+function matchEducation(job: Job, targetEducation?: string, targetEducations?: string[]): boolean {
+  if (Array.isArray(targetEducations) && targetEducations.length > 0) {
+    const valid = targetEducations.filter(
+      (edu) => edu && edu.trim() !== 'All Education Levels' && edu.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((edu) => matchSingleEducation(job, edu));
+  }
+  return matchSingleEducation(job, targetEducation || 'All Education Levels');
+}
+
+/**
+ * Checks if a candidate's single job role matches a given job
+ */
+function matchSingleJobRole(job: Job, targetRole?: string): boolean {
   if (!targetRole || targetRole === 'All Roles') return true;
 
   const roleTarget = targetRole.toLowerCase().trim();
@@ -388,6 +416,20 @@ function matchJobRole(job: Job, targetRole?: string): boolean {
     roleTokens.length === 0 ||
     roleTokens.some((t) => allText.includes(t))
   );
+}
+
+/**
+ * Checks if a candidate's job role selection (single or multi-select) matches a given job
+ */
+function matchJobRole(job: Job, targetRole?: string, targetRoles?: string[]): boolean {
+  if (Array.isArray(targetRoles) && targetRoles.length > 0) {
+    const valid = targetRoles.filter(
+      (r) => r && r.trim() !== 'All Roles' && r.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((r) => matchSingleJobRole(job, r));
+  }
+  return matchSingleJobRole(job, targetRole);
 }
 
 /**
@@ -456,10 +498,10 @@ function matchExperience(job: Job, targetExp?: string): boolean {
 }
 
 /**
- * Checks if a candidate's MIDC / Location selection matches a given job
+ * Checks if a candidate's single MIDC / Location selection matches a given job
  */
-function matchLocation(job: Job, targetZone?: string): boolean {
-  if (!targetZone || targetZone === 'All MIDC Zones') return true;
+function matchSingleLocation(job: Job, targetZone?: string): boolean {
+  if (!targetZone || targetZone === 'All MIDC Zones' || targetZone === 'All Locations') return true;
 
   const rawZone = targetZone.toLowerCase().trim();
   const jobMidc = ((job as any).midc_zone || (job as any).midcZone || '').toLowerCase();
@@ -511,9 +553,23 @@ function matchLocation(job: Job, targetZone?: string): boolean {
 }
 
 /**
- * Checks if a candidate's Job Type selection matches a given job
+ * Checks if a candidate's location selection (single or multi-select) matches a given job
  */
-function matchJobType(job: Job, targetType?: string): boolean {
+function matchLocation(job: Job, targetZone?: string, targetLocations?: string[]): boolean {
+  if (Array.isArray(targetLocations) && targetLocations.length > 0) {
+    const valid = targetLocations.filter(
+      (loc) => loc && loc.trim() !== 'All MIDC Zones' && loc.trim() !== 'All Locations' && loc.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((loc) => matchSingleLocation(job, loc));
+  }
+  return matchSingleLocation(job, targetZone);
+}
+
+/**
+ * Checks if a candidate's single Job Type selection matches a given job
+ */
+function matchSingleJobType(job: Job, targetType?: string): boolean {
   if (!targetType || targetType === 'All Types') return true;
 
   const targetClean = normalizeAlphanumeric(targetType);
@@ -524,9 +580,23 @@ function matchJobType(job: Job, targetType?: string): boolean {
 }
 
 /**
- * Checks if a candidate's Work Mode selection matches a given job
+ * Checks if a candidate's Job Type selection (single or multi-select) matches a given job
  */
-function matchWorkMode(job: Job, targetMode?: string): boolean {
+function matchJobType(job: Job, targetType?: string, targetTypes?: string[]): boolean {
+  if (Array.isArray(targetTypes) && targetTypes.length > 0) {
+    const valid = targetTypes.filter(
+      (t) => t && t.trim() !== 'All Types' && t.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((t) => matchSingleJobType(job, t));
+  }
+  return matchSingleJobType(job, targetType);
+}
+
+/**
+ * Checks if a candidate's single Work Mode selection matches a given job
+ */
+function matchSingleWorkMode(job: Job, targetMode?: string): boolean {
   if (!targetMode || targetMode === 'All Modes') return true;
 
   const targetClean = normalizeAlphanumeric(targetMode);
@@ -534,6 +604,20 @@ function matchWorkMode(job: Job, targetMode?: string): boolean {
 
   if (!jModeClean) return true; // If unspecified, don't over-filter
   return jModeClean.includes(targetClean) || targetClean.includes(jModeClean);
+}
+
+/**
+ * Checks if a candidate's Work Mode selection (single or multi-select) matches a given job
+ */
+function matchWorkMode(job: Job, targetMode?: string, targetModes?: string[]): boolean {
+  if (Array.isArray(targetModes) && targetModes.length > 0) {
+    const valid = targetModes.filter(
+      (m) => m && m.trim() !== 'All Modes' && m.trim() !== 'All'
+    );
+    if (valid.length === 0) return true;
+    return valid.some((m) => matchSingleWorkMode(job, m));
+  }
+  return matchSingleWorkMode(job, targetMode);
 }
 
 /**
@@ -684,18 +768,18 @@ export function evaluateJobMatchesFilter(
     return false;
   }
 
-  // 3. Industry
-  if (!matchIndustry(job, filters.industry)) {
+  // 3. Industry (Single or Multi-Select)
+  if (!matchIndustry(job, filters.industry, filters.industries)) {
     return false;
   }
 
-  // 4. Education
-  if (!matchEducation(job, filters.education || 'All Education Levels')) {
+  // 4. Education (Single or Multi-Select)
+  if (!matchEducation(job, filters.education || 'All Education Levels', filters.educations)) {
     return false;
   }
 
-  // 5. Job Role
-  if (!matchJobRole(job, filters.jobRole)) {
+  // 5. Job Role (Single or Multi-Select)
+  if (!matchJobRole(job, filters.jobRole, filters.jobRoles)) {
     return false;
   }
 
@@ -704,18 +788,18 @@ export function evaluateJobMatchesFilter(
     return false;
   }
 
-  // 7. Location / MIDC Zone
-  if (!matchLocation(job, filters.midcZone)) {
+  // 7. Location / MIDC Zone (Single or Multi-Select)
+  if (!matchLocation(job, filters.midcZone, filters.locations)) {
     return false;
   }
 
-  // 8. Job Type
-  if (!matchJobType(job, filters.jobType)) {
+  // 8. Job Type (Single or Multi-Select)
+  if (!matchJobType(job, filters.jobType, filters.jobTypes)) {
     return false;
   }
 
-  // 9. Work Mode
-  if (!matchWorkMode(job, filters.workMode)) {
+  // 9. Work Mode (Single or Multi-Select)
+  if (!matchWorkMode(job, filters.workMode, filters.workModes)) {
     return false;
   }
 
@@ -734,4 +818,101 @@ export function evaluateJobMatchesFilter(
   }
 
   return true;
+}
+
+/**
+ * Calculates a relevance score for an industry-grade search result.
+ * Higher scores represent superior matches across multiple facets.
+ */
+export function calculateJobRelevanceScore(
+  job: Job,
+  filters: FilterOptions,
+  searchQuery: string = ''
+): number {
+  let score = 0;
+  const q = searchQuery.toLowerCase().trim();
+  const title = (job.title || '').toLowerCase();
+  const trade = (job.trade || '').toLowerCase();
+  const company = (job.company || '').toLowerCase();
+  const industry = (job.industry || '').toLowerCase();
+  const skills = Array.isArray(job.skills) ? job.skills.join(' ').toLowerCase() : '';
+  const location = (job.location || '').toLowerCase();
+
+  // Search Query matching weights
+  if (q) {
+    if (title === q) score += 100;
+    else if (title.startsWith(q)) score += 60;
+    else if (title.includes(q)) score += 40;
+
+    if (trade === q) score += 50;
+    else if (trade.includes(q)) score += 30;
+
+    if (skills.includes(q)) score += 25;
+    if (company.includes(q)) score += 20;
+    if (industry.includes(q)) score += 15;
+    if (location.includes(q)) score += 10;
+  }
+
+  // Multi-select matching density boosts
+  if (filters.industries && filters.industries.length > 0) {
+    const matchCount = filters.industries.filter((ind) => matchSingleIndustry(job, ind)).length;
+    score += matchCount * 15;
+  }
+
+  if (filters.jobRoles && filters.jobRoles.length > 0) {
+    const matchCount = filters.jobRoles.filter((role) => matchSingleJobRole(job, role)).length;
+    score += matchCount * 20;
+  }
+
+  if (filters.locations && filters.locations.length > 0) {
+    const matchCount = filters.locations.filter((loc) => matchSingleLocation(job, loc)).length;
+    score += matchCount * 15;
+  }
+
+  if (filters.educations && filters.educations.length > 0) {
+    const matchCount = filters.educations.filter((edu) => matchSingleEducation(job, edu)).length;
+    score += matchCount * 10;
+  }
+
+  if (filters.workModes && filters.workModes.length > 0) {
+    const matchCount = filters.workModes.filter((wm) => matchSingleWorkMode(job, wm)).length;
+    score += matchCount * 5;
+  }
+
+  // Freshness & Verification boosts
+  const statusStr = String(job.status || '').toUpperCase();
+  if (statusStr === 'APPROVED' || statusStr === 'ACTIVE') score += 5;
+  const postedAt = job.posted_at ? new Date(job.posted_at).getTime() : 0;
+  if (postedAt > 0) {
+    const daysOld = (Date.now() - postedAt) / (1000 * 60 * 60 * 24);
+    if (daysOld <= 3) score += 10;
+    else if (daysOld <= 7) score += 5;
+  }
+
+  return score;
+}
+
+/**
+ * Filter and rank job results by industry-grade relevance
+ */
+export function rankAndFilterJobs(
+  jobs: Job[],
+  filters: FilterOptions,
+  searchQuery: string = '',
+  selectedCategory: string = 'All Jobs'
+): Job[] {
+  const matching = jobs.filter((job) =>
+    evaluateJobMatchesFilter(job, filters, searchQuery, selectedCategory)
+  );
+
+  return matching.sort((a, b) => {
+    const scoreA = calculateJobRelevanceScore(a, filters, searchQuery);
+    const scoreB = calculateJobRelevanceScore(b, filters, searchQuery);
+    if (scoreB !== scoreA) {
+      return scoreB - scoreA;
+    }
+    const dateA = a.posted_at ? new Date(a.posted_at).getTime() : 0;
+    const dateB = b.posted_at ? new Date(b.posted_at).getTime() : 0;
+    return dateB - dateA;
+  });
 }
