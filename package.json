@@ -8,6 +8,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:all": "npm --prefix backend run dev & npm --prefix App run dev",
     "dev:mobile": "npm --prefix mobile run dev",
+    "dev:workjob-admin": "npm --prefix work-job/admin run dev",
+    "build:workjob-admin": "npm --prefix work-job/admin run build",
     "build": "npm --prefix backend run build && npm --prefix App run build"
   }
 }

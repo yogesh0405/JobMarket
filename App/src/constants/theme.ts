@@ -170,18 +170,33 @@ export const applyThemeToCssVariables = () => {
   root.style.setProperty('--radius-lg', THEME.radius.lg);
   root.style.setProperty('--radius-full', THEME.radius.full);
 
-  // Typography Tokens
-  root.style.setProperty('--font-hero-title', THEME.fontSizes.heroTitle);
-  root.style.setProperty('--font-section-title', THEME.fontSizes.sectionTitle);
-  root.style.setProperty('--font-card-title', THEME.fontSizes.cardTitle);
-  root.style.setProperty('--font-body', THEME.fontSizes.body);
-  root.style.setProperty('--font-body-small', THEME.fontSizes.bodySmall);
-  root.style.setProperty('--font-caption', THEME.fontSizes.caption);
-  root.style.setProperty('--font-metadata', THEME.fontSizes.metadata);
-  root.style.setProperty('--font-label-caps', THEME.fontSizes.labelCaps);
-  root.style.setProperty('--font-badge', THEME.fontSizes.badge);
-  root.style.setProperty('--font-pill', THEME.fontSizes.pill);
-  root.style.setProperty('--font-button', THEME.fontSizes.button);
+  // Typography Tokens - responsive: preserve mobile sizes, scale up for desktop
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 767;
+  if (isMobile) {
+    root.style.setProperty('--font-hero-title', THEME.fontSizes.heroTitle);
+    root.style.setProperty('--font-section-title', THEME.fontSizes.sectionTitle);
+    root.style.setProperty('--font-card-title', THEME.fontSizes.cardTitle);
+    root.style.setProperty('--font-body', THEME.fontSizes.body);
+    root.style.setProperty('--font-body-small', THEME.fontSizes.bodySmall);
+    root.style.setProperty('--font-caption', THEME.fontSizes.caption);
+    root.style.setProperty('--font-metadata', THEME.fontSizes.metadata);
+    root.style.setProperty('--font-label-caps', THEME.fontSizes.labelCaps);
+    root.style.setProperty('--font-badge', THEME.fontSizes.badge);
+    root.style.setProperty('--font-pill', THEME.fontSizes.pill);
+    root.style.setProperty('--font-button', THEME.fontSizes.button);
+  } else {
+    root.style.setProperty('--font-hero-title', '24px');
+    root.style.setProperty('--font-section-title', '20px');
+    root.style.setProperty('--font-card-title', '16px');
+    root.style.setProperty('--font-body', '14px');
+    root.style.setProperty('--font-body-small', '13px');
+    root.style.setProperty('--font-caption', '12px');
+    root.style.setProperty('--font-metadata', '11.5px');
+    root.style.setProperty('--font-label-caps', '11px');
+    root.style.setProperty('--font-badge', '12px');
+    root.style.setProperty('--font-pill', '11px');
+    root.style.setProperty('--font-button', '14px');
+  }
 
   // Shadow
   root.style.setProperty('--shadow-card', THEME.shadows.card);

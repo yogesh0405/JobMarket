@@ -78,6 +78,10 @@ export class AdminService {
   }
 
   // Job Approvals
+  static async getJobStats() {
+    return AdminRepository.getJobStats();
+  }
+
   static async listJobs(filters: any) {
     return AdminRepository.getJobs(filters);
   }

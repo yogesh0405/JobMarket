@@ -83,6 +83,15 @@ export class AdminController {
     }
   }
 
+  static async getJobStats(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await AdminService.getJobStats();
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async listJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const data = await AdminService.listJobs(req.query as any);

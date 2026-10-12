@@ -11,13 +11,13 @@ export interface PaginatedResult<T> {
 export class AdminRepository {
   // 1. Dashboard Statistics
   static async getStats(): Promise<any> {
-    return CacheService.getOrSet('cache:admin:stats', 60, async () => {
+    return CacheService.getOrSet('cache:admin:stats', 10, async () => {
       const usersCountQuery = `
         SELECT 
           COUNT(*) as total_users,
-          COUNT(CASE WHEN role = 'candidate' THEN 1 END) as total_workers,
-          COUNT(CASE WHEN role = 'employer' THEN 1 END) as total_employers,
-          COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('candidate', 'job_seeker', 'worker') THEN 1 END) as total_workers,
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('employer', 'recruiter') THEN 1 END) as total_employers,
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('admin', 'superadmin') THEN 1 END) as total_admins
         FROM users;
       `;
 
@@ -26,7 +26,8 @@ export class AdminRepository {
           COUNT(*) as total_jobs,
           COUNT(CASE WHEN UPPER(status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT') THEN 1 END) as pending_jobs,
           COUNT(CASE WHEN UPPER(status) IN ('APPROVED', 'ACTIVE') THEN 1 END) as approved_jobs,
-          COUNT(CASE WHEN UPPER(status) IN ('REJECTED', 'CLOSED') THEN 1 END) as rejected_jobs
+          COUNT(CASE WHEN UPPER(status) IN ('REJECTED', 'CLOSED') THEN 1 END) as rejected_jobs,
+          COUNT(CASE WHEN posted_at >= CURRENT_DATE OR created_at >= CURRENT_DATE THEN 1 END) as jobs_today
         FROM jobs;
       `;
 
@@ -52,7 +53,7 @@ export class AdminRepository {
       const companyCountQuery = `
         SELECT COUNT(DISTINCT company_name) as total_companies 
         FROM users 
-        WHERE role = 'employer' AND company_name IS NOT NULL;
+        WHERE LOWER(TRIM(role)) IN ('employer', 'recruiter') AND company_name IS NOT NULL;
       `;
 
       const [uRes, jRes, aRes, rRes, oRes, cRes] = await Promise.all([
@@ -84,7 +85,7 @@ export class AdminRepository {
 
   // Analytics Chart Data
   static async getChartsData(): Promise<any> {
-    return CacheService.getOrSet('cache:admin:charts', 300, async () => {
+    return CacheService.getOrSet('cache:admin:charts', 10, async () => {
       const dailyRegistrationsQuery = `
         SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
         FROM users
@@ -118,20 +119,158 @@ export class AdminRepository {
         GROUP BY COALESCE(NULLIF(j.midc_zone, ''), NULLIF(j.location, ''), 'Other MIDC') ORDER BY count DESC LIMIT 5;
       `;
 
-      const [regRes, jobRes, appRes, catRes, locRes] = await Promise.all([
+      const userDistributionQuery = `
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('candidate', 'job_seeker', 'worker') THEN 1 END)::int as job_seekers,
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('employer', 'recruiter') THEN 1 END)::int as employers,
+          COUNT(CASE WHEN LOWER(TRIM(role)) IN ('admin', 'superadmin') THEN 1 END)::int as admins
+        FROM users;
+      `;
+
+      const growthQuery = `
+        WITH days_14 AS (
+          SELECT generate_series(
+            DATE_TRUNC('day', CURRENT_DATE - INTERVAL '13 days'),
+            DATE_TRUNC('day', CURRENT_DATE),
+            '1 day'::interval
+          ) as day
+        ),
+        days_30 AS (
+          SELECT generate_series(
+            DATE_TRUNC('day', CURRENT_DATE - INTERVAL '29 days'),
+            DATE_TRUNC('day', CURRENT_DATE),
+            '1 day'::interval
+          ) as day
+        )
+        SELECT
+          (
+            SELECT json_agg(u14) FROM (
+              SELECT 
+                TO_CHAR(d.day, 'DD Mon') as label,
+                TO_CHAR(d.day, 'YYYY-MM-DD') as date,
+                COALESCE(COUNT(u.id), 0)::int as count
+              FROM days_14 d
+              LEFT JOIN users u ON DATE_TRUNC('day', u.created_at) = d.day
+              GROUP BY d.day ORDER BY d.day ASC
+            ) u14
+          ) as user_growth_14d,
+          (
+            SELECT json_agg(j14) FROM (
+              SELECT 
+                TO_CHAR(d.day, 'DD Mon') as label,
+                TO_CHAR(d.day, 'YYYY-MM-DD') as date,
+                COALESCE(COUNT(j.id), 0)::int as posted,
+                COALESCE(SUM(COALESCE(j.filled_openings, 0)), 0)::int as filled
+              FROM days_14 d
+              LEFT JOIN jobs j ON DATE_TRUNC('day', j.created_at) = d.day
+              GROUP BY d.day ORDER BY d.day ASC
+            ) j14
+          ) as job_trends_14d,
+          (
+            SELECT json_agg(u30) FROM (
+              SELECT 
+                TO_CHAR(d.day, 'DD Mon') as label,
+                TO_CHAR(d.day, 'YYYY-MM-DD') as date,
+                COALESCE(COUNT(u.id), 0)::int as count
+              FROM days_30 d
+              LEFT JOIN users u ON DATE_TRUNC('day', u.created_at) = d.day
+              GROUP BY d.day ORDER BY d.day ASC
+            ) u30
+          ) as user_growth_30d,
+          (
+            SELECT json_agg(j30) FROM (
+              SELECT 
+                TO_CHAR(d.day, 'DD Mon') as label,
+                TO_CHAR(d.day, 'YYYY-MM-DD') as date,
+                COALESCE(COUNT(j.id), 0)::int as posted,
+                COALESCE(SUM(COALESCE(j.filled_openings, 0)), 0)::int as filled
+              FROM days_30 d
+              LEFT JOIN jobs j ON DATE_TRUNC('day', j.created_at) = d.day
+              GROUP BY d.day ORDER BY d.day ASC
+            ) j30
+          ) as job_trends_30d,
+          (
+            SELECT json_agg(um) FROM (
+              SELECT 
+                TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as label,
+                COUNT(*)::int as count
+              FROM users
+              GROUP BY DATE_TRUNC('month', created_at)
+              ORDER BY DATE_TRUNC('month', created_at) ASC
+            ) um
+          ) as user_growth_monthly,
+          (
+            SELECT json_agg(jm) FROM (
+              SELECT 
+                TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as label,
+                COUNT(*)::int as posted,
+                COALESCE(SUM(COALESCE(filled_openings, 0)), 0)::int as filled
+              FROM jobs
+              GROUP BY DATE_TRUNC('month', created_at)
+              ORDER BY DATE_TRUNC('month', created_at) ASC
+            ) jm
+          ) as job_trends_monthly;
+      `;
+
+      const [regRes, jobRes, appRes, catRes, locRes, uDistRes, growthRes] = await Promise.all([
         pool.query(dailyRegistrationsQuery),
         pool.query(dailyJobsQuery),
         pool.query(dailyApplicationsQuery),
         pool.query(topCategoriesQuery),
-        pool.query(topLocationsQuery)
+        pool.query(topLocationsQuery),
+        pool.query(userDistributionQuery),
+        pool.query(growthQuery)
       ]);
+
+      const uDist = uDistRes.rows[0] || {};
+      const totalU = parseInt(uDist.total || '0', 10);
+      const jsCount = parseInt(uDist.job_seekers || '0', 10);
+      const empCount = parseInt(uDist.employers || '0', 10);
+      const admCount = parseInt(uDist.admins || '0', 10);
+
+      const calcPct = (c: number) => totalU > 0 ? Number(((c / totalU) * 100).toFixed(1)) : 0;
+
+      const userDistribution = [
+        {
+          key: 'job_seekers',
+          label: 'Job Seekers (Candidates)',
+          count: jsCount,
+          percentage: calcPct(jsCount),
+          color: '#0EA5E9'
+        },
+        {
+          key: 'employers',
+          label: 'Employers',
+          count: empCount,
+          percentage: calcPct(empCount),
+          color: '#8B5CF6'
+        },
+        {
+          key: 'admins',
+          label: 'Admins (System)',
+          count: admCount,
+          percentage: calcPct(admCount),
+          color: '#64748B'
+        }
+      ];
+
+      const gRow = growthRes.rows[0] || {};
 
       return {
         dailyRegistrations: regRes.rows,
         dailyJobs: jobRes.rows,
         dailyApplications: appRes.rows,
         topCategories: catRes.rows,
-        topLocations: locRes.rows
+        topLocations: locRes.rows,
+        userDistribution,
+        userDistributionTotal: totalU,
+        userGrowth14d: gRow.user_growth_14d || [],
+        jobTrends14d: gRow.job_trends_14d || [],
+        userGrowth30d: gRow.user_growth_30d || [],
+        jobTrends30d: gRow.job_trends_30d || [],
+        userGrowthMonthly: gRow.user_growth_monthly || [],
+        jobTrendsMonthly: gRow.job_trends_monthly || []
       };
     });
   }
@@ -304,21 +443,21 @@ export class AdminRepository {
     let paramIndex = 1;
 
     if (search) {
-      queryParts.push(`(title ILIKE $${paramIndex} OR company ILIKE $${paramIndex} OR location ILIKE $${paramIndex} OR trade ILIKE $${paramIndex})`);
+      queryParts.push(`(j.title ILIKE $${paramIndex} OR j.company ILIKE $${paramIndex} OR j.location ILIKE $${paramIndex} OR j.trade ILIKE $${paramIndex} OR u.name ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex})`);
       values.push(`%${search}%`);
       paramIndex++;
     }
 
-    if (status) {
+    if (status && status.toUpperCase() !== 'ALL') {
       const s = status.toUpperCase();
       if (s === 'PENDING_REVIEW' || s === 'PENDING' || s === 'PENDING_APPROVAL') {
-        queryParts.push(`UPPER(status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT')`);
+        queryParts.push(`UPPER(j.status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT')`);
       } else if (s === 'APPROVED' || s === 'ACTIVE') {
-        queryParts.push(`UPPER(status) IN ('APPROVED', 'ACTIVE')`);
+        queryParts.push(`UPPER(j.status) IN ('APPROVED', 'ACTIVE')`);
       } else if (s === 'REJECTED' || s === 'CLOSED') {
-        queryParts.push(`UPPER(status) IN ('REJECTED', 'CLOSED')`);
+        queryParts.push(`UPPER(j.status) IN ('REJECTED', 'CLOSED')`);
       } else {
-        queryParts.push(`UPPER(status) = $${paramIndex}`);
+        queryParts.push(`UPPER(j.status) = $${paramIndex}`);
         values.push(s);
         paramIndex++;
       }
@@ -326,22 +465,25 @@ export class AdminRepository {
 
     const whereClause = queryParts.length > 0 ? `WHERE ${queryParts.join(' AND ')}` : '';
 
-    const allowedSortFields = ['title', 'company', 'location', 'posted_at', 'status', 'salary_max'];
+    const allowedSortFields = ['title', 'company', 'location', 'posted_at', 'status', 'salary_max', 'created_at'];
     const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'posted_at';
     const validSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const countQuery = `SELECT COUNT(*) FROM jobs ${whereClause};`;
+    const countQuery = `SELECT COUNT(*) FROM jobs j LEFT JOIN users u ON j.employer_id = u.id ${whereClause};`;
     const countRes = await pool.query(countQuery, values);
     const total = parseInt(countRes.rows[0].count, 10);
 
     const dataQuery = `
-      SELECT id, employer_id, company, company_logo, company_color, title, industry, location,
-             job_type, work_mode, min_experience, max_experience, salary_min, salary_max,
-             openings, filled_openings, featured, status, posted_at, overtime, trade, midc_zone,
-             (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count
-      FROM jobs
+      SELECT j.id, j.employer_id, j.company, j.company_logo, j.company_color, j.title, j.industry, j.location,
+             j.job_type, j.work_mode, j.min_experience, j.max_experience, j.salary_min, j.salary_max,
+             j.openings, j.filled_openings, j.featured, j.status, j.posted_at, j.created_at, j.overtime, j.trade, j.midc_zone,
+             j.description, j.responsibilities, j.requirements, j.reject_reason,
+             u.name as employer_name, u.email as employer_email, u.phone as employer_phone, u.company_name as user_company_name,
+             (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_id = j.id) as applicants_count
+      FROM jobs j
+      LEFT JOIN users u ON j.employer_id = u.id
       ${whereClause}
-      ORDER BY ${validSortBy} ${validSortOrder}
+      ORDER BY j.${validSortBy} ${validSortOrder}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
 
@@ -353,6 +495,29 @@ export class AdminRepository {
       page: safePage,
       limit: safeLimit
     };
+  }
+
+  static async getJobStats(): Promise<any> {
+    return CacheService.getOrSet('cache:admin:job_stats', 5, async () => {
+      const q = `
+        SELECT 
+          COUNT(*) as total_jobs,
+          COUNT(CASE WHEN UPPER(status) IN ('PENDING_REVIEW', 'PENDING', 'PENDING_APPROVAL', 'IN_REVIEW', 'UNDER_APPROVAL', 'DRAFT') THEN 1 END)::int as pending,
+          COUNT(CASE WHEN UPPER(status) IN ('APPROVED', 'ACTIVE') THEN 1 END)::int as approved,
+          COUNT(CASE WHEN UPPER(status) IN ('REJECTED', 'CLOSED') THEN 1 END)::int as rejected,
+          COUNT(CASE WHEN posted_at >= CURRENT_DATE OR created_at >= CURRENT_DATE THEN 1 END)::int as today
+        FROM jobs;
+      `;
+      const res = await pool.query(q);
+      const row = res.rows[0] || {};
+      return {
+        total: parseInt(row.total_jobs || '0', 10),
+        pending: parseInt(row.pending || '0', 10),
+        approved: parseInt(row.approved || '0', 10),
+        rejected: parseInt(row.rejected || '0', 10),
+        today: parseInt(row.today || '0', 10)
+      };
+    });
   }
 
   static async getJobDetails(jobId: string): Promise<any> {

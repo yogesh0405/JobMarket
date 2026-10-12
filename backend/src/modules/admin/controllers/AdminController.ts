@@ -145,6 +145,15 @@ export class AdminController {
   }
 
   // Job management
+  static async getJobStats(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await AdminService.getJobStats();
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async listJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const page = safeInt(req.query.page, 1);
@@ -172,12 +181,19 @@ export class AdminController {
   static async listPendingJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const page = safeInt(req.query.page, 1);
-      const limit = safeInt(req.query.limit, 10);
+      const limit = safeInt(req.query.limit, 100);
+      const search = req.query.search as string;
+      const status = req.query.status ? (req.query.status as string) : 'PENDING_REVIEW';
+      const sortBy = req.query.sortBy as string;
+      const sortOrder = req.query.sortOrder as 'ASC' | 'DESC';
 
       const result = await AdminService.listJobs({
         page,
         limit,
-        status: 'PENDING_REVIEW'
+        search,
+        status,
+        sortBy,
+        sortOrder
       });
 
       res.status(200).json({ success: true, data: result });

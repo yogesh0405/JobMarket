@@ -4,6 +4,7 @@ import {
   Search,
   MapPin,
   Briefcase,
+  ChevronLeft,
   ChevronRight,
   ArrowRight,
   X,
@@ -414,6 +415,52 @@ export const HomePage: React.FC = () => {
     });
   }, [activeRoleTab, allJobs]);
 
+  // Horizontal Menu Next & Previous 3-jobs carousel controls
+  const rolesCarouselRef = useRef<HTMLDivElement>(null);
+  const [canScrollRolesPrev, setCanScrollRolesPrev] = useState(false);
+  const [canScrollRolesNext, setCanScrollRolesNext] = useState(true);
+
+  const checkRolesScroll = useCallback(() => {
+    if (rolesCarouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = rolesCarouselRef.current;
+      setCanScrollRolesPrev(scrollLeft > 10);
+      setCanScrollRolesNext(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(checkRolesScroll, 150);
+    window.addEventListener('resize', checkRolesScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkRolesScroll);
+    };
+  }, [checkRolesScroll, roleFilteredJobs, activeRoleTab]);
+
+  useEffect(() => {
+    if (rolesCarouselRef.current) {
+      rolesCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+    setTimeout(checkRolesScroll, 200);
+  }, [activeRoleTab, checkRolesScroll]);
+
+  const handleScrollRolesPrev = () => {
+    if (rolesCarouselRef.current) {
+      // 3 cards step: (290px card width + 14px gap) * 3 = 912px
+      const cardStep = (290 + 14) * 3;
+      rolesCarouselRef.current.scrollBy({ left: -cardStep, behavior: 'smooth' });
+      setTimeout(checkRolesScroll, 400);
+    }
+  };
+
+  const handleScrollRolesNext = () => {
+    if (rolesCarouselRef.current) {
+      const cardStep = (290 + 14) * 3;
+      rolesCarouselRef.current.scrollBy({ left: cardStep, behavior: 'smooth' });
+      setTimeout(checkRolesScroll, 400);
+    }
+  };
+
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const params = new URLSearchParams();
@@ -464,12 +511,12 @@ export const HomePage: React.FC = () => {
       <style>{`
         .home-main-container {
           width: 100%;
-          max-width: 960px;
+          max-width: 1180px;
           margin: 0 auto;
-          padding: 20px 16px 80px 16px;
+          padding: 24px 20px 80px 20px;
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 24px;
           box-sizing: border-box;
         }
 
@@ -482,60 +529,289 @@ export const HomePage: React.FC = () => {
         .home-search-fields-grid {
           display: grid;
           grid-template-columns: 1fr 1fr 1.25fr auto;
-          gap: 10px;
+          gap: 12px;
           align-items: center;
         }
 
         .home-search-submit-btn {
-          height: 42px;
-          padding: 0 18px;
+          height: 46px;
+          padding: 0 20px;
           white-space: nowrap;
           margin-top: 0 !important;
+          font-size: 14px;
+          font-weight: 700;
         }
 
         .home-stats-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 14px;
+          gap: 16px;
+        }
+
+        .home-stat-card {
+          background-color: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          border-radius: 8px;
+          padding: 16px 14px;
+          text-align: center;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+
+        .home-stat-card .stat-number {
+          font-size: 26px;
+          font-weight: 900;
+          line-height: 1.2;
+        }
+
+        .home-stat-card .stat-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748B;
+          margin-top: 4px;
+        }
+
+        /* Category Header Styles Desktop */
+        .home-category-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          margin: 38px 0 0 0;
+        }
+
+        .home-category-badge {
+          display: inline-block;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 4px 12px;
+          border-radius: 4px;
+          margin-bottom: 8px;
+          letter-spacing: 0.4px;
+        }
+
+        .home-category-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0 0 6px 0;
+          text-align: center;
+          letter-spacing: -0.2px;
+        }
+
+        .home-category-sub {
+          font-size: 14px;
+          color: #64748B;
+          margin: 0 0 18px 0;
+          text-align: center;
         }
 
         .home-jobs-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
+          gap: 14px;
         }
 
-        .home-trades-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-          gap: 8px;
-        }
-
-        .home-education-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-          gap: 8px;
-        }
-
-        .home-healthcare-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-          gap: 8px;
-        }
-
+        .home-trades-grid,
+        .home-education-grid,
+        .home-healthcare-grid,
         .home-hospitality-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-          gap: 8px;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 12px;
+          width: 100%;
+        }
+
+        .home-chip-card {
+          background-color: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          border-radius: 8px;
+          padding: 14px 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          transition: all 0.15s ease;
+        }
+
+        .home-chip-icon-box {
+          width: 38px;
+          height: 38px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+        }
+
+        .home-chip-title {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: #0F172A;
+          line-height: 17px;
+          min-height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .home-chip-count {
+          font-size: 11.5px;
+          color: #64748B;
+          font-weight: 600;
+          margin-top: 4px;
+        }
+
+        /* Advantage Section Desktop */
+        .home-advantage-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          margin: 44px 0 0 0;
         }
 
         .home-advantage-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+          gap: 18px;
+          width: 100%;
         }
 
-        @media (max-width: 991px) {
+        .home-advantage-card {
+          background-color: #FFFFFF;
+          border-radius: 8px;
+          border: 1px solid #CBD5E1;
+          padding: 18px 20px;
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+
+        .home-advantage-title {
+          font-size: 15.5px;
+          font-weight: 700;
+          color: #0F172A;
+        }
+
+        .home-advantage-desc {
+          font-size: 13.5px;
+          color: #64748B;
+          margin-top: 4px;
+          line-height: 19px;
+        }
+
+        /* Popular Roles Section Desktop */
+        .home-popular-roles-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          width: 100%;
+          margin: 44px 0 36px 0;
+        }
+
+        .home-popular-roles-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0;
+          letter-spacing: -0.2px;
+        }
+
+        .home-popular-roles-badge {
+          font-size: 11.5px;
+          font-weight: 800;
+          background-color: #DCFCE7;
+          color: #15803D;
+          padding: 3px 8px;
+          border-radius: 4px;
+          letter-spacing: 0.4px;
+        }
+
+        .home-popular-roles-sub {
+          font-size: 13.5px;
+          color: #64748B;
+          margin: 3px 0 0 0;
+        }
+
+        .home-popular-roles-carousel-wrapper {
+          position: relative;
+          width: 100%;
+        }
+
+        .home-carousel-arrow-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background-color: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #1B4FDF;
+          transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .home-carousel-arrow-btn:disabled {
+          cursor: not-allowed;
+          opacity: 0.35 !important;
+          color: #94A3B8 !important;
+          background-color: #F8FAFC !important;
+          border-color: #E2E8F0 !important;
+          box-shadow: none !important;
+          transform: translateY(-50%) !important;
+        }
+
+        .home-carousel-prev-btn {
+          left: -18px;
+        }
+
+        .home-carousel-next-btn {
+          right: -18px;
+        }
+
+        @media (max-width: 768px) {
+          .home-carousel-prev-btn {
+            left: -4px;
+          }
+          .home-carousel-next-btn {
+            right: -4px;
+          }
+        }
+
+        .home-popular-job-card {
+          width: 290px;
+          min-width: 290px;
+          flex-shrink: 0;
+          background-color: #FFFFFF;
+          border-radius: 8px;
+          border: 1px solid #CBD5E1;
+          padding: 16px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          text-decoration: none;
+          color: inherit;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+          transition: all 0.15s ease;
+        }
+
+        .home-popular-job-title {
+          font-size: 15.5px;
+          font-weight: 800;
+          color: #0F172A;
+          letter-spacing: -0.15px;
+        }
+
+        @media (max-width: 1100px) and (min-width: 768px) {
           .home-search-fields-grid {
             grid-template-columns: 1fr 1fr;
           }
@@ -551,6 +827,13 @@ export const HomePage: React.FC = () => {
           }
           .home-advantage-grid {
             grid-template-columns: 1fr;
+          }
+          .home-trades-grid,
+          .home-education-grid,
+          .home-healthcare-grid,
+          .home-hospitality-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
           }
         }
 
@@ -1098,12 +1381,12 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Popular Role Picks Section (Horizontal Carousel matching MobileApp) */}
-        <div className="home-popular-roles-section" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', margin: '48px 0 44px 0' }}>
+        <div className="home-popular-roles-section" style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', margin: '44px 0 36px 0' }}>
           {/* Section Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              width: '38px',
-              height: '38px',
+              width: '42px',
+              height: '42px',
               borderRadius: '8px',
               backgroundColor: '#EFF6FF',
               display: 'flex',
@@ -1111,26 +1394,18 @@ export const HomePage: React.FC = () => {
               justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <Briefcase size={20} color="#1B4FDF" />
+              <Briefcase size={22} color="#1B4FDF" />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <h3 className="home-popular-roles-title" style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h3 className="home-popular-roles-title">
                   Popular Role Picks
                 </h3>
-                <span style={{
-                  fontSize: '9.5px',
-                  fontWeight: 800,
-                  backgroundColor: '#DCFCE7',
-                  color: '#15803D',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  letterSpacing: '0.4px',
-                }}>
+                <span className="home-popular-roles-badge">
                   VERIFIED JOBS
                 </span>
               </div>
-              <p className="home-popular-roles-sub" style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+              <p className="home-popular-roles-sub">
                 Explore top verified job opportunities categorized by available roles in the database
               </p>
             </div>
@@ -1158,9 +1433,9 @@ export const HomePage: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveRoleTab(tab.id)}
                   style={{
-                    padding: '7px 12px',
+                    padding: '8px 16px',
                     borderRadius: '6px',
-                    fontSize: '12px',
+                    fontSize: '13.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
@@ -1169,16 +1444,16 @@ export const HomePage: React.FC = () => {
                     color: isActive ? '#FFFFFF' : '#334155',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '8px',
                     flexShrink: 0,
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <span style={{ color: isActive ? '#FFFFFF' : '#94A3B8', fontSize: '14px', lineHeight: 1 }}>•</span>
+                  <span style={{ color: isActive ? '#FFFFFF' : '#94A3B8', fontSize: '15px', lineHeight: 1 }}>•</span>
                   <span>{tab.label}</span>
                   <span style={{
-                    fontSize: '10px',
-                    padding: '1px 6px',
+                    fontSize: '11px',
+                    padding: '2px 7px',
                     borderRadius: '10px',
                     backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
                     color: isActive ? '#FFFFFF' : '#64748B',
@@ -1191,35 +1466,68 @@ export const HomePage: React.FC = () => {
             })}
           </div>
 
-          {/* Horizontal Scrolling Job Cards Carousel */}
-          <div
-            className="no-scrollbar"
-            style={{
-              display: 'flex',
-              gap: '12px',
-              overflowX: 'auto',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-              padding: '4px 0 8px 0',
-            }}
-          >
+          {/* Horizontal Scrolling Job Cards Carousel Wrapper */}
+          <div className="home-popular-roles-carousel-wrapper">
+            {/* Previous Button on Left Side of Menu */}
+            <button
+              type="button"
+              onClick={handleScrollRolesPrev}
+              disabled={!canScrollRolesPrev}
+              className="home-carousel-arrow-btn home-carousel-prev-btn"
+              title="Previous 3 jobs"
+              aria-label="Previous 3 jobs"
+              onMouseEnter={(e) => {
+                if (canScrollRolesPrev) {
+                  e.currentTarget.style.backgroundColor = '#1B4FDF';
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#1B4FDF';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (canScrollRolesPrev) {
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  e.currentTarget.style.color = '#1B4FDF';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                }
+              }}
+            >
+              <ChevronLeft size={24} strokeWidth={2.5} />
+            </button>
+
+            {/* Horizontal Scrolling Job Cards Carousel Track */}
+            <div
+              ref={rolesCarouselRef}
+              onScroll={checkRolesScroll}
+              className="no-scrollbar"
+              style={{
+                display: 'flex',
+                gap: '14px',
+                overflowX: 'auto',
+                scrollBehavior: 'smooth',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                padding: '4px 0 8px 0',
+              }}
+            >
             {roleFilteredJobs.length === 0 ? (
               <div style={{
                 width: '100%',
-                padding: '24px',
+                padding: '28px',
                 backgroundColor: '#FFFFFF',
                 borderRadius: '8px',
                 border: '1px solid #CBD5E1',
                 textAlign: 'center',
                 color: '#64748B',
-                fontSize: '13px',
+                fontSize: '14px',
               }}>
                 No vacancies under "{activeRoleTab}" currently.
               </div>
             ) : (
               <>
-                {roleFilteredJobs.slice(0, 8).map((job) => {
+                {roleFilteredJobs.map((job) => {
                   const isSaved = isJobSaved(job.id);
                   const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
                   const minExp = job.minExperience ?? (job as any).min_experience ?? 0;
@@ -1247,13 +1555,13 @@ export const HomePage: React.FC = () => {
                       to={`/job/${job.id}`}
                       className="home-popular-job-card"
                       style={{
-                        width: '270px',
-                        minWidth: '270px',
+                        width: '290px',
+                        minWidth: '290px',
                         flexShrink: 0,
                         backgroundColor: '#FFFFFF',
                         borderRadius: '8px',
                         border: '1px solid #CBD5E1',
-                        padding: '14px',
+                        padding: '16px',
                         boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                         textDecoration: 'none',
                         color: 'inherit',
@@ -1266,18 +1574,21 @@ export const HomePage: React.FC = () => {
                       onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#CBD5E1')}
                     >
                       {/* Top Row: Title & Bookmark */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                        <h4 style={{
-                          margin: 0,
-                          fontSize: '14.5px',
-                          fontWeight: 800,
-                          color: '#0F172A',
-                          letterSpacing: '-0.15px',
-                          flex: 1,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <h4
+                          className="home-popular-job-title"
+                          style={{
+                            margin: 0,
+                            fontSize: '15.5px',
+                            fontWeight: 800,
+                            color: '#0F172A',
+                            letterSpacing: '-0.15px',
+                            flex: 1,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
                           {job.title}
                         </h4>
                         <button
@@ -1287,7 +1598,7 @@ export const HomePage: React.FC = () => {
                           style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', flexShrink: 0 }}
                         >
                           <Bookmark
-                            size={17}
+                            size={18}
                             color={isSaved ? '#1B4FDF' : '#94A3B8'}
                             fill={isSaved ? '#1B4FDF' : 'transparent'}
                           />
@@ -1295,39 +1606,39 @@ export const HomePage: React.FC = () => {
                       </div>
 
                       {/* Location Row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                        <MapPin size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
+                        <MapPin size={13} color="#94A3B8" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '13px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {locationText}
                         </span>
                       </div>
 
                       {/* Specs Row (Exp & Salary) */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                        <Briefcase size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                        <Briefcase size={13} color="#94A3B8" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
                           {expStr}   |   ₹ {salaryStr}
                         </span>
                       </div>
 
                       {/* Badges Row (On-site / Full-Time) */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
-                        <span style={{
+                        <span className="home-popular-job-badge" style={{
                           backgroundColor: '#F1F5F9',
                           color: '#475569',
-                          fontSize: '10.5px',
+                          fontSize: '11.5px',
                           fontWeight: 700,
-                          padding: '2px 8px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
                         }}>
                           {job.workMode || (job as any).work_mode || 'On-site'}
                         </span>
-                        <span style={{
+                        <span className="home-popular-job-badge" style={{
                           backgroundColor: '#F1F5F9',
                           color: '#475569',
-                          fontSize: '10.5px',
+                          fontSize: '11.5px',
                           fontWeight: 700,
-                          padding: '2px 8px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
                         }}>
                           {job.jobType || (job as any).job_type || 'Full-time'}
@@ -1338,15 +1649,15 @@ export const HomePage: React.FC = () => {
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '5px',
+                        gap: '6px',
                         backgroundColor: '#F3E8FF',
-                        padding: '4px 8px',
+                        padding: '5px 9px',
                         borderRadius: '4px',
                         marginTop: '8px',
                       }}>
-                        <Clock size={11} color="#7C3AED" style={{ flexShrink: 0 }} />
+                        <Clock size={12} color="#7C3AED" style={{ flexShrink: 0 }} />
                         <span style={{
-                          fontSize: '11px',
+                          fontSize: '12px',
                           fontWeight: 600,
                           color: '#6B21A8',
                           whiteSpace: 'nowrap',
@@ -1358,22 +1669,22 @@ export const HomePage: React.FC = () => {
                       </div>
 
                       {/* Divider */}
-                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '10px 0' }} />
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '12px 0' }} />
 
                       {/* Company Footer */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                          <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={34} borderRadius="6px" />
+                          <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={36} borderRadius="6px" />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div className="home-popular-job-company" style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {job.company}
                             </div>
-                            <div style={{ fontSize: '9.5px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               Posted by {job.company || 'Recruiter'}
                             </div>
                           </div>
                         </div>
-                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#94A3B8', flexShrink: 0 }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#94A3B8', flexShrink: 0 }}>
                           {formatTimeAgo(job.postedAt || (job as any).created_at)}
                         </span>
                       </div>
@@ -1385,13 +1696,13 @@ export const HomePage: React.FC = () => {
                 <Link
                   to={`/jobs?keyword=${encodeURIComponent(DEFAULT_ROLE_TABS.find((t) => t.id === activeRoleTab)?.keyword || '')}`}
                   style={{
-                    width: '200px',
-                    minWidth: '200px',
+                    width: '210px',
+                    minWidth: '210px',
                     flexShrink: 0,
                     backgroundColor: '#F8FAFC',
                     borderRadius: '8px',
                     border: '1px dashed #CBD5E1',
-                    padding: '16px',
+                    padding: '18px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -1413,8 +1724,8 @@ export const HomePage: React.FC = () => {
                   }}
                 >
                   <div style={{
-                    width: '40px',
-                    height: '40px',
+                    width: '42px',
+                    height: '42px',
                     borderRadius: '50%',
                     backgroundColor: '#FFFFFF',
                     border: '1px solid #DBEAFE',
@@ -1422,62 +1733,82 @@ export const HomePage: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <ArrowRight size={20} color="#1B4FDF" />
+                    <ArrowRight size={22} color="#1B4FDF" />
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0F172A' }}>
                     Explore All Roles
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>
                     View full catalog of live vacancies
                   </div>
                 </Link>
               </>
             )}
           </div>
+
+            {/* Next Button on Right Side of Menu */}
+            <button
+              type="button"
+              onClick={handleScrollRolesNext}
+              disabled={!canScrollRolesNext}
+              className="home-carousel-arrow-btn home-carousel-next-btn"
+              title="Next 3 jobs"
+              aria-label="Next 3 jobs"
+              onMouseEnter={(e) => {
+                if (canScrollRolesNext) {
+                  e.currentTarget.style.backgroundColor = '#1B4FDF';
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#1B4FDF';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.08)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (canScrollRolesNext) {
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  e.currentTarget.style.color = '#1B4FDF';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                }
+              }}
+            >
+              <ChevronRight size={24} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
 
-        {/* Live Stats 2x2 Grid */}
+        {/* Live Stats 4 Grid */}
         <div className="home-stats-grid">
-          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
-            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Active Listings</div>
+          <div className="home-stat-card">
+            <div className="stat-number" style={{ color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
+            <div className="stat-label">Active Listings</div>
           </div>
-          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#059669' }}>120+</div>
-            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Factories Hiring</div>
+          <div className="home-stat-card">
+            <div className="stat-number" style={{ color: '#059669' }}>120+</div>
+            <div className="stat-label">Factories Hiring</div>
           </div>
-          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#7C3AED' }}>10,000+</div>
-            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Verified Workers</div>
+          <div className="home-stat-card">
+            <div className="stat-number" style={{ color: '#7C3AED' }}>10,000+</div>
+            <div className="stat-label">Verified Workers</div>
           </div>
-          <div className="home-stat-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-            <div className="stat-number" style={{ fontSize: '20px', fontWeight: 900, color: '#EA580C' }}>4,500+</div>
-            <div className="stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>Monthly Placements</div>
+          <div className="home-stat-card">
+            <div className="stat-number" style={{ color: '#EA580C' }}>4,500+</div>
+            <div className="stat-label">Monthly Placements</div>
           </div>
         </div>
 
         {/* Browse by ITI Trade / Specialty */}
-        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '28px 0 0 0' }}>
-          <div className="home-category-badge" style={{
-            display: 'inline-block',
-            fontSize: '10.5px',
-            fontWeight: 800,
-            backgroundColor: '#EFF6FF',
-            color: '#1B4FDF',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-          }}>
+        <div className="home-category-section">
+          <div className="home-category-badge" style={{ backgroundColor: '#EFF6FF', color: '#1B4FDF' }}>
             POPULAR TRADES
           </div>
-          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+          <h3 className="home-category-title">
             Browse by ITI Trade / Specialty
           </h3>
-          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+          <p className="home-category-sub">
             Direct vacancies in production, quality, maintenance & logistics
           </p>
 
-          <div className="home-trades-grid" style={{ width: '100%' }}>
+          <div className="home-trades-grid">
             {ITI_TRADES_GRID.map((trade, idx) => {
               const IconComp = trade.icon;
               const count = getRealJobCount(trade.keyword);
@@ -1486,19 +1817,6 @@ export const HomePage: React.FC = () => {
                   key={idx}
                   className="home-chip-card"
                   onClick={() => handleQuickTradeSearch(trade.name)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #CBD5E1',
-                    borderRadius: '6px',
-                    padding: '10px 6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                    transition: 'all 0.15s ease',
-                  }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#1B4FDF';
                     e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1510,31 +1828,13 @@ export const HomePage: React.FC = () => {
                     e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                   }}
                 >
-                  <div className="home-chip-icon-box" style={{
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '5px',
-                    backgroundColor: '#EFF6FF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '6px',
-                  }}>
-                    <IconComp size={15} color="#1B4FDF" />
+                  <div className="home-chip-icon-box" style={{ backgroundColor: '#EFF6FF' }}>
+                    <IconComp size={18} color="#1B4FDF" />
                   </div>
-                  <div className="home-chip-title" style={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: '#0F172A',
-                    lineHeight: '14px',
-                    minHeight: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
+                  <div className="home-chip-title">
                     {trade.name}
                   </div>
-                  <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                  <div className="home-chip-count">
                     {count} {count === 1 ? 'Open position' : 'Open positions'}
                   </div>
                 </div>
@@ -1544,27 +1844,18 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Browse Jobs by Qualification */}
-        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
-          <div className="home-category-badge" style={{
-            display: 'inline-block',
-            fontSize: '10.5px',
-            fontWeight: 800,
-            backgroundColor: '#F0FDF4',
-            color: '#16A34A',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-          }}>
+        <div className="home-category-section">
+          <div className="home-category-badge" style={{ backgroundColor: '#F0FDF4', color: '#16A34A' }}>
             EDUCATION
           </div>
-          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+          <h3 className="home-category-title">
             Browse Jobs by Qualification
           </h3>
-          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+          <p className="home-category-sub">
             Find jobs matching your school education or college degree
           </p>
 
-          <div className="home-education-grid" style={{ width: '100%' }}>
+          <div className="home-education-grid">
             {EDUCATION_GRID.map((qual, idx) => {
               const IconComp = qual.icon;
               const count = getRealJobCount(qual.keyword);
@@ -1573,19 +1864,6 @@ export const HomePage: React.FC = () => {
                   key={idx}
                   className="home-chip-card"
                   onClick={() => handleQuickTradeSearch(qual.name)}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    border: '1px solid #CBD5E1',
-                    borderRadius: '6px',
-                    padding: '10px 6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                    transition: 'all 0.15s ease',
-                  }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#16A34A';
                     e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1597,31 +1875,13 @@ export const HomePage: React.FC = () => {
                     e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                   }}
                 >
-                  <div className="home-chip-icon-box" style={{
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '5px',
-                    backgroundColor: '#F0FDF4',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '6px',
-                  }}>
-                    <IconComp size={15} color="#16A34A" />
+                  <div className="home-chip-icon-box" style={{ backgroundColor: '#F0FDF4' }}>
+                    <IconComp size={18} color="#16A34A" />
                   </div>
-                  <div className="home-chip-title" style={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: '#0F172A',
-                    lineHeight: '14px',
-                    minHeight: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
+                  <div className="home-chip-title">
                     {qual.name}
                   </div>
-                  <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                  <div className="home-chip-count">
                     {count} {count === 1 ? 'Job Opening' : 'Job Openings'}
                   </div>
                 </div>
@@ -1631,45 +1891,23 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Hospital & Healthcare Jobs */}
-        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
-          <div className="home-category-badge" style={{
-            display: 'inline-block',
-            fontSize: '10.5px',
-            fontWeight: 800,
-            backgroundColor: '#FEF2F2',
-            color: '#DC2626',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-          }}>
+        <div className="home-category-section">
+          <div className="home-category-badge" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
             HEALTHCARE
           </div>
-          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+          <h3 className="home-category-title">
             Hospital & Healthcare Jobs
           </h3>
-          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+          <p className="home-category-sub">
             Browse medical, nursing, administration and support staff jobs
           </p>
 
-          <div className="home-healthcare-grid" style={{ width: '100%' }}>
+          <div className="home-healthcare-grid">
             {HOSPITAL_GRID.map((h, idx) => (
               <div
                 key={idx}
                 className="home-chip-card"
                 onClick={() => handleQuickTradeSearch(h.name)}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '6px',
-                  padding: '10px 6px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                  transition: 'all 0.15s ease',
-                }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#DC2626';
                   e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1681,22 +1919,13 @@ export const HomePage: React.FC = () => {
                   e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                 }}
               >
-                <div className="home-chip-icon-box" style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '5px',
-                  backgroundColor: '#FEF2F2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '6px',
-                }}>
-                  <HeartPulse size={15} color="#DC2626" />
+                <div className="home-chip-icon-box" style={{ backgroundColor: '#FEF2F2' }}>
+                  <HeartPulse size={18} color="#DC2626" />
                 </div>
-                <div className="home-chip-title" style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                <div className="home-chip-title">
                   {h.name}
                 </div>
-                <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                <div className="home-chip-count">
                   {getRealJobCount(h.keyword)} Openings
                 </div>
               </div>
@@ -1705,45 +1934,23 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Hotel & Hospitality Jobs */}
-        <div className="home-category-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '36px 0 0 0' }}>
-          <div className="home-category-badge" style={{
-            display: 'inline-block',
-            fontSize: '10.5px',
-            fontWeight: 800,
-            backgroundColor: '#FFFBEB',
-            color: '#D97706',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-          }}>
+        <div className="home-category-section">
+          <div className="home-category-badge" style={{ backgroundColor: '#FFFBEB', color: '#D97706' }}>
             HOSPITALITY
           </div>
-          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', textAlign: 'center' }}>
+          <h3 className="home-category-title">
             Hotel & Hospitality Jobs
           </h3>
-          <p className="home-category-sub" style={{ fontSize: '12px', color: '#64748B', margin: '0 0 14px 0', textAlign: 'center' }}>
+          <p className="home-category-sub">
             Opportunities in kitchen, housekeeping, food service & front desk
           </p>
 
-          <div className="home-hospitality-grid" style={{ width: '100%' }}>
+          <div className="home-hospitality-grid">
             {HOTEL_GRID.map((h, idx) => (
               <div
                 key={idx}
                 className="home-chip-card"
                 onClick={() => handleQuickTradeSearch(h.name)}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '6px',
-                  padding: '10px 6px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-                  transition: 'all 0.15s ease',
-                }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#D97706';
                   e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1755,22 +1962,13 @@ export const HomePage: React.FC = () => {
                   e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
                 }}
               >
-                <div className="home-chip-icon-box" style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '5px',
-                  backgroundColor: '#FFFBEB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '6px',
-                }}>
-                  <Utensils size={15} color="#D97706" />
+                <div className="home-chip-icon-box" style={{ backgroundColor: '#FFFBEB' }}>
+                  <Utensils size={18} color="#D97706" />
                 </div>
-                <div className="home-chip-title" style={{ fontSize: '11.5px', fontWeight: 700, color: '#0F172A', lineHeight: '14px' }}>
+                <div className="home-chip-title">
                   {h.name}
                 </div>
-                <div className="home-chip-count" style={{ fontSize: '10px', color: '#64748B', fontWeight: 600, marginTop: '2px' }}>
+                <div className="home-chip-count">
                   {getRealJobCount(h.keyword)} Openings
                 </div>
               </div>
@@ -1779,82 +1977,46 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Applicant Advantage Section */}
-        <div className="home-advantage-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', margin: '38px 0 0 0' }}>
-          <div className="home-category-badge" style={{
-            display: 'inline-block',
-            fontSize: '10.5px',
-            fontWeight: 800,
-            backgroundColor: '#EFF6FF',
-            color: '#1B4FDF',
-            padding: '3px 10px',
-            borderRadius: '4px',
-            marginBottom: '6px',
-          }}>
+        <div className="home-advantage-section">
+          <div className="home-category-badge" style={{ backgroundColor: '#EFF6FF', color: '#1B4FDF' }}>
             JOBMARKET ADVANTAGE
           </div>
-          <h3 className="home-category-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: '0 0 14px 0', textAlign: 'center' }}>
+          <h3 className="home-category-title">
             Why Industrial Workers Choose JobMarket
           </h3>
 
-          <div className="home-advantage-grid" style={{ width: '100%' }}>
-            <div className="home-advantage-card" style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #CBD5E1',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}>
-              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="home-advantage-grid">
+            <div className="home-advantage-card">
+              <CheckCircle2 size={24} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title">
                   Direct MIDC Plant Hiring
                 </div>
-                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
+                <div className="home-advantage-desc">
                   Connect straight with plant HR without middle consultants or commission cuts.
                 </div>
               </div>
             </div>
 
-            <div className="home-advantage-card" style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #CBD5E1',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}>
-              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div className="home-advantage-card">
+              <CheckCircle2 size={24} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title">
                   100% Free Job Applications
                 </div>
-                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
+                <div className="home-advantage-desc">
                   No registration charges or hidden fees for workers and job seekers.
                 </div>
               </div>
             </div>
 
-            <div className="home-advantage-card" style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #CBD5E1',
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            }}>
-              <CheckCircle2 size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div className="home-advantage-card">
+              <CheckCircle2 size={24} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div className="home-advantage-title" style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>
+                <div className="home-advantage-title">
                   Bus & Canteen Verified Facilities
                 </div>
-                <div className="home-advantage-desc" style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', lineHeight: '16px' }}>
+                <div className="home-advantage-desc">
                   All job openings specify company bus routes, subsidized canteen, and OT perks.
                 </div>
               </div>

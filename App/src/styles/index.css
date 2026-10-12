@@ -541,6 +541,12 @@ h1, h2, h3, h4, h5, h6 {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 1000 !important;
+  }
+  #page-content,
+  #page-content.no-navbar-padding,
+  body #page-content {
+    padding-top: var(--navbar-height) !important;
   }
   .candidates-grid-responsive {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;

@@ -221,11 +221,21 @@ export const useJobPostForm = (navigation: any, route: any) => {
     if (newIndustry !== 'Other') setCustomIndustry('');
     const roles = getRolesForIndustry(newIndustry);
     setCurrentRoleOptions(roles);
-    if (title && title !== 'Other' && !roles.includes(title)) {
+    if (title && !roles.includes(title)) {
       setTitle('');
       setCustomTitle('');
     }
   };
+
+  useEffect(() => {
+    const activeInd = industry === 'Other' ? customIndustry : industry;
+    if (activeInd) {
+      const roles = getRolesForIndustry(activeInd);
+      setCurrentRoleOptions(roles);
+    } else {
+      setCurrentRoleOptions([]);
+    }
+  }, [industry, customIndustry]);
 
   useEffect(() => {
     const activeInd = industry === 'Other' ? customIndustry : industry;
@@ -245,6 +255,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     setCustomIndustry('');
     setTitle('');
     setCustomTitle('');
+    setCurrentRoleOptions([]);
     setOpeningsInput('1');
     setTargetIti(false);
     setItiTrade('');
@@ -352,7 +363,17 @@ export const useJobPostForm = (navigation: any, route: any) => {
               const ind = j.industry || j.trade || 'Industrial Manufacturing';
               setIndustry(ind);
               handleIndustryChange(ind);
-              setTitle(j.title || '');
+              const indRoles = getRolesForIndustry(ind);
+              if (j.title && indRoles.includes(j.title)) {
+                setTitle(j.title);
+                setCustomTitle('');
+              } else if (j.title) {
+                setTitle('Other');
+                setCustomTitle(j.title);
+              } else {
+                setTitle('');
+                setCustomTitle('');
+              }
               setOpeningsInput((j.openings ?? 1).toString());
               setTargetIti(!!j.targetIti);
               const iti = j.itiTrade || j.iti_trade || '';

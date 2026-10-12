@@ -87,6 +87,16 @@ export const Layout: React.FC = () => {
                      location.search.includes('tab=security') ||
                      location.search.includes('tab=profile');
 
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const isCandidateProfileRoute = location.pathname.startsWith('/profile/') ||
                                   location.pathname.startsWith('/candidate/') ||
                                   location.pathname.startsWith('/p/');
@@ -98,7 +108,15 @@ export const Layout: React.FC = () => {
 
   const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
 
-  const hideNavbar = isCandidateProfileRoute || isJobDetailRoute || isCompanyProfileRoute || isGlobalSearchRoute;
+  const hideNavbarMobileRoutes = isCandidateProfileRoute || 
+                                 isJobDetailRoute || 
+                                 isCompanyProfileRoute || 
+                                 isGlobalSearchRoute ||
+                                 location.pathname.startsWith('/resume');
+
+  // Desktop view: Header must NEVER hide in any section!
+  // Mobile view: Keep existing hiding logic completely untouched.
+  const hideNavbar = isMobile && hideNavbarMobileRoutes;
 
   return (
     <>

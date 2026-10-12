@@ -6,14 +6,14 @@
 :root {
   --font-family-base: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   
-  /* Font Sizes */
-  --font-hero-title: 15px;
-  --font-section-title: 14px;
-  --font-subtitle: 12px;
-  --font-body: 12px;
-  --font-value: 12px;
-  --font-badge-cta: 11px;
-  --font-label-caps: 9.5px;
+  /* Font Sizes (Desktop First) */
+  --font-hero-title: 24px;
+  --font-section-title: 20px;
+  --font-subtitle: 15px;
+  --font-body: 14px;
+  --font-value: 15px;
+  --font-badge-cta: 12.5px;
+  --font-label-caps: 11px;
 
   /* Font Weights */
   --weight-extrabold: 800;
@@ -108,6 +108,16 @@
 }
 
 @media (max-width: 767px) {
+  :root {
+    --font-hero-title: 15px;
+    --font-section-title: 14px;
+    --font-subtitle: 12px;
+    --font-body: 12px;
+    --font-value: 12px;
+    --font-badge-cta: 11px;
+    --font-label-caps: 9.5px;
+  }
+
   .ui-card-surface {
     border-radius: var(--radius-card-mobile, 6px);
     padding: 12px 14px;

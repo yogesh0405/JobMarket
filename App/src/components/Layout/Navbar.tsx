@@ -239,10 +239,10 @@ export const Navbar: React.FC = () => {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <span className="navbar-brand-text" style={{ fontSize: '15.5px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px', lineHeight: 1.1, margin: 0, padding: 0 }}>
+                <span className="navbar-brand-text" style={{ fontSize: '18px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px', lineHeight: 1.1, margin: 0, padding: 0 }}>
                   {platformSettings.platform_name || 'JobMarket'}
                 </span>
-                <span style={{ fontSize: '11px', color: '#475569', marginTop: '1.5px', fontWeight: 600, lineHeight: 1.2 }}>
+                <span style={{ fontSize: '12px', color: '#475569', marginTop: '2px', fontWeight: 600, lineHeight: 1.2 }}>
                   {getCurrentSectionTitle()}
                 </span>
               </div>

@@ -30,6 +30,7 @@ router.get('/workers', AdminController.listWorkers);
 // Job Approvals & Management
 router.get('/jobs', AdminController.listJobs);
 router.get('/jobs/pending', AdminController.listPendingJobs);
+router.get('/jobs/stats', AdminController.getJobStats);
 router.get('/jobs/:id', AdminController.getJobDetails);
 router.patch('/jobs/:id/approve', adminActionLimiter, AdminController.approveJob);
 router.patch('/jobs/:id/reject', adminActionLimiter, AdminController.rejectJob);

@@ -193,8 +193,6 @@ export const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
-        <Route path="/security" element={<SecurityPage />} />
-        <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
 
         {/* 2. Admin Module Routes (Shifted to standalone SuperAdmin portal) */}
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />
@@ -212,6 +210,7 @@ export const App: React.FC = () => {
           <Route path="/jobs/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
           <Route path="/companies" element={<CandidateOrGuestOnly><CompaniesDirectoryPage /></CandidateOrGuestOnly>} />
           <Route path="/company/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
+          <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
 
           {/* Employer Only Routes */}
           <Route path="/post-job" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />
@@ -230,7 +229,7 @@ export const App: React.FC = () => {
           <Route path="/scheduled-interviews" element={<Navigate to="/dashboard?tab=interviews" replace />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/alerts" element={<NotificationsPage />} />
-          <Route path="/security" element={<Navigate to="/dashboard?tab=security" replace />} />
+          <Route path="/security" element={<SecurityPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/help" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />

@@ -16,6 +16,7 @@ router.get('/workers', AdminController.listWorkers);
 
 router.get('/jobs', AdminController.listJobs);
 router.get('/jobs/pending', AdminController.listPendingJobs);
+router.get('/jobs/stats', AdminController.getJobStats);
 router.get('/jobs/:id', AdminController.getJobDetails);
 router.patch('/jobs/:id/approve', AdminController.approveJob);
 router.patch('/jobs/:id/reject', AdminController.rejectJob);
