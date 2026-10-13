@@ -357,7 +357,7 @@ export class AdminRepository {
 
     const compIdentifier = (user.company_name || user.name || '').trim();
 
-    // 1. Fetch real company information from companies table
+    // 1. Fetch company information
     let company: any = {};
     try {
       const companyQuery = `
@@ -374,16 +374,20 @@ export class AdminRepository {
       // Table fallback
     }
 
-    // 2. Fetch user's job applications (if candidate)
+    // 2. Applications submitted by user
     const appsQuery = `
-      SELECT ja.*, j.title as job_title, j.company as job_company
+      SELECT ja.id, ja.job_id, ja.user_id, ja.status, ja.applied_at, ja.updated_at,
+             ja.interview_date, ja.interview_time, ja.venue_address, ja.maps_link,
+             ja.reject_reason, ja.interview_rating, ja.interview_feedback, ja.interview_status,
+             j.title as job_title, j.company as job_company, j.location as job_location,
+             j.salary_min, j.salary_max, j.job_type, j.status as job_status
       FROM job_applications ja
       JOIN jobs j ON ja.job_id = j.id
       WHERE ja.user_id = $1
       ORDER BY ja.applied_at DESC;
     `;
 
-    // 3. Fetch real-time jobs posted with complete compensation and location details (if employer)
+    // 3. Jobs posted (if employer)
     const jobsQuery = `
       SELECT id, title, company, status, openings, salary_min, salary_max, location, industry, midc_zone, 
              (SELECT COUNT(*) FROM job_applications WHERE job_id = jobs.id) as applicants_count, 
@@ -394,10 +398,188 @@ export class AdminRepository {
       ORDER BY posted_at DESC;
     `;
 
-    const [appsRes, jobsRes] = await Promise.all([
-      pool.query(appsQuery, [userId]),
-      pool.query(jobsQuery, [userId, compIdentifier])
+    // 4. Saved jobs by user
+    const savedQuery = `
+      SELECT sj.id as saved_id, sj.created_at as saved_at,
+             j.id as job_id, j.title, j.company, j.location, j.job_type, j.work_mode,
+             j.salary_min, j.salary_max, j.status as job_status, j.industry, j.midc_zone,
+             j.posted_at
+      FROM saved_jobs sj
+      LEFT JOIN jobs j ON (sj.job_id = j.id OR sj.job_id::text = j.id::text)
+      WHERE sj.user_id = $1
+      ORDER BY sj.created_at DESC;
+    `;
+
+    // 5. Support tickets
+    const ticketsQuery = `
+      SELECT st.id, st.ticket_number, st.full_name, st.email, st.phone, st.category,
+             st.subject, st.description, st.attachment, st.preferred_contact,
+             st.priority::text as priority, st.status::text as status,
+             st.created_at, st.updated_at, st.last_reply_at,
+             (SELECT COUNT(*) FROM support_messages sm WHERE sm.ticket_id = st.id) as message_count
+      FROM support_tickets st
+      WHERE st.user_id = $1 OR (st.email = $2 AND $2 != '')
+      ORDER BY st.created_at DESC;
+    `;
+
+    // 6. Audit logs
+    const auditQuery = `
+      SELECT al.id, al.action, al.module, al.ip_address, al.user_agent, al.metadata, al.created_at
+      FROM audit_logs al
+      WHERE al.user_id = $1
+         OR (al.metadata->>'targetUserId' = $1::text)
+         OR (al.metadata->>'userId' = $1::text)
+      ORDER BY al.created_at DESC
+      LIMIT 100;
+    `;
+
+    // 7. Active / recent sessions
+    const sessionsQuery = `
+      SELECT id, ip_address, user_agent, device_name, expires_at, revoked, created_at, last_used_at
+      FROM sessions
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 20;
+    `;
+
+    // 8. Employer received applications (if employer)
+    const employerAppsQuery = `
+      SELECT ja.id, ja.status, ja.applied_at, ja.updated_at,
+             ja.interview_date, ja.interview_time, ja.venue_address, ja.maps_link,
+             ja.reject_reason, ja.interview_rating, ja.interview_feedback, ja.interview_status,
+             j.title as job_title, j.company as job_company,
+             u.id as applicant_id, u.name as applicant_name, u.email as applicant_email,
+             u.phone as applicant_phone, u.profile_picture_url as applicant_avatar
+      FROM job_applications ja
+      JOIN jobs j ON ja.job_id = j.id
+      JOIN users u ON ja.user_id = u.id
+      WHERE j.employer_id = $1
+      ORDER BY ja.applied_at DESC
+      LIMIT 50;
+    `;
+
+    const [appsRes, jobsRes, savedRes, ticketsRes, auditRes, sessionsRes, empAppsRes] = await Promise.all([
+      pool.query(appsQuery, [userId]).catch(() => ({ rows: [] })),
+      pool.query(jobsQuery, [userId, compIdentifier]).catch(() => ({ rows: [] })),
+      pool.query(savedQuery, [userId]).catch(() => ({ rows: [] })),
+      pool.query(ticketsQuery, [userId, user.email || '']).catch(() => ({ rows: [] })),
+      pool.query(auditQuery, [userId]).catch(() => ({ rows: [] })),
+      pool.query(sessionsQuery, [userId]).catch(() => ({ rows: [] })),
+      pool.query(employerAppsQuery, [userId]).catch(() => ({ rows: [] }))
     ]);
+
+    // Unified chronological activity stream construction
+    const rawActivities: any[] = [];
+
+    // Map audit logs (excluding login, logout, and auth session activities)
+    auditRes.rows.forEach(r => {
+      const actUpper = (r.action || '').toUpperCase();
+      if (actUpper.includes('LOGIN') || actUpper.includes('LOGOUT') || actUpper.includes('SESSION')) {
+        return; // Exclude login/logout/session auth events per requirement
+      }
+
+      let title = r.action ? r.action.replace(/_/g, ' ') : 'System Action';
+      let type = 'AUDIT';
+      if (actUpper.includes('PASSWORD')) { 
+        type = 'SECURITY'; 
+        title = 'Password Reset Processed'; 
+      } else if (actUpper.includes('STATUS')) { 
+        type = 'ADMIN_ACTION'; 
+        title = `Account Status Changed to ${r.metadata?.status || 'Updated'}`; 
+      } else if (actUpper.includes('JOB')) { 
+        type = 'JOB'; 
+        title = r.action.replace(/_/g, ' '); 
+      } else if (actUpper.includes('REPORT')) {
+        type = 'REPORT';
+        title = 'Report Handled';
+      }
+
+      rawActivities.push({
+        id: `audit-${r.id}`,
+        type,
+        action: r.action,
+        module: r.module || 'System',
+        title,
+        description: r.metadata ? (typeof r.metadata === 'object' ? JSON.stringify(r.metadata) : String(r.metadata)) : (r.user_agent || 'Platform interaction'),
+        ipAddress: r.ip_address,
+        userAgent: r.user_agent,
+        timestamp: r.created_at,
+        status: r.action?.includes('FAILED') || r.action?.includes('BLOCKED') ? 'error' : 'success'
+      });
+    });
+
+    // Map applications submitted
+    appsRes.rows.forEach(a => {
+      rawActivities.push({
+        id: `app-act-${a.id}`,
+        type: 'APPLICATION',
+        action: 'JOB_APPLICATION',
+        module: 'Applications',
+        title: `Applied for ${a.job_title || 'Job Position'}`,
+        description: `At ${a.job_company || 'Employer'} • Status: ${(a.status || 'applied').toUpperCase()}`,
+        timestamp: a.applied_at || a.updated_at,
+        status: a.status === 'shortlisted' || a.status === 'hired' ? 'success' : a.status === 'rejected' ? 'error' : 'info',
+        metadata: { jobId: a.job_id, status: a.status }
+      });
+    });
+
+    // Map saved jobs
+    savedRes.rows.forEach(s => {
+      rawActivities.push({
+        id: `saved-act-${s.saved_id}`,
+        type: 'SAVED_JOB',
+        action: 'JOB_SAVED',
+        module: 'Bookmarks',
+        title: `Saved Job: ${s.title || 'Job Listing'}`,
+        description: `${s.company || 'Company'} • Location: ${s.location || 'N/A'}`,
+        timestamp: s.saved_at,
+        status: 'info',
+        metadata: { jobId: s.job_id }
+      });
+    });
+
+    // Map support tickets
+    ticketsRes.rows.forEach(t => {
+      rawActivities.push({
+        id: `ticket-act-${t.id}`,
+        type: 'SUPPORT',
+        action: 'TICKET_CREATED',
+        module: 'Support',
+        title: `Support Ticket #${t.ticket_number}: ${t.subject}`,
+        description: `Category: ${t.category} • Priority: ${(t.priority || 'medium').toUpperCase()} • Status: ${(t.status || 'open').toUpperCase()}`,
+        timestamp: t.created_at,
+        status: t.status === 'resolved' || t.status === 'closed' ? 'success' : 'warning',
+        metadata: { ticketId: t.id, ticketNumber: t.ticket_number }
+      });
+    });
+
+    // Account creation milestone
+    if (user.created_at) {
+      rawActivities.push({
+        id: `reg-${user.id}`,
+        type: 'ACCOUNT',
+        action: 'USER_REGISTERED',
+        module: 'Auth',
+        title: 'User Registered on JobMarket',
+        description: `Account created with role: ${(user.role || 'candidate').toUpperCase()}`,
+        timestamp: user.created_at,
+        status: 'success'
+      });
+    }
+
+    // Sort descending by timestamp
+    rawActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Deduplicate identical action & timestamp
+    const activities: any[] = [];
+    const seenKeys = new Set<string>();
+    for (const act of rawActivities) {
+      const key = `${act.action}-${new Date(act.timestamp).getTime()}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        activities.push(act);
+      }
+    }
 
     const enrichedProfile = {
       ...user,
@@ -419,8 +601,20 @@ export class AdminRepository {
     return {
       profile: enrichedProfile,
       applications: appsRes.rows,
+      receivedApplications: empAppsRes.rows,
+      savedJobs: savedRes.rows,
+      supportTickets: ticketsRes.rows,
+      activities,
       postedJobs: jobsRes.rows,
-      jobs: jobsRes.rows
+      jobs: jobsRes.rows,
+      stats: {
+        applicationsCount: appsRes.rows.length,
+        receivedApplicationsCount: empAppsRes.rows.length,
+        savedJobsCount: savedRes.rows.length,
+        supportTicketsCount: ticketsRes.rows.length,
+        activityCount: activities.length,
+        postedJobsCount: jobsRes.rows.length
+      }
     };
   }
 
