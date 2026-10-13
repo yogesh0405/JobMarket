@@ -144,6 +144,59 @@ export const ITI_TRADES_GRID = [
   { name: 'Technician', icon: Wrench },
 ];
 
+export interface ITITradeHorizontalItem {
+  id: string;
+  name: string;
+  image: string;
+  startingSalary: string;
+  keyword: string;
+}
+
+export const ITI_HORIZONTAL_DATA: ITITradeHorizontalItem[] = [
+  {
+    id: 'fitter',
+    name: 'Fitter',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&q=80',
+    startingSalary: '₹20,000/m',
+    keyword: 'Fitter',
+  },
+  {
+    id: 'welder',
+    name: 'Welder',
+    image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=600&q=80',
+    startingSalary: '₹24,000/m',
+    keyword: 'Welder',
+  },
+  {
+    id: 'cnc-operator',
+    name: 'CNC Operator',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&q=80',
+    startingSalary: '₹25,000/m',
+    keyword: 'CNC',
+  },
+  {
+    id: 'electrician',
+    name: 'Electrician',
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'Electrician',
+  },
+  {
+    id: 'machinist',
+    name: 'Machinist',
+    image: 'https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=600&q=80',
+    startingSalary: '₹21,000/m',
+    keyword: 'Machinist',
+  },
+  {
+    id: 'technician',
+    name: 'Technician',
+    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&q=80',
+    startingSalary: '₹23,000/m',
+    keyword: 'Technician',
+  },
+];
+
 export const EDUCATION_GRID = [
   { name: '12th Pass Jobs', icon: GraduationCap },
   { name: 'B.Com Jobs', icon: BarChart2 },
@@ -156,10 +209,103 @@ export const EDUCATION_GRID = [
   { name: '10th Pass Jobs', icon: GraduationCap },
 ];
 
+export interface EducationHorizontalItem {
+  id: string;
+  name: string;
+  image: string;
+  startingSalary: string;
+  keyword: string;
+}
+
+export const EDUCATION_HORIZONTAL_DATA: EducationHorizontalItem[] = [
+  {
+    id: '10th-pass',
+    name: '10th Pass Jobs',
+    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&q=80',
+    startingSalary: '₹12,000/m',
+    keyword: '10th Pass',
+  },
+  {
+    id: '12th-pass',
+    name: '12th Pass Jobs',
+    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&q=80',
+    startingSalary: '₹15,000/m',
+    keyword: '12th Pass',
+  },
+  {
+    id: 'diploma',
+    name: 'Diploma Jobs',
+    image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&q=80',
+    startingSalary: '₹20,000/m',
+    keyword: 'Diploma',
+  },
+  {
+    id: 'graduate',
+    name: 'Graduate (BA / B.Com)',
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80',
+    startingSalary: '₹18,000/m',
+    keyword: 'Graduate',
+  },
+  {
+    id: 'btech',
+    name: 'B.E. / B.Tech Jobs',
+    image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&q=80',
+    startingSalary: '₹28,000/m',
+    keyword: 'B.E.',
+  },
+  {
+    id: 'bca',
+    name: 'BCA / IT Graduate',
+    image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'BCA',
+  },
+];
+
+export interface HospitalRoleItem {
+  id: string;
+  name: string;
+  image: string;
+  startingSalary: string;
+  keyword: string;
+}
+
+export const HOSPITAL_HORIZONTAL_DATA: HospitalRoleItem[] = [
+  {
+    id: 'staff-nurse',
+    name: 'Staff Nurse',
+    image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=600&q=80',
+    startingSalary: '₹18,000/m',
+    keyword: 'Staff Nurse',
+  },
+  {
+    id: 'ward-boy',
+    name: 'Ward Boy / Assistant',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&q=80',
+    startingSalary: '₹14,000/m',
+    keyword: 'Ward Boy',
+  },
+  {
+    id: 'lab-assistant',
+    name: 'Lab Assistant',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=600&q=80',
+    startingSalary: '₹16,000/m',
+    keyword: 'Lab Assistant',
+  },
+  {
+    id: 'pharmacist',
+    name: 'Pharmacist',
+    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'Pharmacist',
+  },
+];
+
 export const HOSPITAL_GRID = [
   { name: 'Staff Nurse', icon: HeartPulse },
   { name: 'Ward Boy / Assistant', icon: HeartPulse },
   { name: 'Lab Assistant', icon: HeartPulse },
+  { name: 'Pharmacist', icon: HeartPulse },
 ];
 
 export const HOTEL_GRID = [

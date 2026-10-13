@@ -3,6 +3,7 @@ import { GeocodingService } from '../services/geocodingService';
 import { CacheService } from '../../../utils/redisCache';
 import { safeJsonParse } from '../../../utils/jsonUtils';
 import { PlatformRepository } from '../../platform/repositories/PlatformRepository';
+import { NotFoundError } from '../../../errors/AppError';
 
 export interface JobData {
   title: string;
@@ -1556,6 +1557,90 @@ export class JobRepository {
     return {
       application: updateRes.rows[0],
       meta: appInfo
+    };
+  }
+
+  static async reportJob(params: {
+    jobId: string;
+    reporterId?: string | null;
+    reasonCategory: string;
+    description?: string;
+  }): Promise<{ alreadyReported: boolean; message: string; report?: any }> {
+    const { jobId, reporterId, reasonCategory, description } = params;
+
+    // 1. Fetch job to verify existence and get employer ID
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(jobId);
+    let job: any = null;
+    if (isUUID) {
+      const jobRes = await pool.query('SELECT id, employer_id, title FROM jobs WHERE id = $1', [jobId]);
+      if (jobRes.rows.length > 0) {
+        job = jobRes.rows[0];
+      }
+    }
+
+    if (!job) {
+      const jobRes = await pool.query('SELECT id, employer_id, title FROM jobs WHERE id::text = $1 LIMIT 1', [jobId]);
+      if (jobRes.rows.length > 0) {
+        job = jobRes.rows[0];
+      }
+    }
+
+    if (!job) {
+      throw new NotFoundError('Job listing not found');
+    }
+
+    // 2. Prevent spam / duplicate reports from same reporter for this job if pending
+    if (reporterId) {
+      const existing = await pool.query(
+        "SELECT id FROM reports WHERE reporter_id = $1 AND reported_content_id = $2 AND status = 'PENDING' LIMIT 1",
+        [reporterId, jobId]
+      );
+      if (existing.rows.length > 0) {
+        return {
+          alreadyReported: true,
+          message: 'You have already reported this job listing. Our Trust & Safety team is reviewing it.'
+        };
+      }
+    }
+
+    const cleanReason = description && description.trim().length > 0
+      ? `[${reasonCategory}] ${description.trim()}`
+      : `[${reasonCategory}] Flagged by user as ${reasonCategory}`;
+
+    // 3. Insert report record
+    const insertQuery = `
+      INSERT INTO reports (
+        id,
+        reporter_id,
+        reported_user_id,
+        reported_content_id,
+        reported_content_type,
+        reason,
+        status,
+        created_at
+      ) VALUES (
+        uuid_generate_v4(),
+        $1,
+        $2,
+        $3,
+        'JOB',
+        $4,
+        'PENDING',
+        CURRENT_TIMESTAMP
+      )
+      RETURNING *;
+    `;
+    const result = await pool.query(insertQuery, [
+      reporterId || null,
+      job.employer_id || null,
+      String(job.id),
+      cleanReason
+    ]);
+
+    return {
+      alreadyReported: false,
+      message: 'Report submitted successfully. Thank you for protecting our job community.',
+      report: result.rows[0]
     };
   }
 }

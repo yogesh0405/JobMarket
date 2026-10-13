@@ -11,6 +11,7 @@ import {
   Building2,
   Briefcase,
   Award,
+  Flag,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
@@ -25,6 +26,7 @@ interface CandidateJobDetailHeaderProps {
   onBack: () => void;
   onShare: () => void;
   onToggleSave: () => void;
+  onReport?: () => void;
   onCompanyPress?: () => void;
 }
 
@@ -36,6 +38,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   onBack,
   onShare,
   onToggleSave,
+  onReport,
   onCompanyPress,
 }) => {
   const insets = useSafeAreaInsets();
@@ -92,6 +95,16 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
             >
               <Bookmark size={16} color="#FFFFFF" fill={isSaved ? '#FFFFFF' : 'transparent'} />
             </TouchableOpacity>
+
+            {onReport ? (
+              <TouchableOpacity
+                style={styles.transparentIconBtn}
+                onPress={onReport}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Flag size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
 

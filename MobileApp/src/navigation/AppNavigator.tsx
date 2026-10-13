@@ -22,6 +22,7 @@ import { CandidateEditProfileScreen } from '../screens/candidate/CandidateEditPr
 import { CandidateResumeScreen } from '../screens/candidate/CandidateResumeScreen';
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
 import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
+import { ReportJobScreen } from '../screens/candidate/ReportJobScreen';
 import { CandidateJobMapScreen } from '../screens/candidate/CandidateJobMapScreen';
 import { CandidateJobMapViewScreen } from '../screens/candidate/CandidateJobMapViewScreen';
 import { CandidateInterviewsScreen } from '../screens/candidate/CandidateInterviewsScreen';
@@ -67,6 +68,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
           <Stack.Screen name="GoogleAuth" component={GoogleAuthScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+          <Stack.Screen name="ReportJob" component={ReportJobScreen} />
           <Stack.Screen name="JobFilter" component={JobFilterScreen} />
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
           <Stack.Screen name="NotFound" component={NotFoundScreen} />
@@ -80,6 +82,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="EditProfile" component={CandidateEditProfileScreen} />
           <Stack.Screen name="CandidateResume" component={CandidateResumeScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+          <Stack.Screen name="ReportJob" component={ReportJobScreen} />
           <Stack.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
@@ -120,6 +123,7 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="ApplicantDetail" component={ApplicantDetailScreen} />
           <Stack.Screen name="EmployerCandidateDetail" component={EmployerCandidateDetailScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
+          <Stack.Screen name="ReportJob" component={ReportJobScreen} />
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />

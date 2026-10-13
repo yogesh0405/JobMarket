@@ -427,8 +427,9 @@ export class AdminController {
     try {
       const page = safeInt(req.query.page, 1);
       const limit = safeInt(req.query.limit, 10);
+      const status = req.query.status as string | undefined;
 
-      const result = await AdminService.listReports({ page, limit });
+      const result = await AdminService.listReports({ page, limit, status });
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);

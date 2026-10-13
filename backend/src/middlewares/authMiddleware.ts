@@ -92,3 +92,27 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
   }
 };
 
+export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = verifyAccessToken(token);
+    if (decoded && (decoded.id || decoded.userId)) {
+      req.user = {
+        ...decoded,
+        id: decoded.id || decoded.userId,
+        userId: decoded.userId || decoded.id || ''
+      };
+    }
+  } catch (_) {
+    // Non-blocking: continue as guest if token is expired or invalid
+  }
+
+  return next();
+};
+

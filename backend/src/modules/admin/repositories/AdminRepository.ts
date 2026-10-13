@@ -846,28 +846,42 @@ export class AdminRepository {
   }
 
   // 7. User Reports
-  static async getReports(filters: { page: number; limit: number }): Promise<PaginatedResult<any>> {
-    const { page, limit } = filters;
+  static async getReports(filters: { page: number; limit: number; status?: string }): Promise<PaginatedResult<any>> {
+    const { page, limit, status } = filters;
     const safePage = isNaN(Number(page)) || Number(page) < 1 ? 1 : Math.floor(Number(page));
     const safeLimit = isNaN(Number(limit)) || Number(limit) < 1 ? 10 : Math.floor(Number(limit));
     const offset = (safePage - 1) * safeLimit;
 
-    const countQuery = 'SELECT COUNT(*) FROM reports;';
-    const countRes = await pool.query(countQuery);
+    const whereClauses: string[] = [];
+    const params: any[] = [];
+    let paramIdx = 1;
+
+    if (status && status !== 'ALL') {
+      whereClauses.push(`r.status = $${paramIdx++}`);
+      params.push(status.toUpperCase());
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const countQuery = `SELECT COUNT(*) FROM reports r ${whereSql};`;
+    const countRes = await pool.query(countQuery, params);
     const total = parseInt(countRes.rows[0].count, 10);
 
     const dataQuery = `
       SELECT r.*, 
              u1.name as reporter_name, u1.email as reporter_email,
-             u2.name as reported_user_name, u2.email as reported_user_email
+             u2.name as reported_user_name, u2.email as reported_user_email,
+             j.title as job_title, j.company as job_company, j.status as job_status
       FROM reports r
       LEFT JOIN users u1 ON r.reporter_id = u1.id
       LEFT JOIN users u2 ON r.reported_user_id = u2.id
+      LEFT JOIN jobs j ON (r.reported_content_type = 'JOB' AND r.reported_content_id = j.id::text)
+      ${whereSql}
       ORDER BY r.created_at DESC
-      LIMIT $1 OFFSET $2;
+      LIMIT $${paramIdx++} OFFSET $${paramIdx++};
     `;
 
-    const dataRes = await pool.query(dataQuery, [safeLimit, offset]);
+    const dataRes = await pool.query(dataQuery, [...params, safeLimit, offset]);
 
     return {
       data: dataRes.rows,

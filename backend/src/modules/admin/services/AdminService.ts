@@ -473,7 +473,8 @@ export class AdminService {
   }
 
   static async resolveReport(reportId: string, resolutionAction: string, adminId: string, ip?: string, ua?: string) {
-    if (!['ignore', 'delete_content', 'suspend_user'].includes(resolutionAction)) {
+    const validActions = ['ignore', 'delete_content', 'delete_job', 'suspend_user', 'unpublish_content', 'unpublish_job'];
+    if (!validActions.includes(resolutionAction)) {
       throw new BadRequestError('Invalid resolution action');
     }
 
@@ -490,10 +491,14 @@ export class AdminService {
       await clientTransaction(async (client) => {
         if (resolutionAction === 'suspend_user') {
           // Suspend reported user
-          await client.query("UPDATE users SET status = 'INACTIVE' WHERE id = $1;", [report.reported_user_id]);
-        } else if (resolutionAction === 'delete_content') {
+          await client.query("UPDATE users SET status = 'BLOCKED' WHERE id = $1;", [report.reported_user_id]);
+        } else if (resolutionAction === 'unpublish_content' || resolutionAction === 'unpublish_job') {
           if (report.reported_content_type === 'JOB') {
-            await client.query('DELETE FROM jobs WHERE id = $1;', [report.reported_content_id]);
+            await client.query("UPDATE jobs SET status = 'UNPUBLISHED' WHERE id::text = $1;", [report.reported_content_id]);
+          }
+        } else if (resolutionAction === 'delete_content' || resolutionAction === 'delete_job') {
+          if (report.reported_content_type === 'JOB') {
+            await client.query('DELETE FROM jobs WHERE id::text = $1;', [report.reported_content_id]);
           }
         }
         await client.query("UPDATE reports SET status = 'RESOLVED', resolved_at = CURRENT_TIMESTAMP, resolved_by = $1 WHERE id = $2;", [adminId, reportId]);

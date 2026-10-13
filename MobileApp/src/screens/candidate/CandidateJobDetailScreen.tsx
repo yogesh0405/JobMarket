@@ -18,6 +18,8 @@ import {
   ArrowLeft,
   MapPin,
   Ticket,
+  ShieldAlert,
+  Flag,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -433,6 +435,13 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         onBack={handleBackNavigation}
         onShare={handleShareJob}
         onToggleSave={handleToggleSave}
+        onReport={() => {
+          navigation.navigate('ReportJob', {
+            jobId: job.id,
+            jobTitle: job.title,
+            companyName: job.company,
+          });
+        }}
         onCompanyPress={() => {
           const companyId = (job as any).company_id || (job as any).companyId || job.company;
           navigation.navigate('CompanyProfile', { companyId, name: job.company });
@@ -586,6 +595,38 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
               />
             </>
           )}
+        </View>
+
+        {/* 3. Trust & Safety / Report Job Listing Card */}
+        <View style={styles.trustSafetyCard}>
+          <View style={styles.trustSafetyHeaderRow}>
+            <View style={styles.trustSafetyIconBadge}>
+              <ShieldAlert size={18} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trustSafetyTitle}>Job Market Trust & Safety</Text>
+              <Text style={styles.trustSafetyDesc}>
+                We strictly prohibit fraud, fake employers, or asking for money during the recruitment process. Never pay for interview calls, training kits, or job offer letters.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.trustSafetyActionRow}>
+            <TouchableOpacity
+              style={styles.reportListingBtn}
+              activeOpacity={0.8}
+              onPress={() => {
+                navigation.navigate('ReportJob', {
+                  jobId: job.id,
+                  jobTitle: job.title,
+                  companyName: job.company,
+                });
+              }}
+            >
+              <Flag size={14} color="#EF4444" />
+              <Text style={styles.reportListingBtnText}>Report Fake, Scam or Suspicious Job</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -802,5 +843,76 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11.5,
     fontWeight: '800',
+  },
+  trustSafetyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    marginTop: 12,
+  },
+  trustSafetyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  trustSafetyIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 0,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trustSafetyTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  trustSafetyDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  trustSafetyActionRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  reportListingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 0,
+  },
+  reportListingBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  reportBadgeReported: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 0,
+  },
+  reportBadgeReportedText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803D',
   },
 });

@@ -1145,4 +1145,36 @@ export class JobController {
       next(error);
     }
   }
+
+  static async reportJob(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const { reasonCategory, description } = req.body;
+
+      if (!reasonCategory || typeof reasonCategory !== 'string') {
+        res.status(400).json({
+          success: false,
+          message: 'A valid reason category is required to submit a report.'
+        });
+        return;
+      }
+
+      const reporterId = req.user?.userId || req.user?.id || null;
+
+      const result = await JobRepository.reportJob({
+        jobId: id,
+        reporterId,
+        reasonCategory: reasonCategory.trim(),
+        description: description ? String(description).slice(0, 1000) : undefined,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

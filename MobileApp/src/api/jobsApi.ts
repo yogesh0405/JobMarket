@@ -61,4 +61,17 @@ export const jobsApi = {
   getSkills: async (): Promise<ApiResponse> => {
     return apiFetch('/api/v1/jobs/meta/skills');
   },
+
+  reportJob: async (
+    id: string,
+    data: { reasonCategory: string; description?: string }
+  ): Promise<ApiResponse<{ alreadyReported: boolean; message: string }>> => {
+    if (!isValidId(id)) {
+      return { success: false, error: 'Invalid Job ID' } as any;
+    }
+    return apiFetch(`/api/v1/jobs/${id}/report`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };

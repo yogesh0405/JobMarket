@@ -19,6 +19,7 @@ import { CandidateHomeScreen } from '../screens/candidate/CandidateHomeScreen';
 import { CandidateJobSearchScreen } from '../screens/candidate/CandidateJobSearchScreen';
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
 import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
+import { ReportJobScreen } from '../screens/candidate/ReportJobScreen';
 import { CandidateAppliedJobsScreen } from '../screens/candidate/CandidateAppliedJobsScreen';
 import { CandidateSavedJobsScreen } from '../screens/candidate/CandidateSavedJobsScreen';
 import { CandidateCompaniesScreen } from '../screens/candidate/CandidateCompaniesScreen';
@@ -38,6 +39,7 @@ const CandidateJobsStackNavigator = () => (
     <JobsStackNav.Screen name="CandidateJobMapView" component={CandidateJobMapViewScreen} />
     <JobsStackNav.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
     <JobsStackNav.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />
+    <JobsStackNav.Screen name="ReportJob" component={ReportJobScreen} />
     <JobsStackNav.Screen name="CompanyProfile" component={CompanyProfileScreen} />
   </JobsStackNav.Navigator>
 );
@@ -50,6 +52,7 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
     focusedRouteName === 'CandidateJobDetail' ||
     focusedRouteName === 'CandidateApplyConfirm' ||
     focusedRouteName === 'CandidateJobMapView' ||
+    focusedRouteName === 'ReportJob' ||
     focusedRouteName === 'JobDetail' ||
     focusedRouteName === 'JobDetails'
   ) {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { JobController } from '../controllers/JobController';
-import { requireAuth } from '../../../middlewares/authMiddleware';
+import { requireAuth, optionalAuth } from '../../../middlewares/authMiddleware';
 import { rateLimiter } from '../../../middlewares/rateLimiter';
 
 const router = Router();
@@ -49,6 +49,7 @@ router.put('/:id', requireAuth, actionLimiter, JobController.updateJob);
 router.delete('/:id', requireAuth, actionLimiter, JobController.deleteJob);
 router.post('/:id/apply', requireAuth, actionLimiter, JobController.applyToJob);
 router.post('/:id/save', requireAuth, actionLimiter, JobController.toggleSaveJob);
+router.post('/:id/report', optionalAuth, actionLimiter, JobController.reportJob);
 router.get('/:id/applicants', requireAuth, JobController.getApplicantsForJob);
 router.patch('/:id/applicants/:userId/status', requireAuth, actionLimiter, JobController.updateApplicantStatus);
 router.post('/:id/applicants/:userId/interview', requireAuth, actionLimiter, JobController.scheduleInterview);
