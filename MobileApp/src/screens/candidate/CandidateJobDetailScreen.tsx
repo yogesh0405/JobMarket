@@ -18,8 +18,8 @@ import {
   ArrowLeft,
   MapPin,
   Ticket,
-  ShieldAlert,
-  Flag,
+  ShieldCheck,
+  AlertCircle,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -35,6 +35,7 @@ import { logger } from '../../utils/logger';
 import { FALLBACK_SEED_JOBS } from '../../constants/seedJobs';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { savedJobsStore } from '../../utils/savedJobsStore';
+import { reportedJobsStore, ReportedJobMetadata } from '../../utils/reportedJobsStore';
 import { CandidateJobDetailHeader } from './components/CandidateJobDetailHeader';
 import { shareJob } from '../../utils/shareUtils';
 
@@ -101,6 +102,12 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [hasApplied, setHasApplied] = useState(false);
   const [appliedItem, setAppliedItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
+  const [isReported, setIsReported] = useState<boolean>(() => {
+    return initialJobId ? reportedJobsStore.isReported(initialJobId) : false;
+  });
+  const [reportMeta, setReportMeta] = useState<ReportedJobMetadata | undefined>(() => {
+    return initialJobId ? reportedJobsStore.getReportMetadata(initialJobId) : undefined;
+  });
 
   // Synchronize state whenever screen receives new navigation parameters
   useEffect(() => {
@@ -112,8 +119,16 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       setJob(pJob);
       setActiveJobId(pJob.id);
       setLoading(false);
+      if (reportedJobsStore.isReported(pJob.id)) {
+        setIsReported(true);
+        setReportMeta(reportedJobsStore.getReportMetadata(pJob.id));
+      }
     } else if (resolvedId) {
       setActiveJobId(resolvedId);
+      if (reportedJobsStore.isReported(resolvedId)) {
+        setIsReported(true);
+        setReportMeta(reportedJobsStore.getReportMetadata(resolvedId));
+      }
       const seed = findSeedJob(resolvedId);
       if (seed) {
         setJob(seed);
@@ -221,8 +236,22 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       .catch(() => {});
   }, [job?.id, activeJobId, passedJob?.id]);
 
+  const checkReportedStatus = useCallback(() => {
+    const targetJob = job || passedJob;
+    const jobIdToCheck = targetJob?.id || activeJobId;
+    if (!jobIdToCheck) return;
+
+    const reported = reportedJobsStore.isReported(jobIdToCheck);
+    setIsReported(reported);
+    if (reported) {
+      setReportMeta(reportedJobsStore.getReportMetadata(jobIdToCheck));
+    }
+  }, [job?.id, passedJob?.id, activeJobId]);
+
   useEffect(() => {
     syncApplicationStatus();
+    checkReportedStatus();
+
     const unsubscribeApplied = appliedJobsStore.subscribe(syncApplicationStatus);
     const unsubscribeSaved = savedJobsStore.subscribe(() => {
       const targetJob = job || passedJob;
@@ -231,16 +260,20 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         setIsSaved(savedJobsStore.isSaved(jobIdToCheck));
       }
     });
+    const unsubscribeReported = reportedJobsStore.subscribe(checkReportedStatus);
+
     return () => {
       unsubscribeApplied();
       unsubscribeSaved();
+      unsubscribeReported();
     };
-  }, [syncApplicationStatus, job?.id, passedJob?.id, activeJobId]);
+  }, [syncApplicationStatus, checkReportedStatus, job?.id, passedJob?.id, activeJobId]);
 
   useFocusEffect(
     useCallback(() => {
       syncApplicationStatus();
-    }, [syncApplicationStatus])
+      checkReportedStatus();
+    }, [syncApplicationStatus, checkReportedStatus])
   );
 
   const handleToggleSave = async () => {
@@ -345,6 +378,137 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
       return () => subscription.remove();
     }, [handleBackNavigation])
   );
+
+  if (isReported) {
+    const meta = reportMeta || reportedJobsStore.getReportMetadata(activeJobId || job?.id || passedJob?.id);
+    const jobTitle = meta?.title || job?.title || passedJob?.title || 'Job Opportunity';
+    const company = meta?.company || job?.company || passedJob?.company || 'Employer';
+    const reason = meta?.reasonCategory || 'Inappropriate / Fraudulent Listing';
+    const reportedDateStr = meta?.reportedAt
+      ? new Date(meta.reportedAt).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Recently Reported';
+    const refCode = `REP-${String(meta?.jobId || activeJobId || job?.id || '000000').slice(-6).toUpperCase()}`;
+
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
+        {/* Top Header */}
+        <View style={[styles.reportedHeaderBar, { paddingTop: Math.max(insets.top, 12) }]}>
+          <TouchableOpacity
+            onPress={handleBackNavigation}
+            style={styles.reportedBackBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={22} color="#0F172A" strokeWidth={2.2} />
+          </TouchableOpacity>
+          <Text style={styles.reportedHeaderTitle}>Job Listing Reported</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={[
+            styles.reportedScrollBody,
+            { paddingBottom: Math.max(insets.bottom + 40, 60) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Card */}
+          <View style={styles.reportedCard}>
+            {/* Status Icon */}
+            <View style={styles.reportedIconWrapper}>
+              <ShieldCheck size={36} color="#1B4FDF" strokeWidth={2.2} />
+            </View>
+
+            <Text style={styles.reportedSuccessTitle}>Report Submitted Successfully</Text>
+            <Text style={styles.reportedSuccessSub}>
+              Thank you for reporting this job opening. The job details have been hidden from your view while our Trust & Safety team investigates the employer and listing.
+            </Text>
+
+            {/* Slate 400 Divider per AGENTS.md */}
+            <View style={styles.reportedDivider} />
+
+            {/* Summary Box */}
+            <View style={styles.reportedSummaryBox}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Investigation Status</Text>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusBadgeText}>Pending Moderation Review</Text>
+                </View>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Job Title</Text>
+                <Text style={styles.summaryValue} numberOfLines={1}>{jobTitle}</Text>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Company</Text>
+                <Text style={styles.summaryValue} numberOfLines={1}>{company}</Text>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Report Reason</Text>
+                <Text style={[styles.summaryValue, { color: '#DC2626' }]} numberOfLines={1}>{reason}</Text>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Submitted On</Text>
+                <Text style={styles.summaryValue}>{reportedDateStr}</Text>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Reference Code</Text>
+                <Text style={[styles.summaryValue, { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }]}>
+                  #{refCode}
+                </Text>
+              </View>
+            </View>
+
+            {/* Safety Notice Banner */}
+            <View style={styles.safetyNoticeBox}>
+              <AlertCircle size={18} color="#1B4FDF" strokeWidth={2} style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.safetyNoticeTitle}>Zero Tolerance for Fake Jobs</Text>
+                <Text style={styles.safetyNoticeText}>
+                  Our moderation team verifies employer credentials, physical factory presence, and registration documents. Confirmed fraudulent accounts and fake listings are permanently removed.
+                </Text>
+              </View>
+            </View>
+
+            {/* Primary Action Button */}
+            <TouchableOpacity
+              style={styles.reportedPrimaryBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                navigation.navigate('CandidateJobsTab', {
+                  screen: 'CandidateJobSearch',
+                });
+              }}
+            >
+              <Text style={styles.reportedPrimaryBtnText}>Browse Other Jobs</Text>
+            </TouchableOpacity>
+
+            {/* Secondary Action Button */}
+            <TouchableOpacity
+              style={styles.reportedSecondaryBtn}
+              activeOpacity={0.7}
+              onPress={handleBackNavigation}
+            >
+              <Text style={styles.reportedSecondaryBtnText}>Return to Previous Screen</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -596,38 +760,6 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             </>
           )}
         </View>
-
-        {/* 3. Trust & Safety / Report Job Listing Card */}
-        <View style={styles.trustSafetyCard}>
-          <View style={styles.trustSafetyHeaderRow}>
-            <View style={styles.trustSafetyIconBadge}>
-              <ShieldAlert size={18} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trustSafetyTitle}>Job Market Trust & Safety</Text>
-              <Text style={styles.trustSafetyDesc}>
-                We strictly prohibit fraud, fake employers, or asking for money during the recruitment process. Never pay for interview calls, training kits, or job offer letters.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.trustSafetyActionRow}>
-            <TouchableOpacity
-              style={styles.reportListingBtn}
-              activeOpacity={0.8}
-              onPress={() => {
-                navigation.navigate('ReportJob', {
-                  jobId: job.id,
-                  jobTitle: job.title,
-                  companyName: job.company,
-                });
-              }}
-            >
-              <Flag size={14} color="#EF4444" />
-              <Text style={styles.reportListingBtnText}>Report Fake, Scam or Suspicious Job</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
 
       {/* BOTTOM FIXED CTA ACTION BAR */}
@@ -844,75 +976,159 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '800',
   },
-  trustSafetyCard: {
+  reportedHeaderBar: {
+    height: 52,
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  reportedBackBtn: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reportedHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  reportedScrollBody: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  reportedCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 0,
+    padding: 20,
+    alignItems: 'center',
+  },
+  reportedIconWrapper: {
+    width: 68,
+    height: 68,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  reportedSuccessTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  reportedSuccessSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 19,
+    paddingHorizontal: 4,
+  },
+  reportedDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 18,
+  },
+  reportedSummaryBox: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 14,
-    marginTop: 12,
-  },
-  trustSafetyHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: 10,
-  },
-  trustSafetyIconBadge: {
-    width: 32,
-    height: 32,
     borderRadius: 0,
-    backgroundColor: '#FEF3C7',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  trustSafetyTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  trustSafetyDesc: {
-    fontSize: 11.5,
+  summaryLabel: {
+    fontSize: 12.5,
     color: '#64748B',
+    fontWeight: '500',
+  },
+  summaryValue: {
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '700',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  statusBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 0,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  safetyNoticeBox: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    padding: 12,
+    marginTop: 16,
+    borderRadius: 0,
+  },
+  safetyNoticeTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0369A1',
+    marginBottom: 2,
+  },
+  safetyNoticeText: {
+    fontSize: 11.5,
+    color: '#0C4A6E',
     lineHeight: 16,
-    marginTop: 3,
   },
-  trustSafetyActionRow: {
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  reportListingBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  reportedPrimaryBtn: {
+    width: '100%',
+    height: 48,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
+    alignItems: 'center',
+    marginTop: 20,
     borderRadius: 0,
   },
-  reportListingBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#DC2626',
+  reportedPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
-  reportBadgeReported: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    backgroundColor: '#F0FDF4',
+  reportedSecondaryBtn: {
+    width: '100%',
+    height: 46,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: '#CBD5E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
     borderRadius: 0,
   },
-  reportBadgeReportedText: {
-    fontSize: 12,
+  reportedSecondaryBtnText: {
+    color: '#334155',
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#15803D',
   },
 });

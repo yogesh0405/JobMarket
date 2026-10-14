@@ -26,6 +26,7 @@ import {
 import { COLORS, RADIUS } from '../../constants/theme';
 import { jobsApi } from '../../api/jobsApi';
 import { useToast } from '../../context/ToastContext';
+import { reportedJobsStore } from '../../utils/reportedJobsStore';
 
 interface ReportReasonOption {
   key: string;
@@ -111,8 +112,7 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleSubmitReport = async () => {
     if (!selectedReason) return;
     if (!jobId) {
-      // Offline / fallback job preview
-      setCurrentStep('SUCCESS');
+      showToast('Invalid job listing ID', 'error');
       return;
     }
 
@@ -123,21 +123,31 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
         description: description.trim() || undefined,
       });
 
-      if (response && response.success === false) {
-        showToast(response.message || 'Unable to submit report', 'error');
+      if (response && (response as any).success === false) {
+        showToast((response as any).message || (response as any).error || 'Unable to submit report', 'error');
         setIsSubmitting(false);
         return;
       }
 
+      reportedJobsStore.addReportedJob(jobId, {
+        title: jobTitle,
+        company: companyName,
+        reasonCategory: selectedReason.label,
+        reportedAt: new Date().toISOString(),
+      });
       setCurrentStep('SUCCESS');
     } catch (err: any) {
-      // Even if network fails or already reported, provide friendly user-facing resolution
-      const errMsg = err?.response?.data?.message || err?.message || '';
+      const errMsg = err?.message || 'Failed to submit report. Please try again.';
       if (errMsg.toLowerCase().includes('already')) {
+        reportedJobsStore.addReportedJob(jobId, {
+          title: jobTitle,
+          company: companyName,
+          reasonCategory: selectedReason.label,
+          reportedAt: new Date().toISOString(),
+        });
         setCurrentStep('SUCCESS');
       } else {
-        showToast(errMsg || 'Report submitted for review', 'info');
-        setCurrentStep('SUCCESS');
+        showToast(errMsg, 'error');
       }
     } finally {
       setIsSubmitting(false);
