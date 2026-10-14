@@ -27,5 +27,6 @@ router.post('/', JobController.createJob);
 router.put('/:id', JobController.updateJob);
 router.delete('/:id', JobController.deleteJob);
 router.post('/:id/save', JobController.toggleSaveJob);
+router.post('/:id/report', JobController.reportJob);
 
 export default router;
