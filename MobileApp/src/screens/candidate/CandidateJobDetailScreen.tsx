@@ -394,23 +394,31 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
         })
       : 'Recently Reported';
     const refCode = `REP-${String(meta?.jobId || activeJobId || job?.id || '000000').slice(-6).toUpperCase()}`;
+    const androidStatusBarHeight = StatusBar.currentHeight || 0;
+    const topSafeArea = Math.max(
+      insets.top,
+      Platform.OS === 'android' ? androidStatusBarHeight : 0,
+      14
+    );
 
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
-        {/* Top Header */}
-        <View style={[styles.reportedHeaderBar, { paddingTop: Math.max(insets.top, 12) }]}>
-          <TouchableOpacity
-            onPress={handleBackNavigation}
-            style={styles.reportedBackBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={22} color="#0F172A" strokeWidth={2.2} />
-          </TouchableOpacity>
-          <Text style={styles.reportedHeaderTitle}>Job Listing Reported</Text>
-          <View style={{ width: 36 }} />
+        {/* Top Header Container with Safe Area Inset */}
+        <View style={{ backgroundColor: '#FFFFFF', paddingTop: topSafeArea, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+          <View style={styles.reportedHeaderBar}>
+            <TouchableOpacity
+              onPress={handleBackNavigation}
+              style={styles.reportedBackBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={22} color="#0F172A" strokeWidth={2.2} />
+            </TouchableOpacity>
+            <Text style={styles.reportedHeaderTitle}>Job Listing Reported</Text>
+            <View style={{ width: 36 }} />
+          </View>
         </View>
 
         <ScrollView
@@ -979,8 +987,6 @@ const styles = StyleSheet.create({
   reportedHeaderBar: {
     height: 52,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

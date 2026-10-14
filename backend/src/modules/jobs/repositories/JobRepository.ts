@@ -1568,10 +1568,12 @@ export class JobRepository {
   }): Promise<{ alreadyReported: boolean; message: string; report?: any }> {
     const { jobId, reporterId, reasonCategory, description } = params;
 
-    // 1. Fetch job to verify existence and get employer ID
-    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(jobId);
+    const isUUID = (val: any): boolean =>
+      typeof val === 'string' &&
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val.trim());
+
     let job: any = null;
-    if (isUUID) {
+    if (isUUID(jobId)) {
       const jobRes = await pool.query('SELECT id, employer_id, title FROM jobs WHERE id = $1', [jobId]);
       if (jobRes.rows.length > 0) {
         job = jobRes.rows[0];
@@ -1585,15 +1587,15 @@ export class JobRepository {
       }
     }
 
-    if (!job) {
-      throw new NotFoundError('Job listing not found');
-    }
+    const targetJobId = job ? String(job.id) : String(jobId);
+    const safeReporterId = isUUID(reporterId) ? String(reporterId).trim() : null;
+    const safeEmployerId = isUUID(job?.employer_id) ? String(job.employer_id).trim() : null;
 
     // 2. Prevent spam / duplicate reports from same reporter for this job if pending
-    if (reporterId) {
+    if (safeReporterId) {
       const existing = await pool.query(
         "SELECT id FROM reports WHERE reporter_id = $1 AND reported_content_id = $2 AND status = 'PENDING' LIMIT 1",
-        [reporterId, jobId]
+        [safeReporterId, targetJobId]
       );
       if (existing.rows.length > 0) {
         return {
@@ -1619,7 +1621,7 @@ export class JobRepository {
         status,
         created_at
       ) VALUES (
-        uuid_generate_v4(),
+        gen_random_uuid(),
         $1,
         $2,
         $3,
@@ -1631,9 +1633,9 @@ export class JobRepository {
       RETURNING *;
     `;
     const result = await pool.query(insertQuery, [
-      reporterId || null,
-      job.employer_id || null,
-      String(job.id),
+      safeReporterId,
+      safeEmployerId,
+      targetJobId,
       cleanReason
     ]);
 

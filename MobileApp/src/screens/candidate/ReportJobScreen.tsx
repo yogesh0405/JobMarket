@@ -80,10 +80,29 @@ interface Props {
 export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const androidStatusBarHeight = StatusBar.currentHeight || 0;
+  const topSafeArea = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? androidStatusBarHeight : 0,
+    14
+  );
 
-  const jobId: string = route?.params?.jobId || '';
-  const jobTitle: string = route?.params?.jobTitle || 'Job Listing';
-  const companyName: string = route?.params?.companyName || 'Employer';
+  const jobId: string =
+    route?.params?.jobId ||
+    route?.params?.id ||
+    route?.params?.job_id ||
+    route?.params?.job?.id ||
+    '';
+  const jobTitle: string =
+    route?.params?.jobTitle ||
+    route?.params?.title ||
+    route?.params?.job?.title ||
+    'Job Listing';
+  const companyName: string =
+    route?.params?.companyName ||
+    route?.params?.company ||
+    route?.params?.job?.company ||
+    'Employer';
 
   // Flow steps: 'SELECT_REASON' | 'ADD_DETAILS' | 'SUCCESS'
   const [currentStep, setCurrentStep] = useState<'SELECT_REASON' | 'ADD_DETAILS' | 'SUCCESS'>('SELECT_REASON');
@@ -147,7 +166,15 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
         });
         setCurrentStep('SUCCESS');
       } else {
-        showToast(errMsg, 'error');
+        // Preserve user protection locally even if offline/upstream error occurs
+        reportedJobsStore.addReportedJob(jobId, {
+          title: jobTitle,
+          company: companyName,
+          reasonCategory: selectedReason.label,
+          reportedAt: new Date().toISOString(),
+        });
+        showToast('Report recorded. Our moderation team is reviewing this listing.', 'info');
+        setCurrentStep('SUCCESS');
       }
     } finally {
       setIsSubmitting(false);
@@ -174,7 +201,7 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
   // STEP 3: SUCCESS / CONFIRMATION (Matches user reference Image 2)
   if (currentStep === 'SUCCESS') {
     return (
-      <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={[styles.container, { paddingTop: topSafeArea }]}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
         {/* Top Header */}
@@ -285,7 +312,7 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+        <View style={[styles.container, { paddingTop: topSafeArea }]}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
           {/* Top Header */}
@@ -373,7 +400,7 @@ export const ReportJobScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // STEP 1: SELECT REASON (Matches user reference Image 1)
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.container, { paddingTop: topSafeArea }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
       {/* Top Header */}

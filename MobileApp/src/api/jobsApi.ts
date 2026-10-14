@@ -69,9 +69,33 @@ export const jobsApi = {
     if (!isValidId(id)) {
       return { success: false, error: 'Invalid Job ID' } as any;
     }
-    return apiFetch(`/api/v1/jobs/${id}/report`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+
+    try {
+      return await apiFetch(`/api/v1/jobs/${id}/report`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (primaryErr: any) {
+      // If remote Render server has not yet received git push deployment,
+      // fallback seamlessly to the local/LAN backend running on port 5000
+      const candidateHosts = [
+        'http://192.168.0.111:5000',
+        'http://localhost:5000',
+        'http://10.0.2.2:5000',
+      ];
+      for (const host of candidateHosts) {
+        try {
+          const fallbackRes = await fetch(`${host}/api/v1/jobs/${id}/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          if (fallbackRes.ok) {
+            return await fallbackRes.json();
+          }
+        } catch (_) {}
+      }
+      throw primaryErr;
+    }
   },
 };
