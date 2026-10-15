@@ -9,6 +9,7 @@ import { errorHandler } from '../../../shared/middlewares/errorHandler';
 import { correlationIdMiddleware } from './middleware/correlationId';
 import { authHeaderInjector } from './middleware/authHeaderInjector';
 import { createServiceProxy } from './utils/proxyHelper';
+import { rateLimiter } from '../../../shared/middlewares/rateLimiter';
 import spaRouter from './routes/spaRoutes';
 
 const app = express();
@@ -67,6 +68,10 @@ app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
     message: 'JobMarket API Gateway is healthy 🚀'
   });
 });
+
+// Production Edge Defense: Global API Rate Limiter (200 requests per 60s per IP)
+const globalApiLimiter = rateLimiter('gateway_api', 200, 60);
+app.use('/api', globalApiLimiter);
 
 const authServiceProxy = createServiceProxy(env.AUTH_SERVICE_PORT);
 const userServiceProxy = createServiceProxy(env.USER_SERVICE_PORT);

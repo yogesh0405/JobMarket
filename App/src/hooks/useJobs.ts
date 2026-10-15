@@ -468,6 +468,23 @@ export const useJobs = () => {
     }
   }, [state.users]);
 
+  const reportJob = useCallback(async (jobId: string, data: { reasonCategory: string; description?: string }) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${jobId}/report`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || json.error || 'Failed to submit report');
+      }
+      return json;
+    } catch (err: any) {
+      console.error('reportJob error:', err);
+      throw err;
+    }
+  }, []);
+
   return {
     getJobs,
     getJobById,
@@ -487,6 +504,7 @@ export const useJobs = () => {
     fetchCandidateSavedJobs,
     scheduleInterview,
     sendCustomEmail,
-    getAllCandidates
+    getAllCandidates,
+    reportJob
   };
 };

@@ -9,6 +9,7 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 import { CompanyDefaultLogo } from '../company/CompanyDefaultLogo';
 import { MetaVerifiedBadge } from '../common/MetaVerifiedBadge';
+import { reportedJobsStore } from '../../utils/reportedJobsStore';
 
 interface JobCardProps {
   job: Job;
@@ -47,7 +48,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
     if (onSaveToggle) {
       onSaveToggle(job.id, isNowSaved);
     }
-    showToast(isNowSaved ? 'Job saved to your bookmarks! 🔖' : 'Job removed from saved', isNowSaved ? 'success' : 'info');
+    showToast(isNowSaved ? 'Job saved to your bookmarks' : 'Job removed from saved', isNowSaved ? 'success' : 'info');
   };
 
   const renderSalary = () => {
@@ -222,6 +223,30 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
         alignContent: variant === 'carousel' ? 'flex-start' : undefined,
         overflow: variant === 'carousel' ? 'hidden' : undefined
       }}>
+        {/* Reported Badge */}
+        {reportedJobsStore.isReported(job.id) && (
+          <span style={{
+            fontSize: '11px',
+            fontWeight: '700',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            background: '#FEF2F2',
+            color: '#DC2626',
+            border: '1px solid #FECACA',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+            <span>Reported</span>
+          </span>
+        )}
+
         {/* Work Mode badge */}
         <span style={{
           fontSize: '11px',

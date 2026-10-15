@@ -22,7 +22,8 @@
     },
     "android": {
       "package": "com.jobmarket.mobileapp",
-      "usesCleartextTraffic": true,
+      "versionCode": 1,
+      "usesCleartextTraffic": false,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",

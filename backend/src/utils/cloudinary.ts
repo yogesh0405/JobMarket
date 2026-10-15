@@ -4,10 +4,14 @@ import { logger } from './logger';
 
 const parseCloudinaryUrl = () => {
   const url = env.CLOUDINARY_URL;
+  if (!url) {
+    return { apiKey: '', apiSecret: '', cloudName: '' };
+  }
   const regex = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/;
   const match = url.match(regex);
   if (!match) {
-    throw new Error('Invalid CLOUDINARY_URL configuration format');
+    logger.warn('Invalid CLOUDINARY_URL configuration format in environment variables');
+    return { apiKey: '', apiSecret: '', cloudName: '' };
   }
   return {
     apiKey: match[1],
@@ -19,10 +23,17 @@ const parseCloudinaryUrl = () => {
 const { apiKey, apiSecret, cloudName } = parseCloudinaryUrl();
 
 export class CloudinaryUtil {
+  static ensureConfigured() {
+    if (!apiKey || !apiSecret || !cloudName) {
+      throw new Error('Cloudinary is not configured. Please set CLOUDINARY_URL in your environment variables.');
+    }
+  }
+
   /**
    * Generates a signed upload signature for direct Cloudinary uploads from the browser.
    */
   static getUploadSignature(folder: string, publicId?: string) {
+    CloudinaryUtil.ensureConfigured();
     const timestamp = Math.floor(Date.now() / 1000);
     const params: Record<string, any> = {
       folder,
@@ -54,6 +65,7 @@ export class CloudinaryUtil {
    * @param publicId Optional specific public ID for the file
    */
   static async uploadImage(base64Image: string, folder: string, publicId?: string): Promise<string> {
+    CloudinaryUtil.ensureConfigured();
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const params: Record<string, any> = {
@@ -104,6 +116,7 @@ export class CloudinaryUtil {
    * @param publicId The public ID of the asset on Cloudinary (including folder)
    */
   static async deleteImage(publicId: string): Promise<void> {
+    CloudinaryUtil.ensureConfigured();
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const stringToSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
@@ -138,6 +151,7 @@ export class CloudinaryUtil {
   }
 
   static async uploadFile(base64File: string, folder: string, publicId?: string): Promise<string> {
+    CloudinaryUtil.ensureConfigured();
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const params: Record<string, any> = {
@@ -184,6 +198,7 @@ export class CloudinaryUtil {
   }
 
   static async deleteFile(publicId: string, resourceType: string = 'raw'): Promise<void> {
+    CloudinaryUtil.ensureConfigured();
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const params: Record<string, any> = {

@@ -4,6 +4,7 @@ import { UpdateProfileService } from '../../../../src/modules/auth/services/Upda
 import { S3Util } from '../../../../shared/utils/s3';
 import { AuthenticatedRequest } from '../../../../shared/types';
 import { sanitizeUserForResponse } from '../../../auth-service/src/controllers/AuthController';
+import { pool } from '../../../../shared/database/pool';
 
 export class UserController {
   static async me(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -37,9 +38,29 @@ export class UserController {
       const currentUserId = req.headers['x-user-id'] as string || req.user?.userId;
       const currentUserRole = req.headers['x-user-role'] as string || req.user?.role || 'candidate';
 
+      if (!currentUserId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
       let targetUserId = currentUserId;
       if ((currentUserRole === 'employer' || currentUserRole === 'admin') && req.query.userId) {
         targetUserId = req.query.userId as string;
+      }
+
+      // BOLA/IDOR Check: If employer requests another candidate's resume, verify relationship or public status
+      if (currentUserRole === 'employer' && targetUserId !== currentUserId) {
+        const accessCheck = await pool.query(
+          `SELECT 1 FROM job_applications ja 
+           JOIN jobs j ON ja.job_id = j.id 
+           WHERE ja.user_id = $1 AND (j.employer_id = $2 OR j.employer_id::text = $2::text)
+           UNION 
+           SELECT 1 FROM users WHERE id = $1 AND is_resume_public = TRUE 
+           LIMIT 1;`,
+          [targetUserId, currentUserId]
+        );
+        if (accessCheck.rows.length === 0) {
+          return res.status(403).json({ error: 'Access denied: Candidate has not applied to your jobs and resume is private' });
+        }
       }
 
       const user = await UserRepository.findById(targetUserId);
@@ -189,7 +210,29 @@ export class UserController {
       const user = await UserRepository.findById(id);
       if (!user) return res.status(404).json({ error: 'User profile not found' });
 
-      res.status(200).json({ success: true, user: sanitizeUserForResponse(user) });
+      // Strip sensitive personal contact info on public unauthenticated views
+      const sanitized = sanitizeUserForResponse(user);
+      const publicView = {
+        id: sanitized.id,
+        name: sanitized.name,
+        role: sanitized.role,
+        headline: sanitized.headline,
+        location: sanitized.location,
+        bio: sanitized.bio,
+        midc_zone: sanitized.midc_zone,
+        skills: sanitized.skills,
+        preferred_shift: sanitized.preferred_shift,
+        experience: sanitized.experience,
+        education: sanitized.education,
+        profile_picture_url: sanitized.profile_picture_url,
+        trade_specialization: sanitized.trade_specialization,
+        available_in_days: sanitized.available_in_days,
+        company_name: sanitized.company_name,
+        // Only include resume if candidate has marked resume as public
+        resume: sanitized.is_resume_public ? sanitized.resume : null,
+      };
+
+      res.status(200).json({ success: true, user: publicView });
     } catch (error) {
       next(error);
     }

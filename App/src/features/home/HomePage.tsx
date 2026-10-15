@@ -121,6 +121,258 @@ const HOSPITAL_GRID = [
   { name: 'Radiology Tech', icon: HeartPulse, keyword: 'radiology' },
 ];
 
+const TRADE_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-158109226825-a6a2a5aee158?w=600&q=80';
+const HEALTHCARE_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&q=80';
+const EDUCATION_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&q=80';
+
+export interface HorizontalCardItem {
+  id: string;
+  name: string;
+  image: string;
+  startingSalary: string;
+  keyword: string;
+}
+
+export const ITI_HORIZONTAL_DATA: HorizontalCardItem[] = [
+  {
+    id: 'fitter',
+    name: 'Fitter',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&q=80',
+    startingSalary: '₹20,000/m',
+    keyword: 'Fitter',
+  },
+  {
+    id: 'welder',
+    name: 'Welder',
+    image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=600&q=80',
+    startingSalary: '₹24,000/m',
+    keyword: 'Welder',
+  },
+  {
+    id: 'cnc-operator',
+    name: 'CNC Operator',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&q=80',
+    startingSalary: '₹25,000/m',
+    keyword: 'CNC',
+  },
+  {
+    id: 'electrician',
+    name: 'Electrician',
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'Electrician',
+  },
+  {
+    id: 'machinist',
+    name: 'Machinist',
+    image: 'https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=600&q=80',
+    startingSalary: '₹21,000/m',
+    keyword: 'Machinist',
+  },
+  {
+    id: 'technician',
+    name: 'Technician',
+    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&q=80',
+    startingSalary: '₹23,000/m',
+    keyword: 'Technician',
+  },
+];
+
+export const EDUCATION_HORIZONTAL_DATA: HorizontalCardItem[] = [
+  {
+    id: '10th-pass',
+    name: '10th Pass Jobs',
+    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&q=80',
+    startingSalary: '₹12,000/m',
+    keyword: '10th Pass',
+  },
+  {
+    id: '12th-pass',
+    name: '12th Pass Jobs',
+    image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&q=80',
+    startingSalary: '₹15,000/m',
+    keyword: '12th Pass',
+  },
+  {
+    id: 'diploma',
+    name: 'Diploma Jobs',
+    image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&q=80',
+    startingSalary: '₹20,000/m',
+    keyword: 'Diploma',
+  },
+  {
+    id: 'graduate',
+    name: 'Graduate (BA / B.Com)',
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80',
+    startingSalary: '₹18,000/m',
+    keyword: 'Graduate',
+  },
+  {
+    id: 'btech',
+    name: 'B.E. / B.Tech Jobs',
+    image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&q=80',
+    startingSalary: '₹28,000/m',
+    keyword: 'B.E.',
+  },
+  {
+    id: 'bca',
+    name: 'BCA / IT Graduate',
+    image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'BCA',
+  },
+];
+
+export const HOSPITAL_HORIZONTAL_DATA: HorizontalCardItem[] = [
+  {
+    id: 'staff-nurse',
+    name: 'Staff Nurse',
+    image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=600&q=80',
+    startingSalary: '₹18,000/m',
+    keyword: 'Staff Nurse',
+  },
+  {
+    id: 'ward-boy',
+    name: 'Ward Boy / Assistant',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&q=80',
+    startingSalary: '₹14,000/m',
+    keyword: 'Ward Boy',
+  },
+  {
+    id: 'lab-assistant',
+    name: 'Lab Assistant',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?w=600&q=80',
+    startingSalary: '₹16,000/m',
+    keyword: 'Lab Assistant',
+  },
+  {
+    id: 'pharmacist',
+    name: 'Pharmacist',
+    image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'Pharmacist',
+  },
+];
+
+const SafeCardImage: React.FC<{ src: string; fallbackSrc: string; alt: string }> = ({ src, fallbackSrc, alt }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      onError={() => {
+        if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
+      }}
+      className="home-horizontal-card-img"
+      loading="lazy"
+    />
+  );
+};
+
+const EXPERIENCE_FILTER_OPTIONS = [
+  'All Experience',
+  'Fresher (0 Years)',
+  '1–3 Years',
+  '3–5 Years',
+  '5+ Years',
+];
+
+interface HorizontalMenuFilterBarProps {
+  location: string;
+  onLocationChange: (loc: string) => void;
+  experience: string;
+  onExperienceChange: (exp: string) => void;
+  availableLocations: string[];
+  totalCardsCount: number;
+  matchingCardsCount: number;
+  showAllCards: boolean;
+  onToggleShowAll: () => void;
+  onReset: () => void;
+}
+
+const HorizontalMenuFilterBar: React.FC<HorizontalMenuFilterBarProps> = ({
+  location,
+  onLocationChange,
+  experience,
+  onExperienceChange,
+  availableLocations,
+  totalCardsCount,
+  matchingCardsCount,
+  showAllCards,
+  onToggleShowAll,
+  onReset,
+}) => {
+  const isFiltered = location !== 'All Locations' || experience !== 'All Experience';
+
+  return (
+    <div className="home-horizontal-filter-row">
+      <div className={`home-horizontal-filter-badge ${location !== 'All Locations' ? 'active-filter' : ''}`}>
+        <MapPin size={14} color={location !== 'All Locations' ? '#1B4FDF' : '#64748B'} />
+        <select
+          value={location}
+          onChange={(e) => onLocationChange(e.target.value)}
+          className="home-horizontal-filter-select"
+          aria-label="Filter by Location"
+        >
+          <option value="All Locations">All Locations</option>
+          {availableLocations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className={`home-horizontal-filter-badge ${experience !== 'All Experience' ? 'active-filter' : ''}`}>
+        <Briefcase size={14} color={experience !== 'All Experience' ? '#1B4FDF' : '#64748B'} />
+        <select
+          value={experience}
+          onChange={(e) => onExperienceChange(e.target.value)}
+          className="home-horizontal-filter-select"
+          aria-label="Filter by Experience"
+        >
+          {EXPERIENCE_FILTER_OPTIONS.map((exp) => (
+            <option key={exp} value={exp}>
+              {exp}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {isFiltered && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="home-horizontal-filter-clear"
+          title="Reset filters"
+        >
+          <X size={13} />
+          <span>Clear</span>
+        </button>
+      )}
+
+      {isFiltered && (
+        <div className="home-horizontal-count-indicator">
+          <span>
+            {matchingCardsCount} of {totalCardsCount} available
+          </span>
+          {matchingCardsCount < totalCardsCount && (
+            <button
+              type="button"
+              onClick={onToggleShowAll}
+              className="home-horizontal-toggle-show-btn"
+            >
+              {showAllCards ? 'Show Matching Only' : 'Show All'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
 const HOTEL_GRID = [
   { name: 'Chef & Cook', icon: Utensils, keyword: 'cook' },
   { name: 'Housekeeping Staff', icon: Utensils, keyword: 'housekeeping' },
@@ -284,6 +536,166 @@ export const HomePage: React.FC = () => {
     },
     [allJobs]
   );
+
+  // Horizontal Section Real-Time Filters
+  const [tradeLocationFilter, setTradeLocationFilter] = useState('All Locations');
+  const [tradeExpFilter, setTradeExpFilter] = useState('All Experience');
+  const [tradeShowAllCards, setTradeShowAllCards] = useState(false);
+
+  const [eduLocationFilter, setEduLocationFilter] = useState('All Locations');
+  const [eduExpFilter, setEduExpFilter] = useState('All Experience');
+  const [eduShowAllCards, setEduShowAllCards] = useState(false);
+
+  const [hospLocationFilter, setHospLocationFilter] = useState('All Locations');
+  const [hospExpFilter, setHospExpFilter] = useState('All Experience');
+  const [hospShowAllCards, setHospShowAllCards] = useState(false);
+
+  const availableLocations = useMemo(() => {
+    const locs = new Set<string>();
+    [
+      'Chakan MIDC',
+      'Bhosari MIDC',
+      'Waluj MIDC',
+      'Shendra MIDC',
+      'Talegaon MIDC',
+      'Ranjangaon MIDC',
+      'Pune',
+      'Chhatrapati Sambhajinagar',
+      'Mumbai',
+      'Nashik',
+    ].forEach((l) => locs.add(l));
+
+    allJobs.forEach((j) => {
+      if (j.location && j.location.trim().length > 1) locs.add(j.location.trim());
+      if (j.midcZone && j.midcZone.trim().length > 1) locs.add(j.midcZone.trim());
+    });
+
+    return Array.from(locs).sort();
+  }, [allJobs]);
+
+  const matchesFilterLocation = useCallback((job: Job, location: string): boolean => {
+    if (!location || location === 'All Locations') return true;
+    const target = location.toLowerCase();
+    const zoneStr = `${job.location || ''} ${(job as any).midcZone || ''}`.toLowerCase();
+    
+    const keywords = ['chakan', 'bhosari', 'waluj', 'ranjangaon', 'talegaon', 'hadapsar', 'shendra', 'taloja', 'rabale', 'thane', 'tarapur', 'ambernath', 'satpur', 'ambad', 'kagal', 'gokul shirgaon', 'butibori', 'roha', 'pimpri', 'khed', 'pune', 'nashik', 'aurangabad', 'sambhajinagar', 'mumbai', 'nagpur', 'kolhapur'];
+    const matchedKw = keywords.find(k => target.includes(k));
+    if (matchedKw) {
+      if (matchedKw === 'sambhajinagar' || matchedKw === 'aurangabad') {
+        return zoneStr.includes('sambhajinagar') || zoneStr.includes('aurangabad') || zoneStr.includes('waluj') || zoneStr.includes('shendra') || zoneStr.includes('chikalthana');
+      }
+      return zoneStr.includes(matchedKw);
+    }
+    return zoneStr.includes(target) || target.includes(zoneStr);
+  }, []);
+
+  const matchesFilterExperience = useCallback((job: Job, exp: string): boolean => {
+    if (!exp || exp === 'All Experience') return true;
+    const target = exp.toLowerCase();
+    const minE = job.minExperience ?? 0;
+    const maxE = job.maxExperience ?? minE;
+
+    if (target.includes('fresher') || target.includes('0')) {
+      return minE === 0 || (job as any).acceptFreshers === true || (job as any).experienceRequired === false;
+    }
+    if (target.includes('1') && target.includes('3')) {
+      return minE <= 3 && maxE >= 1;
+    }
+    if (target.includes('3') && target.includes('5')) {
+      return minE <= 5 && maxE >= 3;
+    }
+    if (target.includes('5+') || target.includes('5')) {
+      return maxE >= 5;
+    }
+    return true;
+  }, []);
+
+  const getRealFilteredJobCount = useCallback(
+    (keyword: string, location: string, exp: string) => {
+      const q = keyword.toLowerCase().trim();
+      const tokens = q ? q.split(/[\s/&,-]+/).filter((t) => t.length > 0 && !['and', 'or', 'in', 'of', 'for', 'the', 'jobs'].includes(t)) : [];
+
+      return allJobs.filter((j) => {
+        if (!matchesFilterLocation(j, location)) return false;
+        if (!matchesFilterExperience(j, exp)) return false;
+        if (!q) return true;
+
+        const fullJobText = [
+          j.title,
+          j.company,
+          j.description,
+          j.location,
+          j.industry,
+          (j as any).industryType,
+          j.trade,
+          (j as any).itiTrade,
+          j.workMode,
+          j.jobType,
+          j.midcZone,
+          (j as any).shiftDetails,
+          j.educationRequirement,
+          (j as any).education_requirement,
+          (j as any).education_level,
+          ...(j.skills || []),
+          ...(j.requirements || []),
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return tokens.length > 0
+          ? tokens.some((token) => {
+              if (token.length <= 3) {
+                const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp(`\\b${escaped}\\b`, 'i').test(fullJobText);
+              }
+              return fullJobText.includes(token);
+            })
+          : true;
+      }).length;
+    },
+    [allJobs, matchesFilterLocation, matchesFilterExperience]
+  );
+
+  const isTradeFiltered = tradeLocationFilter !== 'All Locations' || tradeExpFilter !== 'All Experience';
+  const tradeMatchingCount = useMemo(() => {
+    return ITI_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, tradeLocationFilter, tradeExpFilter) > 0
+    ).length;
+  }, [tradeLocationFilter, tradeExpFilter, getRealFilteredJobCount]);
+
+  const visibleTradeCards = useMemo(() => {
+    if (!isTradeFiltered || tradeShowAllCards) return ITI_HORIZONTAL_DATA;
+    return ITI_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, tradeLocationFilter, tradeExpFilter) > 0
+    );
+  }, [isTradeFiltered, tradeShowAllCards, tradeLocationFilter, tradeExpFilter, getRealFilteredJobCount]);
+
+  const isEduFiltered = eduLocationFilter !== 'All Locations' || eduExpFilter !== 'All Experience';
+  const eduMatchingCount = useMemo(() => {
+    return EDUCATION_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, eduLocationFilter, eduExpFilter) > 0
+    ).length;
+  }, [eduLocationFilter, eduExpFilter, getRealFilteredJobCount]);
+
+  const visibleEduCards = useMemo(() => {
+    if (!isEduFiltered || eduShowAllCards) return EDUCATION_HORIZONTAL_DATA;
+    return EDUCATION_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, eduLocationFilter, eduExpFilter) > 0
+    );
+  }, [isEduFiltered, eduShowAllCards, eduLocationFilter, eduExpFilter, getRealFilteredJobCount]);
+
+  const isHospFiltered = hospLocationFilter !== 'All Locations' || hospExpFilter !== 'All Experience';
+  const hospMatchingCount = useMemo(() => {
+    return HOSPITAL_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, hospLocationFilter, hospExpFilter) > 0
+    ).length;
+  }, [hospLocationFilter, hospExpFilter, getRealFilteredJobCount]);
+
+  const visibleHospCards = useMemo(() => {
+    if (!isHospFiltered || hospShowAllCards) return HOSPITAL_HORIZONTAL_DATA;
+    return HOSPITAL_HORIZONTAL_DATA.filter(
+      (item) => getRealFilteredJobCount(item.keyword || item.name, hospLocationFilter, hospExpFilter) > 0
+    );
+  }, [isHospFiltered, hospShowAllCards, hospLocationFilter, hospExpFilter, getRealFilteredJobCount]);
+
 
 
   const matchedSuggestions = useMemo(() => {
@@ -469,8 +881,37 @@ export const HomePage: React.FC = () => {
     navigate(`/jobs?${params.toString()}`);
   };
 
-  const handleQuickTradeSearch = (tradeName: string) => {
-    navigate(`/jobs?keyword=${encodeURIComponent(tradeName)}`);
+  const handleQuickTradeSearch = (
+    tradeName: string,
+    filterType?: 'trade' | 'education',
+    extraFilters?: { location?: string; exp?: string }
+  ) => {
+    const params = new URLSearchParams();
+    if (tradeName) {
+      if (filterType === 'education') {
+        params.set('education', tradeName);
+      } else if (filterType === 'trade') {
+        params.set('trade', tradeName);
+      } else {
+        params.set('keyword', tradeName);
+      }
+    } else {
+      if (filterType === 'trade') {
+        params.set('trade', 'All Trades');
+      } else if (filterType === 'education') {
+        params.set('education', 'All Education Levels');
+      }
+    }
+
+    if (extraFilters?.location && extraFilters.location !== 'All Locations') {
+      params.set('location', extraFilters.location);
+    }
+    if (extraFilters?.exp && extraFilters.exp !== 'All Experience') {
+      params.set('exp', extraFilters.exp);
+    }
+
+    const queryStr = params.toString();
+    navigate(queryStr ? `/jobs?${queryStr}` : '/jobs');
   };
 
   const activeHomeFilterCount = useMemo(() => {
@@ -661,6 +1102,291 @@ export const HomePage: React.FC = () => {
           color: #64748B;
           font-weight: 600;
           margin-top: 4px;
+        }
+
+        /* Horizontal Carousel Categories */
+        .home-category-section-left {
+          align-items: flex-start !important;
+          text-align: left !important;
+        }
+
+        .home-category-header-row {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2px;
+        }
+
+        .home-category-title-left {
+          font-size: 20px;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0;
+          letter-spacing: -0.2px;
+        }
+
+        .home-category-see-all {
+          background: none;
+          border: none;
+          padding: 4px 8px;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #1B4FDF;
+          cursor: pointer;
+          transition: opacity 0.15s ease;
+        }
+
+        .home-category-see-all:hover {
+          opacity: 0.8;
+          text-decoration: underline;
+        }
+
+        .home-category-sub-left {
+          font-size: 13px;
+          color: #64748B;
+          margin: 0 0 14px 0;
+        }
+
+        .home-horizontal-filter-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        .home-horizontal-filter-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background-color: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          border-radius: 6px;
+          padding: 6px 10px;
+          font-size: 13px;
+          color: #334155;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition: all 0.15s ease;
+        }
+
+        .home-horizontal-filter-badge:focus-within {
+          border-color: #1B4FDF;
+          box-shadow: 0 0 0 2px rgba(27, 79, 223, 0.12);
+        }
+
+        .home-horizontal-filter-badge.active-filter {
+          border-color: #1B4FDF;
+          background-color: #EFF6FF;
+          color: #1B4FDF;
+          font-weight: 600;
+        }
+
+        .home-horizontal-filter-select {
+          border: none;
+          background: transparent;
+          outline: none;
+          font-size: 13px;
+          color: inherit;
+          font-weight: inherit;
+          cursor: pointer;
+          max-width: 220px;
+        }
+
+        .home-horizontal-filter-clear {
+          background: none;
+          border: none;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: #EF4444;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 5px 10px;
+          border-radius: 4px;
+          transition: background-color 0.15s ease;
+        }
+
+        .home-horizontal-filter-clear:hover {
+          background-color: #FEE2E2;
+        }
+
+        .home-horizontal-count-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12.5px;
+          color: #64748B;
+          margin-left: auto;
+          font-weight: 500;
+        }
+
+        .home-horizontal-toggle-show-btn {
+          background: none;
+          border: 1px solid #CBD5E1;
+          border-radius: 4px;
+          padding: 3px 8px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #1B4FDF;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .home-horizontal-toggle-show-btn:hover {
+          background-color: #EFF6FF;
+          border-color: #1B4FDF;
+        }
+
+        .home-horizontal-empty-box {
+          width: 100%;
+          background-color: #FFFFFF;
+          border: 1px dashed #CBD5E1;
+          border-radius: 8px;
+          padding: 24px 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          box-sizing: border-box;
+          margin-bottom: 8px;
+        }
+
+        .home-filter-reset-action-btn {
+          background-color: #1B4FDF;
+          color: #FFFFFF;
+          border: none;
+          border-radius: 6px;
+          padding: 7px 16px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+        }
+
+        .home-filter-reset-action-btn:hover {
+          background-color: #153fb5;
+        }
+
+        .home-filter-toggle-all-action-btn {
+          background-color: #F1F5F9;
+          color: #334155;
+          border: 1px solid #CBD5E1;
+          border-radius: 6px;
+          padding: 7px 16px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .home-filter-toggle-all-action-btn:hover {
+          background-color: #E2E8F0;
+        }
+
+        .home-horizontal-scroll {
+          display: flex;
+          flex-direction: row;
+          gap: 14px;
+          overflow-x: auto;
+          width: 100%;
+          padding: 4px 2px 14px 2px;
+          box-sizing: border-box;
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .home-horizontal-scroll::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .home-horizontal-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .home-horizontal-scroll::-webkit-scrollbar-thumb {
+          background-color: #CBD5E1;
+          border-radius: 4px;
+        }
+
+        .home-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #94A3B8;
+        }
+
+        .home-horizontal-card {
+          flex: 0 0 162px;
+          width: 162px;
+          background-color: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          transition: all 0.2s ease;
+          text-align: left;
+        }
+
+        .home-horizontal-card:hover {
+          border-color: #1B4FDF;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(27, 79, 223, 0.1);
+        }
+
+        .home-horizontal-card-img {
+          width: 100%;
+          height: 108px;
+          object-fit: cover;
+          background-color: #F1F5F9;
+          display: block;
+        }
+
+        .home-horizontal-card-body {
+          padding: 10px 12px 12px 12px;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+
+        .home-horizontal-card-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #0F172A;
+          line-height: 1.25;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .home-horizontal-job-count {
+          font-size: 11px;
+          color: #64748B;
+          margin-top: 4px;
+        }
+
+        .home-horizontal-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 3px;
+          margin-top: 6px;
+        }
+
+        .home-horizontal-price-from {
+          font-size: 11px;
+          color: #64748B;
+          font-weight: 400;
+        }
+
+        .home-horizontal-price-val {
+          font-size: 13px;
+          font-weight: 800;
+          color: #0F172A;
         }
 
         /* Advantage Section Desktop */
@@ -1014,367 +1740,23 @@ export const HomePage: React.FC = () => {
             font-size: 11px !important;
             line-height: 14px !important;
           }
+
+          /* Horizontal Cards Mobile View */
+          .home-horizontal-card {
+            flex: 0 0 148px !important;
+            width: 148px !important;
+          }
+          .home-horizontal-card-img {
+            height: 104px !important;
+          }
+          .home-category-title-left {
+            font-size: 16px !important;
+          }
         }
       `}</style>
 
       {/* Main Content Area */}
       <div className="home-main-container">
-        {/* Top Search Bar & Live Autocomplete */}
-        <div style={{ position: 'relative', width: '100%', zIndex: 100 }} ref={searchContainerRef}>
-          <div
-            className="home-top-search-bar"
-            onClick={() => navigate('/search')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #CBD5E1',
-              borderRadius: '8px',
-              padding: '0 14px',
-              height: '48px',
-              gap: '10px',
-              boxSizing: 'border-box',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
-              transition: 'all 0.15s ease',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-              <Search
-                size={18}
-                color="#1B4FDF"
-                style={{ flexShrink: 0 }}
-              />
-
-              <div
-                style={{
-                  flex: 1,
-                  fontSize: '14.5px',
-                  color: '#64748B',
-                  fontWeight: 500,
-                  userSelect: 'none',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {SEARCH_PLACEHOLDERS[placeholderIndex]}
-              </div>
-
-              <kbd style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#F1F5F9',
-                color: '#64748B',
-                borderRadius: '4px',
-                padding: '2px 6px',
-                fontSize: '11px',
-                fontWeight: 700,
-                border: '1px solid #E2E8F0',
-                userSelect: 'none',
-                pointerEvents: 'none',
-                flexShrink: 0,
-              }}>
-                ⌘K
-              </kbd>
-            </div>
-
-            <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0', flexShrink: 0 }} />
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setHomeFilterDrawerOpen(true);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#1B4FDF',
-                flexShrink: 0,
-                position: 'relative',
-              }}
-              title="Filter Options"
-            >
-              <SlidersHorizontal size={18} color="#1B4FDF" />
-              {activeHomeFilterCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-2px',
-                    right: '-2px',
-                    backgroundColor: '#1764E8',
-                    color: '#FFFFFF',
-                    borderRadius: '50%',
-                    width: '15px',
-                    height: '15px',
-                    fontSize: '9px',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1.5px solid #FFFFFF',
-                  }}
-                >
-                  {activeHomeFilterCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Autocomplete Dropdown Overlay disabled - search opens dedicated /search page */}
-          {false && showSuggestions && (
-            <div style={{
-              position: 'absolute',
-              top: '54px',
-              left: 0,
-              right: 0,
-              backgroundColor: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #CBD5E1',
-              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.15)',
-              maxHeight: '380px',
-              overflowY: 'auto',
-              zIndex: 999,
-              padding: '6px 0',
-            }}>
-              {topSearch.trim() === '' ? (
-                // Empty state: show popular searches & quick filter tags
-                <div style={{ padding: '8px 12px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                    TRENDING TRADES & ROLES
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                    {['CNC Operator', 'Welder', 'Fitter', 'Electrician', 'Quality Inspector', 'Turner', 'Helper'].map((trade) => (
-                      <button
-                        key={trade}
-                        type="button"
-                        onClick={() => {
-                          setTopSearch(trade);
-                          handleSelectItem({ type: 'trade', label: trade });
-                        }}
-                        style={{
-                          backgroundColor: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          borderRadius: '6px',
-                          padding: '5px 10px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#334155',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#EFF6FF';
-                          e.currentTarget.style.borderColor = '#1B4FDF';
-                          e.currentTarget.style.color = '#1B4FDF';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F8FAFC';
-                          e.currentTarget.style.borderColor = '#E2E8F0';
-                          e.currentTarget.style.color = '#334155';
-                        }}
-                      >
-                        <Award size={13} color="#1B4FDF" />
-                        <span>{trade}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#94A3B8', letterSpacing: '0.4px', marginBottom: '8px' }}>
-                    POPULAR INDUSTRIAL ZONES
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {['Chakan MIDC', 'Waluj MIDC', 'Bhosari MIDC', 'Taloja MIDC', 'Ranjangaon MIDC'].map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => {
-                          handleSelectItem({ type: 'location', label: loc });
-                        }}
-                        style={{
-                          backgroundColor: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          borderRadius: '6px',
-                          padding: '5px 10px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#334155',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#EFF6FF';
-                          e.currentTarget.style.borderColor = '#1B4FDF';
-                          e.currentTarget.style.color = '#1B4FDF';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F8FAFC';
-                          e.currentTarget.style.borderColor = '#E2E8F0';
-                          e.currentTarget.style.color = '#334155';
-                        }}
-                      >
-                        <MapPin size={13} color="#D97706" />
-                        <span>{loc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                // Filtered search results
-                <>
-                  <div
-                    onClick={() => handleSelectItem({ type: 'search_all', label: topSearch.trim() })}
-                    style={{
-                      padding: '10px 14px',
-                      borderBottom: '1px solid #F1F5F9',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      backgroundColor: selectedIndex === 0 ? '#EFF6FF' : '#F8FAFC',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = selectedIndex === 0 ? '#EFF6FF' : '#F8FAFC')}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1B4FDF' }}>
-                      <Search size={15} />
-                      <span>Search all jobs matching "<strong>{topSearch.trim()}</strong>"</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '11px', color: '#94A3B8' }}>Press ↵</span>
-                      <ArrowRight size={14} color="#1B4FDF" />
-                    </div>
-                  </div>
-
-                  {matchedSuggestions.jobs.length > 0 && (
-                    <div style={{ padding: '6px 0' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
-                        MATCHING LIVE JOBS
-                      </div>
-                      {matchedSuggestions.jobs.map((j) => {
-                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'job' && it.id === j.id);
-                        const isSelected = selectedIndex === itemIdx;
-                        return (
-                          <div
-                            key={j.id}
-                            onClick={() => handleSelectItem({ type: 'job', label: j.title, id: j.id })}
-                            style={{
-                              padding: '8px 14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              cursor: 'pointer',
-                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                              transition: 'background 0.15s ease',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
-                          >
-                            <Briefcase size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {j.title}
-                              </div>
-                              <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {j.company} • {j.location}
-                              </div>
-                            </div>
-                            <ChevronRight size={14} color="#94A3B8" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {matchedSuggestions.trades.length > 0 && (
-                    <div style={{ padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
-                        POPULAR TRADES & SKILLS
-                      </div>
-                      {matchedSuggestions.trades.map((trade) => {
-                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'trade' && it.label === trade);
-                        const isSelected = selectedIndex === itemIdx;
-                        return (
-                          <div
-                            key={trade}
-                            onClick={() => handleSelectItem({ type: 'trade', label: trade })}
-                            style={{
-                              padding: '8px 14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              cursor: 'pointer',
-                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                              transition: 'background 0.15s ease',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
-                          >
-                            <Award size={16} color="#059669" style={{ flexShrink: 0 }} />
-                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
-                              {trade}
-                            </div>
-                            <ChevronRight size={14} color="#94A3B8" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {matchedSuggestions.locations.length > 0 && (
-                    <div style={{ padding: '6px 0', borderTop: '1px solid #F1F5F9' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#94A3B8', padding: '4px 14px', letterSpacing: '0.5px' }}>
-                        INDUSTRIAL ZONES & LOCATIONS
-                      </div>
-                      {matchedSuggestions.locations.map((loc) => {
-                        const itemIdx = flatSearchItems.findIndex((it) => it.type === 'location' && it.label === loc);
-                        const isSelected = selectedIndex === itemIdx;
-                        return (
-                          <div
-                            key={loc}
-                            onClick={() => handleSelectItem({ type: 'location', label: loc })}
-                            style={{
-                              padding: '8px 14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              cursor: 'pointer',
-                              backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                              transition: 'background 0.15s ease',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isSelected ? '#EFF6FF' : 'transparent')}
-                          >
-                            <MapPin size={16} color="#D97706" style={{ flexShrink: 0 }} />
-                            <div style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
-                              {loc}
-                            </div>
-                            <ChevronRight size={14} color="#94A3B8" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Promotional Banner Carousel Slider */}
         <div style={{ width: '100%', overflow: 'hidden', borderRadius: '6px' }}>
           <BannerSlider />
@@ -1797,140 +2179,297 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Browse by ITI Trade / Specialty */}
-        <div className="home-category-section">
+        <div className="home-category-section home-category-section-left">
           <div className="home-category-badge" style={{ backgroundColor: '#EFF6FF', color: '#1B4FDF' }}>
             POPULAR TRADES
           </div>
-          <h3 className="home-category-title">
-            Browse by ITI Trade / Specialty
-          </h3>
-          <p className="home-category-sub">
+          <div className="home-category-header-row">
+            <h3 className="home-category-title-left">
+              Browse by ITI Trade / Specialty
+            </h3>
+            <button
+              type="button"
+              className="home-category-see-all"
+              onClick={() => handleQuickTradeSearch('', 'trade', { location: tradeLocationFilter, exp: tradeExpFilter })}
+            >
+              See All
+            </button>
+          </div>
+          <p className="home-category-sub-left">
             Direct vacancies in production, quality, maintenance & logistics
           </p>
 
-          <div className="home-trades-grid">
-            {ITI_TRADES_GRID.map((trade, idx) => {
-              const IconComp = trade.icon;
-              const count = getRealJobCount(trade.keyword);
-              return (
-                <div
-                  key={idx}
-                  className="home-chip-card"
-                  onClick={() => handleQuickTradeSearch(trade.name)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#1B4FDF';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(27, 79, 223, 0.08)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#CBD5E1';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
+          <HorizontalMenuFilterBar
+            location={tradeLocationFilter}
+            onLocationChange={setTradeLocationFilter}
+            experience={tradeExpFilter}
+            onExperienceChange={setTradeExpFilter}
+            availableLocations={availableLocations}
+            totalCardsCount={ITI_HORIZONTAL_DATA.length}
+            matchingCardsCount={tradeMatchingCount}
+            showAllCards={tradeShowAllCards}
+            onToggleShowAll={() => setTradeShowAllCards(prev => !prev)}
+            onReset={() => {
+              setTradeLocationFilter('All Locations');
+              setTradeExpFilter('All Experience');
+            }}
+          />
+
+          {visibleTradeCards.length === 0 ? (
+            <div className="home-horizontal-empty-box">
+              <div style={{ fontSize: '13.5px', color: '#64748B', fontWeight: 600 }}>
+                No active ITI trade openings found matching "{tradeLocationFilter}" & "{tradeExpFilter}".
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="home-filter-reset-action-btn"
+                  onClick={() => {
+                    setTradeLocationFilter('All Locations');
+                    setTradeExpFilter('All Experience');
                   }}
                 >
-                  <div className="home-chip-icon-box" style={{ backgroundColor: '#EFF6FF' }}>
-                    <IconComp size={18} color="#1B4FDF" />
+                  Reset Filters
+                </button>
+                <button
+                  type="button"
+                  className="home-filter-toggle-all-action-btn"
+                  onClick={() => setTradeShowAllCards(true)}
+                >
+                  View All Trades
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="home-horizontal-scroll">
+              {visibleTradeCards.map((item) => {
+                const realCount = isTradeFiltered
+                  ? getRealFilteredJobCount(item.keyword || item.name, tradeLocationFilter, tradeExpFilter)
+                  : getRealJobCount(item.keyword || item.name);
+                return (
+                  <div
+                    key={item.id}
+                    className="home-horizontal-card"
+                    onClick={() => handleQuickTradeSearch(item.name, 'trade', { location: tradeLocationFilter, exp: tradeExpFilter })}
+                  >
+                    <SafeCardImage
+                      src={item.image}
+                      fallbackSrc={TRADE_FALLBACK_IMAGE}
+                      alt={item.name}
+                    />
+                    <div className="home-horizontal-card-body">
+                      <div className="home-horizontal-card-title" title={item.name}>
+                        {item.name}
+                      </div>
+                      <div className="home-horizontal-job-count">
+                        {realCount > 0 ? `${realCount} ${realCount === 1 ? 'Job Opening' : 'Job Openings'}` : 'Direct Openings'}
+                      </div>
+                      <div className="home-horizontal-price-row">
+                        <span className="home-horizontal-price-from">From </span>
+                        <span className="home-horizontal-price-val">{item.startingSalary}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="home-chip-title">
-                    {trade.name}
-                  </div>
-                  <div className="home-chip-count">
-                    {count} {count === 1 ? 'Open position' : 'Open positions'}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Browse Jobs by Qualification */}
-        <div className="home-category-section">
+        <div className="home-category-section home-category-section-left">
           <div className="home-category-badge" style={{ backgroundColor: '#F0FDF4', color: '#16A34A' }}>
             EDUCATION
           </div>
-          <h3 className="home-category-title">
-            Browse Jobs by Qualification
-          </h3>
-          <p className="home-category-sub">
+          <div className="home-category-header-row">
+            <h3 className="home-category-title-left">
+              Browse Jobs by Qualification
+            </h3>
+            <button
+              type="button"
+              className="home-category-see-all"
+              onClick={() => handleQuickTradeSearch('', 'education', { location: eduLocationFilter, exp: eduExpFilter })}
+            >
+              See All
+            </button>
+          </div>
+          <p className="home-category-sub-left">
             Find jobs matching your school education or college degree
           </p>
 
-          <div className="home-education-grid">
-            {EDUCATION_GRID.map((qual, idx) => {
-              const IconComp = qual.icon;
-              const count = getRealJobCount(qual.keyword);
-              return (
-                <div
-                  key={idx}
-                  className="home-chip-card"
-                  onClick={() => handleQuickTradeSearch(qual.name)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#16A34A';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 3px 8px rgba(22, 163, 74, 0.08)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#CBD5E1';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
+          <HorizontalMenuFilterBar
+            location={eduLocationFilter}
+            onLocationChange={setEduLocationFilter}
+            experience={eduExpFilter}
+            onExperienceChange={setEduExpFilter}
+            availableLocations={availableLocations}
+            totalCardsCount={EDUCATION_HORIZONTAL_DATA.length}
+            matchingCardsCount={eduMatchingCount}
+            showAllCards={eduShowAllCards}
+            onToggleShowAll={() => setEduShowAllCards(prev => !prev)}
+            onReset={() => {
+              setEduLocationFilter('All Locations');
+              setEduExpFilter('All Experience');
+            }}
+          />
+
+          {visibleEduCards.length === 0 ? (
+            <div className="home-horizontal-empty-box">
+              <div style={{ fontSize: '13.5px', color: '#64748B', fontWeight: 600 }}>
+                No active qualification openings found matching "{eduLocationFilter}" & "{eduExpFilter}".
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="home-filter-reset-action-btn"
+                  onClick={() => {
+                    setEduLocationFilter('All Locations');
+                    setEduExpFilter('All Experience');
                   }}
                 >
-                  <div className="home-chip-icon-box" style={{ backgroundColor: '#F0FDF4' }}>
-                    <IconComp size={18} color="#16A34A" />
+                  Reset Filters
+                </button>
+                <button
+                  type="button"
+                  className="home-filter-toggle-all-action-btn"
+                  onClick={() => setEduShowAllCards(true)}
+                >
+                  View All Qualifications
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="home-horizontal-scroll">
+              {visibleEduCards.map((item) => {
+                const realCount = isEduFiltered
+                  ? getRealFilteredJobCount(item.keyword || item.name, eduLocationFilter, eduExpFilter)
+                  : getRealJobCount(item.keyword || item.name);
+                return (
+                  <div
+                    key={item.id}
+                    className="home-horizontal-card"
+                    onClick={() => handleQuickTradeSearch(item.name, 'education', { location: eduLocationFilter, exp: eduExpFilter })}
+                  >
+                    <SafeCardImage
+                      src={item.image}
+                      fallbackSrc={EDUCATION_FALLBACK_IMAGE}
+                      alt={item.name}
+                    />
+                    <div className="home-horizontal-card-body">
+                      <div className="home-horizontal-card-title" title={item.name}>
+                        {item.name}
+                      </div>
+                      <div className="home-horizontal-job-count">
+                        {realCount > 0 ? `${realCount} ${realCount === 1 ? 'Job Opening' : 'Job Openings'}` : 'Direct Openings'}
+                      </div>
+                      <div className="home-horizontal-price-row">
+                        <span className="home-horizontal-price-from">From </span>
+                        <span className="home-horizontal-price-val">{item.startingSalary}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="home-chip-title">
-                    {qual.name}
-                  </div>
-                  <div className="home-chip-count">
-                    {count} {count === 1 ? 'Job Opening' : 'Job Openings'}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Hospital & Healthcare Jobs */}
-        <div className="home-category-section">
+        <div className="home-category-section home-category-section-left">
           <div className="home-category-badge" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-            HEALTHCARE
+            HOSPITAL
           </div>
-          <h3 className="home-category-title">
-            Hospital & Healthcare Jobs
-          </h3>
-          <p className="home-category-sub">
+          <div className="home-category-header-row">
+            <h3 className="home-category-title-left">
+              Hospital & Healthcare Jobs
+            </h3>
+            <button
+              type="button"
+              className="home-category-see-all"
+              onClick={() => handleQuickTradeSearch('Hospital', undefined, { location: hospLocationFilter, exp: hospExpFilter })}
+            >
+              See All
+            </button>
+          </div>
+          <p className="home-category-sub-left">
             Browse medical, nursing, administration and support staff jobs
           </p>
 
-          <div className="home-healthcare-grid">
-            {HOSPITAL_GRID.map((h, idx) => (
-              <div
-                key={idx}
-                className="home-chip-card"
-                onClick={() => handleQuickTradeSearch(h.name)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#DC2626';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 3px 8px rgba(220, 38, 38, 0.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#CBD5E1';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
-                }}
-              >
-                <div className="home-chip-icon-box" style={{ backgroundColor: '#FEF2F2' }}>
-                  <HeartPulse size={18} color="#DC2626" />
-                </div>
-                <div className="home-chip-title">
-                  {h.name}
-                </div>
-                <div className="home-chip-count">
-                  {getRealJobCount(h.keyword)} Openings
-                </div>
+          <HorizontalMenuFilterBar
+            location={hospLocationFilter}
+            onLocationChange={setHospLocationFilter}
+            experience={hospExpFilter}
+            onExperienceChange={setHospExpFilter}
+            availableLocations={availableLocations}
+            totalCardsCount={HOSPITAL_HORIZONTAL_DATA.length}
+            matchingCardsCount={hospMatchingCount}
+            showAllCards={hospShowAllCards}
+            onToggleShowAll={() => setHospShowAllCards(prev => !prev)}
+            onReset={() => {
+              setHospLocationFilter('All Locations');
+              setHospExpFilter('All Experience');
+            }}
+          />
+
+          {visibleHospCards.length === 0 ? (
+            <div className="home-horizontal-empty-box">
+              <div style={{ fontSize: '13.5px', color: '#64748B', fontWeight: 600 }}>
+                No active hospital openings found matching "{hospLocationFilter}" & "{hospExpFilter}".
               </div>
-            ))}
-          </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="home-filter-reset-action-btn"
+                  onClick={() => {
+                    setHospLocationFilter('All Locations');
+                    setHospExpFilter('All Experience');
+                  }}
+                >
+                  Reset Filters
+                </button>
+                <button
+                  type="button"
+                  className="home-filter-toggle-all-action-btn"
+                  onClick={() => setHospShowAllCards(true)}
+                >
+                  View All Roles
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="home-horizontal-scroll">
+              {visibleHospCards.map((item) => {
+                const realCount = isHospFiltered
+                  ? getRealFilteredJobCount(item.keyword || item.name, hospLocationFilter, hospExpFilter)
+                  : getRealJobCount(item.keyword || item.name);
+                return (
+                  <div
+                    key={item.id}
+                    className="home-horizontal-card"
+                    onClick={() => handleQuickTradeSearch(item.name, undefined, { location: hospLocationFilter, exp: hospExpFilter })}
+                  >
+                    <SafeCardImage
+                      src={item.image}
+                      fallbackSrc={HEALTHCARE_FALLBACK_IMAGE}
+                      alt={item.name}
+                    />
+                    <div className="home-horizontal-card-body">
+                      <div className="home-horizontal-card-title" title={item.name}>
+                        {item.name}
+                      </div>
+                      <div className="home-horizontal-job-count">
+                        {realCount > 0 ? `${realCount} ${realCount === 1 ? 'Job Opening' : 'Job Openings'}` : 'Direct Openings'}
+                      </div>
+                      <div className="home-horizontal-price-row">
+                        <span className="home-horizontal-price-from">From </span>
+                        <span className="home-horizontal-price-val">{item.startingSalary}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Hotel & Hospitality Jobs */}

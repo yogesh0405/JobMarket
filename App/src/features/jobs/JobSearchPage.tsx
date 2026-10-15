@@ -27,6 +27,7 @@ import {
   JobFilterValues,
   DEFAULT_JOB_FILTERS,
 } from '../../components/job/JobFilterModal';
+import { JobDesktopSideFilter } from '../../components/job/JobDesktopSideFilter';
 
 export const CATEGORIES = [
   'All Jobs',
@@ -63,6 +64,155 @@ function formatTimeAgo(dateString?: string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return `${Math.floor(diffDays / 7)}w ago`;
 }
+
+export const matchesJobFilter = (
+  job: Job,
+  filters: Partial<JobFilterValues>,
+  search: string = '',
+  category: string = 'All Jobs'
+): boolean => {
+  // Category filter
+  if (category && category !== 'All Jobs') {
+    const cat = category.toLowerCase().trim();
+    const title = (job.title || '').toLowerCase();
+    const industry = (job.industry || '').toLowerCase();
+    const trade = (job.trade || '').toLowerCase();
+    const catField = ((job as any).category || (job as any).category_name || (job as any).categoryName || (job as any).job_category || '').toLowerCase();
+
+    const titleMatch = title.includes(cat);
+    const industryMatch = industry.includes(cat) || (industry.length > 0 && cat.includes(industry));
+    const tradeMatch = trade.includes(cat) || (trade.length > 0 && cat.includes(trade));
+    const catFieldMatch = catField.includes(cat) || (catField.length > 0 && cat.includes(catField));
+
+    const tokens = cat.replace(/[()&,/]/g, ' ').split(/\s+/).filter((t: string) => t.length > 2);
+    const allJobText = `${title} ${industry} ${trade} ${catField}`;
+    const tokenMatch = tokens.length > 0 && tokens.some((t: string) => allJobText.includes(t));
+
+    if (!titleMatch && !industryMatch && !tradeMatch && !catFieldMatch && !tokenMatch) {
+      return false;
+    }
+  }
+
+  // Keyword search
+  if (search.trim()) {
+    const q = search.toLowerCase().trim();
+    const fullJobText = [
+      job.title,
+      job.company,
+      job.description,
+      job.location,
+      job.industry,
+      (job as any).industryType,
+      job.trade,
+      (job as any).itiTrade,
+      job.workMode,
+      job.jobType,
+      job.midcZone,
+      (job as any).shiftDetails,
+      job.educationRequirement,
+      (job as any).education_requirement,
+      (job as any).education_level,
+      ...(job.skills || []),
+      ...(job.requirements || []),
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    const tokens = q.split(/[\s/&,-]+/).filter((t) => t.length > 0 && !['and', 'or', 'in', 'of', 'for', 'the'].includes(t));
+    const matches = tokens.length > 0 ? tokens.some((t) => fullJobText.includes(t)) : true;
+    if (!matches) return false;
+  }
+
+  // 1. Zone
+  if (filters.midcZone && filters.midcZone !== 'All Locations') {
+    const zoneStr = (job.midc_zone || job.midcZone || job.address || job.city || job.location || '').toLowerCase();
+    const target = filters.midcZone.toLowerCase();
+    const keywords = ['waluj', 'shendra', 'chikalthana', 'chitegaon', 'paithan', 'bidkin', 'railway', 'jalna', 'sambhajinagar', 'chakan', 'bhosari', 'talegaon', 'ranjangaon', 'taloja', 'thane', 'pune'];
+    let matchedKw = '';
+    for (const kw of keywords) {
+      if (target.includes(kw)) {
+        matchedKw = kw;
+        break;
+      }
+    }
+    if (matchedKw) {
+      if (matchedKw === 'sambhajinagar') {
+        const isSnb = zoneStr.includes('sambhajinagar') || zoneStr.includes('aurangabad') || zoneStr.includes('waluj') || zoneStr.includes('shendra') || zoneStr.includes('chikalthana') || zoneStr.includes('chitegaon') || zoneStr.includes('paithan') || zoneStr.includes('bidkin');
+        if (!isSnb) return false;
+      } else {
+        if (!zoneStr.includes(matchedKw)) return false;
+      }
+    } else {
+      if (!zoneStr.includes(target) && !target.includes(zoneStr)) return false;
+    }
+  }
+
+  // 2. Industry
+  if (filters.industry && filters.industry !== 'All Industries') {
+    const ind = (job.industry || (job as any).industryType || '').toLowerCase();
+    const target = filters.industry.toLowerCase();
+    const tokens = target.split(/[\s&,/()]+/).filter((t) => t.length > 2);
+    const matches = ind.includes(target) || target.includes(ind) || tokens.some((t) => ind.includes(t));
+    if (!matches) return false;
+  }
+
+  // 3. Trade / Role
+  if (filters.trade && filters.trade !== 'All Trades') {
+    const tradeText = `${job.title || ''} ${job.trade || ''} ${(job as any).role || ''} ${(job as any).job_title || ''}`.toLowerCase();
+    const target = filters.trade.toLowerCase();
+    const tokens = target.split(/[\s&,/()]+/).filter((t) => t.length > 2);
+    const matches = tradeText.includes(target) || tradeText.includes(tradeText) || tokens.some((t) => tradeText.includes(t));
+    if (!matches) return false;
+  }
+
+  // 4. Education
+  if (filters.education && filters.education !== 'All Education Levels') {
+    const edu = `${job.educationRequirement || ''} ${(job as any).education_requirement || ''} ${job.education || ''} ${(job as any).qualification || ''} ${(job as any).education_level || ''}`.toLowerCase();
+    const target = filters.education.toLowerCase();
+    const tokens = target.split(/[\s&,/()]+/).filter((t) => t.length > 2);
+    const matches = edu.includes(target) || target.includes(edu) || tokens.some((t) => edu.includes(t));
+    if (!matches) return false;
+  }
+
+  // 5. Job Type
+  if (filters.jobType && filters.jobType !== 'All Types') {
+    const t = (job.job_type || job.jobType || job.type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = filters.jobType.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!t.includes(target) && !target.includes(t)) return false;
+  }
+
+  // 6. Work Mode
+  if (filters.workMode && filters.workMode !== 'All Modes') {
+    const m = (job.work_mode || job.workMode || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const target = filters.workMode.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!m.includes(target) && !target.includes(m)) return false;
+  }
+
+  // 7. Experience Range
+  if (filters.minExperience && filters.minExperience !== 'All Experience') {
+    const target = filters.minExperience.toLowerCase();
+    const minE = job.minExperience ?? 0;
+    const maxE = job.maxExperience ?? minE;
+
+    if (target.includes('fresher') || target.includes('0')) {
+      if (!(minE === 0 || (job as any).acceptFreshers === true || (job as any).experienceRequired === false)) {
+        return false;
+      }
+    } else if (target.includes('1') && target.includes('3')) {
+      if (!(minE <= 3 && maxE >= 1)) return false;
+    } else if (target.includes('3') && target.includes('5')) {
+      if (!(minE <= 5 && maxE >= 3)) return false;
+    } else if (target.includes('5+') || target.includes('5')) {
+      if (!(maxE >= 5)) return false;
+    }
+  }
+
+  // 8. Perks & Facilities
+  if (filters.busFacility && !(job.bus_facility ?? job.busFacility)) return false;
+  if (filters.canteen && !(job.canteen ?? (job as any).canteenFacility)) return false;
+  if (filters.accommodation && !(job.accommodation ?? (job as any).hostelFacility)) return false;
+  if (filters.overtime && !(job.overtime ?? (job as any).otFacility)) return false;
+
+  return true;
+};
 
 export const JobSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -195,150 +345,7 @@ export const JobSearchPage: React.FC = () => {
   }, [activeFilters]);
 
   const filteredJobs = useMemo(() => {
-    return allJobs.filter((job) => {
-      // Category filter
-      if (selectedCategory !== 'All Jobs') {
-        const cat = selectedCategory.toLowerCase().trim();
-        const title = (job.title || '').toLowerCase();
-        const industry = (job.industry || '').toLowerCase();
-        const trade = (job.trade || '').toLowerCase();
-        const catField = ((job as any).category || (job as any).category_name || (job as any).categoryName || (job as any).job_category || '').toLowerCase();
-
-        const titleMatch = title.includes(cat);
-        const industryMatch = industry.includes(cat) || (industry.length > 0 && cat.includes(industry));
-        const tradeMatch = trade.includes(cat) || (trade.length > 0 && cat.includes(trade));
-        const catFieldMatch = catField.includes(cat) || (catField.length > 0 && cat.includes(catField));
-
-        // Token match for multi-word categories (e.g., "Information Technology (IT)", "CNC & VMC Operator")
-        const tokens = cat.replace(/[()&,/]/g, ' ').split(/\s+/).filter((t: string) => t.length > 2);
-        const allJobText = `${title} ${industry} ${trade} ${catField}`;
-        const tokenMatch = tokens.length > 0 && tokens.some((t: string) => allJobText.includes(t));
-
-        if (!titleMatch && !industryMatch && !tradeMatch && !catFieldMatch && !tokenMatch) {
-          return false;
-        }
-      }
-
-      // Keyword query — rich multi-field token matching
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const tokens = q.split(/[\s/&,-]+/).filter((t) => t.length > 0 && !['and', 'or', 'in', 'of', 'for', 'the'].includes(t));
-        const fullJobText = [
-          job.title,
-          job.company,
-          job.description,
-          job.location,
-          job.industry,
-          (job as any).industryType,
-          job.trade,
-          (job as any).itiTrade,
-          job.workMode,
-          job.jobType,
-          job.midcZone,
-          (job as any).shiftDetails,
-          job.educationRequirement,
-          (job as any).education_requirement,
-          (job as any).education_level,
-          ...(job.skills || []),
-          ...(job.requirements || []),
-        ].filter(Boolean).join(' ').toLowerCase();
-
-        const matches = tokens.length > 0
-          ? tokens.some((token) => {
-              if (token.length <= 3) {
-                const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                return new RegExp(`\\b${escaped}\\b`, 'i').test(fullJobText);
-              }
-              return fullJobText.includes(token);
-            })
-          : true;
-
-        if (!matches) return false;
-      }
-
-      // 1. Zone
-      if (activeFilters.midcZone !== 'All Locations') {
-        const zoneStr = (job.midc_zone || job.midcZone || job.address || job.city || job.location || '').toLowerCase();
-        let keyword = activeFilters.midcZone.toLowerCase();
-        if (keyword.includes('waluj')) keyword = 'waluj';
-        else if (keyword.includes('shendra')) keyword = 'shendra';
-        else if (keyword.includes('chikalthana')) keyword = 'chikalthana';
-        else if (keyword.includes('chitegaon')) keyword = 'chitegaon';
-        else if (keyword.includes('paithan')) keyword = 'paithan';
-        else if (keyword.includes('bidkin')) keyword = 'bidkin';
-        else if (keyword.includes('railway station')) keyword = 'railway';
-        else if (keyword.includes('jalna road')) keyword = 'jalna';
-        else if (keyword.includes('chhatrapati sambhajinagar') || keyword.includes('aurangabad')) keyword = 'sambhajinagar';
-        else if (keyword.includes('chakan')) keyword = 'chakan';
-        else if (keyword.includes('bhosari')) keyword = 'bhosari';
-        else if (keyword.includes('talegaon')) keyword = 'talegaon';
-        else if (keyword.includes('ranjangaon')) keyword = 'ranjangaon';
-        else if (keyword.includes('taloja')) keyword = 'taloja';
-        else if (keyword.includes('thane')) keyword = 'thane';
-
-        const isMatch = zoneStr.includes(keyword) ||
-          (keyword === 'sambhajinagar' && (
-            zoneStr.includes('aurangabad') ||
-            zoneStr.includes('waluj') ||
-            zoneStr.includes('shendra') ||
-            zoneStr.includes('chikalthana') ||
-            zoneStr.includes('chitegaon') ||
-            zoneStr.includes('paithan') ||
-            zoneStr.includes('bidkin')
-          ));
-        if (!isMatch) return false;
-      }
-
-      // 2. Industry
-      if (activeFilters.industry !== 'All Industries') {
-        const ind = (job.industry || '').toLowerCase();
-        const target = activeFilters.industry.toLowerCase();
-        if (!ind.includes(target) && !target.includes(ind)) return false;
-      }
-
-      // 3. Trade / Role
-      if (activeFilters.trade !== 'All Trades') {
-        const title = (job.title || job.role || job.job_title || '').toLowerCase();
-        const target = activeFilters.trade.toLowerCase();
-        if (!title.includes(target) && !target.includes(title)) return false;
-      }
-
-      // 4. Education
-      if (activeFilters.education !== 'All Education Levels') {
-        const edu = (job.education || job.qualification || '').toLowerCase();
-        const target = activeFilters.education.toLowerCase();
-        if (!edu.includes(target) && !target.includes(edu)) return false;
-      }
-
-      // 5. Job Type
-      if (activeFilters.jobType !== 'All Types') {
-        const t = (job.job_type || job.jobType || job.type || '').toLowerCase();
-        const target = activeFilters.jobType.toLowerCase();
-        if (!t.includes(target) && !target.includes(t)) return false;
-      }
-
-      // 6. Work Mode
-      if (activeFilters.workMode !== 'All Modes') {
-        const m = (job.work_mode || job.workMode || '').toLowerCase();
-        const target = activeFilters.workMode.toLowerCase();
-        if (!m.includes(target) && !target.includes(m)) return false;
-      }
-
-      // 7. Experience
-      if (activeFilters.minExperience !== 'All Experience') {
-        const expStr = (job.experience || job.min_experience || job.minExperience || '').toLowerCase();
-        const target = activeFilters.minExperience.toLowerCase();
-        if (!expStr.includes(target) && !target.includes(expStr)) return false;
-      }
-
-      // 8. Perks & Facilities
-      if (activeFilters.busFacility && !(job.bus_facility ?? job.busFacility)) return false;
-      if (activeFilters.canteen && !(job.canteen ?? job.canteenFacility)) return false;
-      if (activeFilters.accommodation && !(job.accommodation ?? job.hostelFacility)) return false;
-      if (activeFilters.overtime && !(job.overtime ?? job.otFacility)) return false;
-
-      return true;
-    });
+    return allJobs.filter((job) => matchesJobFilter(job, activeFilters, searchQuery, selectedCategory));
   }, [allJobs, selectedCategory, searchQuery, activeFilters]);
 
   const resetAllFilters = () => {
@@ -351,28 +358,67 @@ export const JobSearchPage: React.FC = () => {
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
       <style>{`
-        .jobs-main-container {
+        .jobs-page-wrapper {
           width: 100%;
-          max-width: 780px;
+          max-width: 1240px;
           margin: 0 auto;
-          padding: 20px 16px 80px 16px;
+          padding: 24px 20px 80px 20px;
           display: flex;
-          flex-direction: column;
-          gap: 16px;
+          gap: 24px;
+          align-items: flex-start;
           box-sizing: border-box;
         }
 
+        .jobs-main-content {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          box-sizing: border-box;
+        }
+
+        @media (max-width: 1023px) {
+          .jobs-page-wrapper {
+            max-width: 780px;
+            padding: 20px 16px 80px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+          .desktop-side-filter {
+            display: none !important;
+          }
+        }
+
         @media (max-width: 767px) {
-          .jobs-main-container {
+          .jobs-page-wrapper {
             max-width: 580px;
             padding: 10px 12px 100px 12px !important;
             gap: 12px !important;
           }
         }
+
+        @media (min-width: 1024px) {
+          .mobile-filter-trigger {
+            display: none !important;
+          }
+        }
       `}</style>
 
       {/* Main Content Area */}
-      <div className="jobs-main-container">
+      <div className="jobs-page-wrapper">
+        {/* Desktop Side Filter (Strictly desktop view >= 1024px) */}
+        <JobDesktopSideFilter
+          currentFilters={activeFilters}
+          onApplyFilters={(applied) => setActiveFilters(applied)}
+          onResetFilters={resetAllFilters}
+          allJobs={allJobs}
+          activeFilterCount={activeFilterCount}
+        />
+
+        {/* Main Content Column */}
+        <div className="jobs-main-content">
         {/* Top Search Bar & View Mode Bar */}
         <div style={{
           display: 'flex',
@@ -441,9 +487,10 @@ export const JobSearchPage: React.FC = () => {
               </button>
             )}
 
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
+            <div className="mobile-filter-trigger" style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
 
             <button
+              className="mobile-filter-trigger"
               onClick={(e) => { e.stopPropagation(); setFilterDrawerOpen(true); }}
               style={{
                 background: 'transparent',
@@ -954,6 +1001,7 @@ export const JobSearchPage: React.FC = () => {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Industry-Standard Job Filter Modal */}

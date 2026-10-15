@@ -27,9 +27,14 @@ import {
   Award,
   Send,
   ExternalLink,
-  Ticket
+  Ticket,
+  Flag,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
+import { ReportJobModal } from '../../components/jobs/ReportJobModal';
+import { reportedJobsStore, ReportedJobMetadata } from '../../utils/reportedJobsStore';
 
 const ensureArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.filter(Boolean).map(String);
@@ -64,8 +69,16 @@ export const JobDetailPage: React.FC = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isFetchingJob, setIsFetchingJob] = useState(!job);
   const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
+
+  const [isReported, setIsReported] = useState<boolean>(() => {
+    return id ? reportedJobsStore.isReported(id) : false;
+  });
+  const [reportMeta, setReportMeta] = useState<ReportedJobMetadata | undefined>(() => {
+    return id ? reportedJobsStore.getReportMetadata(id) : undefined;
+  });
 
   const jobIdStr = job?.id;
   const storeSaved = jobIdStr ? isJobSaved(jobIdStr) : false;
@@ -103,6 +116,19 @@ export const JobDetailPage: React.FC = () => {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
   }, [id]);
+
+  useEffect(() => {
+    const checkReportedStatus = () => {
+      const targetId = job?.id || id;
+      if (targetId && reportedJobsStore.isReported(targetId)) {
+        setIsReported(true);
+        setReportMeta(reportedJobsStore.getReportMetadata(targetId));
+      }
+    };
+    checkReportedStatus();
+    const unsubscribe = reportedJobsStore.subscribe(checkReportedStatus);
+    return () => unsubscribe();
+  }, [id, job?.id]);
 
   const handleToggleSave = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -169,10 +195,217 @@ export const JobDetailPage: React.FC = () => {
     }
   };
 
+  const handleOpenReport = () => {
+    const isMobile = typeof window !== 'undefined' && (
+      window.innerWidth <= 768 ||
+      window.matchMedia('(max-width: 768px)').matches ||
+      /Mobi|Android|iPhone/i.test(navigator.userAgent)
+    );
+
+    if (isMobile) {
+      navigate(`/job/${job?.id || id}/report`);
+    } else {
+      setShowReportModal(true);
+    }
+  };
+
   if (isFetchingJob) {
     return (
       <div className="container" style={{ padding: '40px 16px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
         <div style={{ fontSize: '14px', color: '#64748B', fontWeight: '600' }}>Loading job details...</div>
+      </div>
+    );
+  }
+
+  if (isReported) {
+    const meta = reportMeta || reportedJobsStore.getReportMetadata(job?.id || id);
+    const repTitle = meta?.title || job?.title || 'Job Opening';
+    const repCompany = meta?.company || job?.company || 'Employer';
+    const repReason = meta?.reasonCategory || 'Inappropriate / Fraudulent Listing';
+    const reportedDateStr = meta?.reportedAt
+      ? new Date(meta.reportedAt).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Recently Reported';
+    const refCode = `REP-${String(meta?.jobId || job?.id || id || '000000').slice(-6).toUpperCase()}`;
+
+    return (
+      <div className="job-detail-page-wrapper" style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', paddingBottom: '60px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '16px 14px', boxSizing: 'border-box' }}>
+          
+          {/* Top Return Navigation Bar */}
+          <div style={{
+            backgroundColor: '#2563EB',
+            padding: '12px 16px',
+            color: '#FFFFFF',
+            borderRadius: '0px',
+            marginBottom: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <button
+              onClick={handleBackToJobs}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#FFFFFF',
+                fontSize: '13.5px',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <ArrowLeft size={18} />
+              <span>Back to Jobs</span>
+            </button>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', opacity: 0.9 }}>
+              Job Listing Moderation
+            </span>
+          </div>
+
+          {/* Primary Reported Confirmation Card */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #CBD5E1',
+            borderRadius: '0px',
+            padding: '28px 24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '0px',
+              backgroundColor: '#EFF6FF',
+              border: '1px solid #BFDBFE',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563EB',
+              marginBottom: '16px'
+            }}>
+              <ShieldCheck size={36} />
+            </div>
+
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
+              Report Submitted Successfully
+            </h2>
+            <p style={{ fontSize: '13.5px', color: '#64748B', maxWidth: '600px', margin: '0 auto 16px auto', lineHeight: '1.5' }}>
+              Thank you for reporting this job opening. The job details have been hidden from your view while our Trust & Safety team investigates the employer and listing.
+            </p>
+
+            {/* Slate 400 section separator per AGENTS.md */}
+            <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '18px 0' }} />
+
+            {/* Summary Information Table */}
+            <div style={{
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '0px',
+              padding: '16px',
+              textAlign: 'left',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Investigation Status</span>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: '#B45309',
+                  backgroundColor: '#FEF3C7',
+                  border: '1px solid #FDE68A',
+                  padding: '3px 8px',
+                  borderRadius: '0px'
+                }}>
+                  Pending Moderation Review
+                </span>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Job Title</span>
+                <strong style={{ fontSize: '13px', color: '#0F172A' }}>{repTitle}</strong>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Company</span>
+                <span style={{ fontSize: '13px', color: '#334155', fontWeight: '600' }}>{repCompany}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Report Reason</span>
+                <span style={{ fontSize: '13px', color: '#DC2626', fontWeight: '700' }}>{repReason}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Submitted On</span>
+                <span style={{ fontSize: '12.5px', color: '#475569' }}>{reportedDateStr}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Reference Code</span>
+                <code style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', backgroundColor: '#E2E8F0', padding: '2px 6px', borderRadius: '0px' }}>
+                  #{refCode}
+                </code>
+              </div>
+            </div>
+
+            {/* Slate 400 section separator per AGENTS.md */}
+            <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '20px 0' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleBackToJobs}
+                style={{
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '10px 22px',
+                  borderRadius: '0px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>Browse Other Jobs</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  showToast('Trust & Safety team has been alerted for reference #' + refCode, 'info');
+                }}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  border: '1px solid #CBD5E1',
+                  padding: '10px 18px',
+                  borderRadius: '0px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>Support Inquiry</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -288,7 +521,32 @@ export const JobDetailPage: React.FC = () => {
                 <span>Back to Jobs</span>
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleOpenReport}
+                  title="Report Fake or Suspicious Job"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.35)',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    padding: '3px 8px',
+                    borderRadius: '0px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '11.5px',
+                    fontWeight: '700',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)')}
+                >
+                  <Flag size={13} />
+                  <span>Report</span>
+                </button>
+
                 <button
                   onClick={() => {
                     const shareUrl = `${window.location.origin}/job/${encodeURIComponent(job.id)}`;
@@ -296,7 +554,7 @@ export const JobDetailPage: React.FC = () => {
                       `${job.title} - ${job.company}`,
                       `Check out this job opening for ${job.title} at ${job.company} on JobMarket: ${shareUrl}`,
                       shareUrl,
-                      () => showToast('Job link copied to clipboard! 📋', 'success')
+                      () => showToast('Job link copied to clipboard', 'success')
                     );
                   }}
                   title="Share Job Opening"
@@ -741,6 +999,45 @@ export const JobDetailPage: React.FC = () => {
                 latitude={(job as any).latitude ? Number((job as any).latitude) : undefined}
                 longitude={(job as any).longitude ? Number((job as any).longitude) : undefined}
               />
+
+              {/* Trust & Safety Report Prompt */}
+              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '14px 0 10px 0' }} />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '0px',
+                  boxSizing: 'border-box',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748B' }}>
+                  <ShieldAlert size={16} color="#DC2626" style={{ flexShrink: 0 }} />
+                  <span>Encountered suspicious fees, fake recruiter, or misleading terms?</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenReport}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#DC2626',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Report this job opening
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -946,6 +1243,20 @@ export const JobDetailPage: React.FC = () => {
           candidatePhone: currentUser?.phone,
           candidateEmail: currentUser?.email,
           appliedAt: appliedAtDate || undefined
+        }}
+      />
+
+      {/* Trust & Safety Scam Reporting Modal */}
+      <ReportJobModal
+        isOpen={showReportModal}
+        jobId={job.id}
+        jobTitle={job.title}
+        companyName={job.company}
+        onClose={() => setShowReportModal(false)}
+        onReportSuccess={() => {
+          setIsReported(true);
+          setReportMeta(reportedJobsStore.getReportMetadata(job.id));
+          showToast('Job listing reported. Our Trust & Safety team has been alerted.', 'success');
         }}
       />
     </div>

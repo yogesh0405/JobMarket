@@ -16,7 +16,8 @@ import {
   User, 
   FileText, 
   Building2, 
-  Home
+  Home,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -248,39 +249,73 @@ export const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* DESKTOP ONLY NAVIGATION LINKS */}
-            <div className="navbar-nav desktop-only-nav">
-              {currentUser?.role === 'employer' ? (
-                <>
-                  <Link
-                    to="/dashboard?tab=candidates"
-                    className={`nav-link ${(location.pathname === '/dashboard' && (new URLSearchParams(location.search).get('tab') === 'candidates' || !new URLSearchParams(location.search).get('tab'))) ? 'active' : ''}`}
-                  >
-                    Browse Candidates
-                  </Link>
-                  <Link
-                    to="/post-job"
-                    className={`nav-link ${location.pathname === '/post-job' ? 'active' : ''}`}
-                  >
-                    Post Job
-                  </Link>
-                  <Link
-                    to="/dashboard?tab=manage"
-                    className={`nav-link ${location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'manage' ? 'active' : ''}`}
-                  >
-                    Manage Jobs
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
-                  <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
-                  <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
-                </>
-              )}
+            {/* DESKTOP NAVIGATION LINKS & SEARCH PILL */}
+            <div className="navbar-nav-search-group desktop-only-nav">
+              <div className="navbar-nav">
+                {currentUser?.role === 'employer' ? (
+                  <>
+                    <Link
+                      to="/dashboard?tab=candidates"
+                      className={`nav-link ${(location.pathname === '/dashboard' && (new URLSearchParams(location.search).get('tab') === 'candidates' || !new URLSearchParams(location.search).get('tab'))) ? 'active' : ''}`}
+                    >
+                      Browse Candidates
+                    </Link>
+                    <Link
+                      to="/post-job"
+                      className={`nav-link ${location.pathname === '/post-job' ? 'active' : ''}`}
+                    >
+                      Post Job
+                    </Link>
+                    <Link
+                      to="/dashboard?tab=manage"
+                      className={`nav-link ${location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'manage' ? 'active' : ''}`}
+                    >
+                      Manage Jobs
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
+                    <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
+                  </>
+                )}
+              </div>
+
+              {/* Header Search Bar (matching user screenshot) */}
+              <div
+                className="navbar-header-search-pill desktop-only-search"
+                onClick={() => navigate('/search')}
+                title="Search jobs here"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate('/search');
+                  }
+                }}
+              >
+                <span className="navbar-header-search-placeholder">
+                  Search jobs here
+                </span>
+                <div className="navbar-header-search-btn">
+                  <Search size={14} color="#FFFFFF" strokeWidth={2.5} />
+                </div>
+              </div>
             </div>
 
             <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Mobile Search Button */}
+              <button
+                type="button"
+                className="navbar-mobile-search-btn mobile-only-search-btn"
+                onClick={() => navigate('/search')}
+                title="Search jobs"
+                aria-label="Search jobs"
+              >
+                <Search size={20} color="#1E293B" strokeWidth={2.2} />
+              </button>
+
               <NavbarNotificationBell />
 
               {/* Avatar — desktop only, navigates straight to dashboard */}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch, safeParseJson } from '../../utils/api';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
+import { CompanyDesktopSideFilter } from '../../components/company/CompanyDesktopSideFilter';
 import { MobileHeader } from '../../components/common/MobileHeader';
 import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import {
@@ -111,7 +112,84 @@ const COMPANY_SIZES = [
   '100-500 employees',
 ];
 
-type CompanyFilterCategoryKey = 'LOCATION' | 'INDUSTRY' | 'TYPE' | 'SIZE' | 'HIRING';
+export const matchesCompanyFilter = (
+  c: CompanyItem,
+  targetFilters: {
+    midcZone?: string;
+    industry?: string;
+    companyType?: string;
+    companySize?: string;
+    onlyHiring?: boolean;
+  },
+  search: string = ''
+): boolean => {
+  // 1. Zone / Location filter
+  if (targetFilters.midcZone && targetFilters.midcZone !== 'All Locations' && targetFilters.midcZone !== 'All MIDC Zones & Cities') {
+    const zoneStr = (c.midc_zone || c.midcZone || c.address || c.city || c.location || '').toLowerCase();
+    const target = targetFilters.midcZone.toLowerCase();
+    const keywords = ['waluj', 'shendra', 'chikalthana', 'chitegaon', 'paithan', 'bidkin', 'railway', 'jalna', 'sambhajinagar', 'chakan', 'bhosari', 'talegaon', 'ranjangaon', 'taloja', 'thane', 'bengaluru', 'delhi', 'mumbai', 'pune'];
+    let matchedKw = '';
+    for (const kw of keywords) {
+      if (target.includes(kw)) {
+        matchedKw = kw;
+        break;
+      }
+    }
+    if (matchedKw) {
+      if (matchedKw === 'sambhajinagar') {
+        const isSnb = zoneStr.includes('sambhajinagar') || zoneStr.includes('aurangabad') || zoneStr.includes('waluj') || zoneStr.includes('shendra') || zoneStr.includes('chikalthana') || zoneStr.includes('chitegaon') || zoneStr.includes('paithan') || zoneStr.includes('bidkin');
+        if (!isSnb) return false;
+      } else {
+        if (!zoneStr.includes(matchedKw)) return false;
+      }
+    } else {
+      if (!zoneStr.includes(target) && !target.includes(zoneStr)) return false;
+    }
+  }
+
+  // 2. Industry filter
+  if (targetFilters.industry && targetFilters.industry !== 'All Industries') {
+    const ind = (c.industry || '').toLowerCase();
+    const target = targetFilters.industry.toLowerCase();
+    const tokens = target.split(/[\s&,/()]+/).filter((t) => t.length > 2);
+    const matches = ind.includes(target) || target.includes(ind) || tokens.some((t) => ind.includes(t));
+    if (!matches) return false;
+  }
+
+  // 3. Company Type filter
+  if (targetFilters.companyType && targetFilters.companyType !== 'All Types') {
+    const cType = (c.company_type || c.companyType || '').toLowerCase();
+    const target = targetFilters.companyType.toLowerCase();
+    if (!cType) return false;
+    if (!cType.includes(target) && !target.includes(cType)) return false;
+  }
+
+  // 4. Company Size filter
+  if (targetFilters.companySize && targetFilters.companySize !== 'All Sizes') {
+    const cSize = (c.company_size || c.companySize || '').toLowerCase();
+    const target = targetFilters.companySize.toLowerCase();
+    if (!cSize) return false;
+    if (!cSize.includes(target) && !target.includes(cSize)) return false;
+  }
+
+  // 5. Only Hiring filter
+  if (targetFilters.onlyHiring) {
+    const jobsCount = c.open_jobs_count ?? c.jobs_count ?? c.openings_count ?? c.jobsCount ?? 0;
+    if (jobsCount <= 0) return false;
+  }
+
+  // 6. Search query
+  if (search.trim()) {
+    const q = search.toLowerCase().trim();
+    const matchName = (c.name || '').toLowerCase().includes(q);
+    const matchIndustry = (c.industry || '').toLowerCase().includes(q);
+    const matchCity = (c.city || '').toLowerCase().includes(q);
+    const matchZone = (c.midc_zone || c.midcZone || '').toLowerCase();
+    if (!matchName && !matchIndustry && !matchCity && !matchZone) return false;
+  }
+
+  return true;
+};
 
 export const CompaniesDirectoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -222,93 +300,11 @@ export const CompaniesDirectoryPage: React.FC = () => {
     setDraftOnlyHiring(false);
   };
 
-  const isCompanyMatchingFilters = useCallback((c: CompanyItem, targetFilters: typeof filters, search: string) => {
-    // 1. Zone filter
-    if (targetFilters.midcZone && targetFilters.midcZone !== 'All Locations' && targetFilters.midcZone !== 'All MIDC Zones & Cities') {
-      const zoneStr = (c.midc_zone || c.midcZone || c.address || c.city || c.location || '').toLowerCase();
-      let keyword = targetFilters.midcZone.toLowerCase();
-      if (keyword.includes('waluj')) keyword = 'waluj';
-      else if (keyword.includes('shendra')) keyword = 'shendra';
-      else if (keyword.includes('chikalthana')) keyword = 'chikalthana';
-      else if (keyword.includes('chitegaon')) keyword = 'chitegaon';
-      else if (keyword.includes('paithan')) keyword = 'paithan';
-      else if (keyword.includes('bidkin')) keyword = 'bidkin';
-      else if (keyword.includes('railway station')) keyword = 'railway';
-      else if (keyword.includes('jalna road')) keyword = 'jalna';
-      else if (keyword.includes('chhatrapati sambhajinagar') || keyword.includes('aurangabad')) keyword = 'sambhajinagar';
-      else if (keyword.includes('chakan')) keyword = 'chakan';
-      else if (keyword.includes('bhosari')) keyword = 'bhosari';
-      else if (keyword.includes('talegaon')) keyword = 'talegaon';
-      else if (keyword.includes('ranjangaon')) keyword = 'ranjangaon';
-      else if (keyword.includes('taloja')) keyword = 'taloja';
-      else if (keyword.includes('thane')) keyword = 'thane';
-
-      const isMatch = zoneStr.includes(keyword) || 
-        (keyword === 'sambhajinagar' && (
-          zoneStr.includes('aurangabad') || 
-          zoneStr.includes('waluj') || 
-          zoneStr.includes('shendra') || 
-          zoneStr.includes('chikalthana') || 
-          zoneStr.includes('chitegaon') || 
-          zoneStr.includes('paithan') ||
-          zoneStr.includes('bidkin')
-        ));
-      if (!isMatch) {
-        return false;
-      }
-    }
-
-    // 2. Industry filter
-    if (targetFilters.industry && targetFilters.industry !== 'All Industries') {
-      const ind = (c.industry || '').toLowerCase();
-      const target = targetFilters.industry.toLowerCase();
-      if (!ind.includes(target) && !target.includes(ind)) {
-        return false;
-      }
-    }
-
-    // 3. Company Type filter
-    if (targetFilters.companyType && targetFilters.companyType !== 'All Types') {
-      const cType = (c.company_type || c.companyType || '').toLowerCase();
-      const target = targetFilters.companyType.toLowerCase();
-      if (!cType.includes(target) && !target.includes(cType)) {
-        return false;
-      }
-    }
-
-    // 4. Company Size filter
-    if (targetFilters.companySize && targetFilters.companySize !== 'All Sizes') {
-      const cSize = (c.company_size || c.companySize || '').toLowerCase();
-      const target = targetFilters.companySize.toLowerCase();
-      if (!cSize.includes(target) && !target.includes(cSize)) {
-        return false;
-      }
-    }
-
-    // 5. Only Hiring filter
-    if (targetFilters.onlyHiring) {
-      const jobsCount = c.open_jobs_count ?? c.jobs_count ?? c.openings_count ?? c.jobsCount ?? 0;
-      if (jobsCount <= 0) {
-        return false;
-      }
-    }
-
-    // 6. Search query
-    if (search.trim()) {
-      const q = search.toLowerCase().trim();
-      const matchName = (c.name || '').toLowerCase().includes(q);
-      const matchIndustry = (c.industry || '').toLowerCase().includes(q);
-      const matchCity = (c.city || '').toLowerCase().includes(q);
-      const matchZone = (c.midc_zone || c.midcZone || '').toLowerCase();
-      return matchName || matchIndustry || matchCity || matchZone;
-    }
-
-    return true;
-  }, []);
+  const isCompanyMatchingFilters = useCallback(matchesCompanyFilter, []);
 
   const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => isCompanyMatchingFilters(c, filters, searchQuery));
-  }, [companies, filters, searchQuery, isCompanyMatchingFilters]);
+    return companies.filter((c) => matchesCompanyFilter(c, filters, searchQuery));
+  }, [companies, filters, searchQuery]);
 
   // Real-time calculation of matching count inside the draft filter
   const draftMatchingCount = useMemo(() => {
@@ -344,22 +340,50 @@ export const CompaniesDirectoryPage: React.FC = () => {
   return (
     <div style={{ width: '100%', minHeight: '100vh', background: '#F8FAFC', boxSizing: 'border-box' }}>
       <style>{`
-        .companies-main-container {
+        .companies-page-wrapper {
           width: 100%;
-          max-width: 780px;
+          max-width: 1240px;
           margin: 0 auto;
-          padding: 20px 16px 80px 16px;
+          padding: 24px 20px 80px 20px;
+          display: flex;
+          gap: 24px;
+          align-items: flex-start;
+          box-sizing: border-box;
+        }
+
+        .companies-main-content {
+          flex: 1;
+          min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 16px;
           box-sizing: border-box;
         }
 
+        @media (max-width: 1023px) {
+          .companies-page-wrapper {
+            max-width: 780px;
+            padding: 20px 16px 80px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+          }
+          .desktop-side-filter {
+            display: none !important;
+          }
+        }
+
         @media (max-width: 767px) {
-          .companies-main-container {
+          .companies-page-wrapper {
             max-width: 580px;
             padding: 10px 12px 100px 12px !important;
             gap: 12px !important;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .mobile-filter-trigger {
+            display: none !important;
           }
         }
 
@@ -385,8 +409,19 @@ export const CompaniesDirectoryPage: React.FC = () => {
         }
       `}</style>
 
-      {/* Main Content Area */}
-      <div className="companies-main-container">
+      {/* Responsive Page Wrapper */}
+      <div className="companies-page-wrapper">
+        {/* Desktop Side Filter (Rendered strictly for desktop view) */}
+        <CompanyDesktopSideFilter
+          filters={filters}
+          onFilterChange={(newFilters) => setFilters(newFilters)}
+          onReset={resetAllFilters}
+          companies={companies}
+          activeFilterCount={activeFilterCount}
+        />
+
+        {/* Main Content Area */}
+        <div className="companies-main-content">
         {/* Search Bar & Dedicated Filter Button */}
         <div style={{
           display: 'flex',
@@ -451,9 +486,10 @@ export const CompaniesDirectoryPage: React.FC = () => {
               </button>
             )}
 
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
+            <div className="mobile-filter-trigger" style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
 
             <button
+              className="mobile-filter-trigger"
               onClick={() => handleOpenFilterModal('LOCATION')}
               style={{
                 background: 'transparent',
@@ -782,6 +818,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* ── FILTER MODAL / DRAWER (PORTAL TO BODY) ── */}

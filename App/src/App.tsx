@@ -12,6 +12,7 @@ import { JobSearchPage } from './features/jobs/JobSearchPage';
 import { JobMapPage } from './features/jobs/JobMapPage';
 import { JobDetailPage } from './features/jobs/JobDetailPage';
 import { JobApplyPage } from './features/jobs/JobApplyPage';
+import { ReportJobPage } from './features/jobs/ReportJobPage';
 import { JobPostPage } from './features/jobs/JobPostPage';
 import { JobApplicantsPage } from './features/jobs/JobApplicantsPage';
 import { ApplicantDetailPage } from './features/jobs/ApplicantDetailPage';
@@ -193,6 +194,8 @@ export const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify-otp" element={<VerifyOTPPage />} />
+        <Route path="/job/:id/report" element={<ReportJobPage />} />
+        <Route path="/jobs/:id/report" element={<ReportJobPage />} />
 
         {/* 2. Admin Module Routes (Shifted to standalone SuperAdmin portal) */}
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />

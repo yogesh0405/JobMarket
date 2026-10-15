@@ -16,7 +16,21 @@ app.get(['/health', '/api/support/health'], (req, res) => {
 });
 
 app.use('/api/support', supportRoutes);
-app.use('/api/admin/support', adminSupportRouter);
+
+// Mandatory Admin Authentication & RBAC Guard
+app.use('/api/admin/support', (req, res, next) => {
+  const role = (req.headers['x-user-role'] as string || '').toLowerCase();
+  const userId = req.headers['x-user-id'] as string;
+  if (!userId || (role !== 'admin' && role !== 'superadmin')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Access denied. Administrative credentials required.',
+      data: null,
+      errors: ['FORBIDDEN']
+    });
+  }
+  next();
+}, adminSupportRouter);
 
 app.use(errorHandler);
 

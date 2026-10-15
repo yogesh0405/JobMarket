@@ -1591,58 +1591,76 @@ export class JobRepository {
     const safeReporterId = isUUID(reporterId) ? String(reporterId).trim() : null;
     const safeEmployerId = isUUID(job?.employer_id) ? String(job.employer_id).trim() : null;
 
-    // 2. Prevent spam / duplicate reports from same reporter for this job if pending
-    if (safeReporterId) {
-      const existing = await pool.query(
-        "SELECT id FROM reports WHERE reporter_id = $1 AND reported_content_id = $2 AND status = 'PENDING' LIMIT 1",
-        [safeReporterId, targetJobId]
-      );
-      if (existing.rows.length > 0) {
-        return {
-          alreadyReported: true,
-          message: 'You have already reported this job listing. Our Trust & Safety team is reviewing it.'
-        };
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 2. Prevent spam / duplicate reports from same reporter with transaction-level advisory lock
+      if (safeReporterId) {
+        await client.query(
+          "SELECT pg_advisory_xact_lock(hashtext('report_' || $1 || '_' || $2));",
+          [safeReporterId, targetJobId]
+        );
+
+        const existing = await client.query(
+          "SELECT id FROM reports WHERE reporter_id = $1 AND reported_content_id = $2 AND status = 'PENDING' LIMIT 1",
+          [safeReporterId, targetJobId]
+        );
+        if (existing.rows.length > 0) {
+          await client.query('COMMIT');
+          return {
+            alreadyReported: true,
+            message: 'You have already reported this job listing. Our Trust & Safety team is reviewing it.'
+          };
+        }
       }
+
+      const cleanReason = description && description.trim().length > 0
+        ? `[${reasonCategory}] ${description.trim()}`
+        : `[${reasonCategory}] Flagged by user as ${reasonCategory}`;
+
+      // 3. Insert report record
+      const insertQuery = `
+        INSERT INTO reports (
+          id,
+          reporter_id,
+          reported_user_id,
+          reported_content_id,
+          reported_content_type,
+          reason,
+          status,
+          created_at
+        ) VALUES (
+          gen_random_uuid(),
+          $1,
+          $2,
+          $3,
+          'JOB',
+          $4,
+          'PENDING',
+          CURRENT_TIMESTAMP
+        )
+        RETURNING *;
+      `;
+      const result = await client.query(insertQuery, [
+        safeReporterId,
+        safeEmployerId,
+        targetJobId,
+        cleanReason
+      ]);
+
+      await client.query('COMMIT');
+
+      return {
+        alreadyReported: false,
+        message: 'Report submitted successfully. Thank you for protecting our job community.',
+        report: result.rows[0]
+      };
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
     }
-
-    const cleanReason = description && description.trim().length > 0
-      ? `[${reasonCategory}] ${description.trim()}`
-      : `[${reasonCategory}] Flagged by user as ${reasonCategory}`;
-
-    // 3. Insert report record
-    const insertQuery = `
-      INSERT INTO reports (
-        id,
-        reporter_id,
-        reported_user_id,
-        reported_content_id,
-        reported_content_type,
-        reason,
-        status,
-        created_at
-      ) VALUES (
-        gen_random_uuid(),
-        $1,
-        $2,
-        $3,
-        'JOB',
-        $4,
-        'PENDING',
-        CURRENT_TIMESTAMP
-      )
-      RETURNING *;
-    `;
-    const result = await pool.query(insertQuery, [
-      safeReporterId,
-      safeEmployerId,
-      targetJobId,
-      cleanReason
-    ]);
-
-    return {
-      alreadyReported: false,
-      message: 'Report submitted successfully. Thank you for protecting our job community.',
-      report: result.rows[0]
-    };
   }
 }

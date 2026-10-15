@@ -13,14 +13,14 @@ dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env'), o
 const envSchema = zod_1.z.object({
     PORT: zod_1.z.coerce.number().default(5000),
     NODE_ENV: zod_1.z.enum(['development', 'production', 'test']).default('development'),
-    DATABASE_URL: zod_1.z.string().default('postgresql://neondb_owner:npg_2LENyTJDu7AQ@ep-still-glade-aznr0ikn-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=verify-full'),
+    DATABASE_URL: zod_1.z.string().default('postgresql://postgres:postgres@localhost:5432/jobmarket'),
     REDIS_URL: zod_1.z.string().default('redis://localhost:6379'),
-    JWT_ACCESS_SECRET: zod_1.z.string().default('super_secret_access_key_change_me_in_prod'),
-    JWT_REFRESH_SECRET: zod_1.z.string().default('super_secret_refresh_key_change_me_in_prod'),
+    JWT_ACCESS_SECRET: zod_1.z.string().default('dev_jwt_access_secret_key_jobmarket_secure'),
+    JWT_REFRESH_SECRET: zod_1.z.string().default('dev_jwt_refresh_secret_key_jobmarket_secure'),
     JWT_ACCESS_EXPIRES_IN: zod_1.z.string().default('1d'),
     JWT_REFRESH_EXPIRES_IN: zod_1.z.string().default('7d'),
     BREVO_API_KEY: zod_1.z.string().default(''),
-    CLOUDINARY_URL: zod_1.z.string().default('cloudinary://111364167496953:u99_zeW9Hrvk32mQa2a0fnX-ApY@gm4yqzhg'),
+    CLOUDINARY_URL: zod_1.z.string().default(''),
     ALLOWED_ORIGINS: zod_1.z.string().default('http://localhost:5173,http://localhost:3000,http://localhost:4173,https://job-market-wine.vercel.app'),
     FRONTEND_URL: zod_1.z.string().default('https://job-market-wine.vercel.app'),
     // Internal Microservices Ports
