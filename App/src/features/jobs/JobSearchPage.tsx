@@ -451,7 +451,7 @@ export const JobSearchPage: React.FC = () => {
               style={{
                 flex: 1,
                 minWidth: 0,
-                fontSize: '12.5px',
+                fontSize: '14.5px',
                 color: searchQuery ? '#0F172A' : '#64748B',
                 fontWeight: searchQuery ? 600 : 500,
                 userSelect: 'none',
@@ -604,15 +604,15 @@ export const JobSearchPage: React.FC = () => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
             overflowX: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
-            marginBottom: '10px',
+            marginBottom: '12px',
             width: '100%',
             boxSizing: 'border-box',
-            paddingBottom: '2px',
+            paddingBottom: '4px',
           }}
         >
           {categoriesList.map((cat) => {
@@ -622,15 +622,15 @@ export const JobSearchPage: React.FC = () => {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 style={{
-                  padding: '5px 12px',
-                  borderRadius: '4px',
-                  fontSize: '11.5px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  border: isActive ? '1px solid #1B4FDF' : '1px solid #E2E8F0',
-                  backgroundColor: isActive ? '#1B4FDF' : '#F8FAFC',
-                  color: isActive ? '#FFFFFF' : '#475569',
+                  border: isActive ? '1px solid #1B4FDF' : '1px solid #CBD5E1',
+                  backgroundColor: isActive ? '#1B4FDF' : '#FFFFFF',
+                  color: isActive ? '#FFFFFF' : '#334155',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
                 }}
@@ -642,7 +642,7 @@ export const JobSearchPage: React.FC = () => {
         </div>
 
         {/* Results Count Line */}
-        <div style={{ marginBottom: '10px', fontSize: '11.5px', fontWeight: 500, color: '#64748B' }}>
+        <div style={{ marginBottom: '12px', fontSize: '13.5px', fontWeight: 600, color: '#475569' }}>
           Showing <span style={{ fontWeight: 800, color: '#1B4FDF' }}>{filteredJobs.length}</span> active vacancies
         </div>
 
@@ -700,10 +700,10 @@ export const JobSearchPage: React.FC = () => {
                       size={42}
                       borderRadius="6px"
                     />
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <h4 style={{
                         margin: 0,
-                        fontSize: '14px',
+                        fontSize: '16px',
                         fontWeight: 800,
                         color: '#0F172A',
                         letterSpacing: '-0.15px',
@@ -713,10 +713,10 @@ export const JobSearchPage: React.FC = () => {
                       }}>
                         {job.title}
                       </h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
-                        <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
                         <span style={{
-                          fontSize: '11.5px',
+                          fontSize: '13px',
                           color: '#64748B',
                           fontWeight: 500,
                           whiteSpace: 'nowrap',
@@ -796,7 +796,7 @@ export const JobSearchPage: React.FC = () => {
                     }}>
                       <h3 style={{
                         margin: 0,
-                        fontSize: '14px',
+                        fontSize: '16px',
                         fontWeight: 800,
                         color: '#0F172A',
                         letterSpacing: '-0.15px',
@@ -835,28 +835,28 @@ export const JobSearchPage: React.FC = () => {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      marginTop: '6px',
+                      gap: '8px',
+                      marginTop: '8px',
                       width: '100%',
                       overflow: 'hidden',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                        <Briefcase size={13} color="#64748B" />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                        <Briefcase size={14} color="#64748B" />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
                           {expText}
                         </span>
                       </div>
 
-                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
+                      <span style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '11px' }}>₹</span>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '13px' }}>₹</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#16A34A' }}>
                           {salaryText}
                         </span>
                       </div>
 
-                      <span style={{ fontSize: '11px', color: '#CBD5E1' }}>|</span>
+                      <span style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
 
                       <div style={{
                         display: 'flex',
@@ -866,10 +866,10 @@ export const JobSearchPage: React.FC = () => {
                         minWidth: 0,
                         overflow: 'hidden',
                       }}>
-                        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
+                        <MapPin size={14} color="#64748B" style={{ flexShrink: 0 }} />
                         <span style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
+                          fontSize: '13px',
+                          fontWeight: 500,
                           color: '#475569',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -885,31 +885,31 @@ export const JobSearchPage: React.FC = () => {
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    padding: '9px 14px',
+                    gap: '14px',
+                    padding: '10px 14px',
                     backgroundColor: '#F8FAFC',
                     borderBottom: '1px solid #F1F5F9',
                     boxSizing: 'border-box',
                     overflow: 'hidden',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
                       <Clock size={13} color="#64748B" />
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
                         {job.jobType || 'Full-time'}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
                       <Building2 size={13} color="#64748B" />
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
                         {job.workMode || 'On-site'}
                       </span>
                     </div>
 
                     {openings ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
                         <Users size={13} color="#64748B" />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
                           {openings} Vacancies
                         </span>
                       </div>
@@ -921,19 +921,19 @@ export const JobSearchPage: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '9px 14px',
+                    padding: '10px 14px',
                     boxSizing: 'border-box',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                       <CompanyDefaultLogo
                         name={job.company}
                         logoUrl={job.companyLogo}
-                        size={38}
+                        size={40}
                         borderRadius="6px"
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontSize: '11.5px',
+                          fontSize: '13.5px',
                           fontWeight: 700,
                           color: '#0F172A',
                           whiteSpace: 'nowrap',
@@ -942,16 +942,16 @@ export const JobSearchPage: React.FC = () => {
                         }}>
                           {job.company}
                         </div>
-                        <div style={{ fontSize: '10px', color: '#64748B' }}>
-                          Posted by Recruiter
+                        <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                          Direct Employer
                         </div>
                       </div>
                     </div>
 
                     <div style={{
-                      fontSize: '10.5px',
+                      fontSize: '12px',
                       fontWeight: 600,
-                      color: '#94A3B8',
+                      color: '#64748B',
                       flexShrink: 0,
                       marginLeft: '8px',
                     }}>

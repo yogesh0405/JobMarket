@@ -11,7 +11,6 @@ export const applicantsApi = {
       }
     } catch (_) {}
 
-    // Fallback endpoint 1: /api/v1/jobs/employer/applicants
     try {
       const res2 = await apiFetch('/api/v1/jobs/employer/applicants');
       if (res2 && (res2.success || Array.isArray(res2.data) || Array.isArray(res2))) {
@@ -19,7 +18,6 @@ export const applicantsApi = {
       }
     } catch (_) {}
 
-    // Fallback endpoint 2: /api/v1/jobs/applicants
     try {
       const res3 = await apiFetch('/api/v1/jobs/applicants');
       if (res3 && (res3.success || Array.isArray(res3.data) || Array.isArray(res3))) {

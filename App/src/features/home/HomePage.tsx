@@ -176,6 +176,27 @@ export const ITI_HORIZONTAL_DATA: HorizontalCardItem[] = [
     startingSalary: '₹23,000/m',
     keyword: 'Technician',
   },
+  {
+    id: 'turner',
+    name: 'Turner',
+    image: 'https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0?w=600&q=80',
+    startingSalary: '₹22,000/m',
+    keyword: 'Turner',
+  },
+  {
+    id: 'quality-inspector',
+    name: 'Quality Inspector',
+    image: 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=600&q=80',
+    startingSalary: '₹26,000/m',
+    keyword: 'Quality',
+  },
+  {
+    id: 'wireman',
+    name: 'Wireman / Maintenance',
+    image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=600&q=80',
+    startingSalary: '₹21,000/m',
+    keyword: 'Wireman',
+  },
 ];
 
 export const EDUCATION_HORIZONTAL_DATA: HorizontalCardItem[] = [
@@ -221,6 +242,27 @@ export const EDUCATION_HORIZONTAL_DATA: HorizontalCardItem[] = [
     startingSalary: '₹22,000/m',
     keyword: 'BCA',
   },
+  {
+    id: 'post-graduate',
+    name: 'Post Graduate / MBA',
+    image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&q=80',
+    startingSalary: '₹35,000/m',
+    keyword: 'Post Graduate',
+  },
+  {
+    id: 'iti-certified',
+    name: 'ITI Certified Jobs',
+    image: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=600&q=80',
+    startingSalary: '₹20,000/m',
+    keyword: 'ITI',
+  },
+  {
+    id: 'bsc-graduate',
+    name: 'B.Sc / Science Graduate',
+    image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&q=80',
+    startingSalary: '₹24,000/m',
+    keyword: 'B.Sc',
+  },
 ];
 
 export const HOSPITAL_HORIZONTAL_DATA: HorizontalCardItem[] = [
@@ -251,6 +293,27 @@ export const HOSPITAL_HORIZONTAL_DATA: HorizontalCardItem[] = [
     image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=600&q=80',
     startingSalary: '₹22,000/m',
     keyword: 'Pharmacist',
+  },
+  {
+    id: 'radiology-tech',
+    name: 'Radiology / X-Ray Tech',
+    image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&q=80',
+    startingSalary: '₹25,000/m',
+    keyword: 'Radiology',
+  },
+  {
+    id: 'medical-representative',
+    name: 'Medical Representative',
+    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&q=80',
+    startingSalary: '₹26,000/m',
+    keyword: 'Medical',
+  },
+  {
+    id: 'hospital-receptionist',
+    name: 'Hospital Receptionist / Admin',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&q=80',
+    startingSalary: '₹17,000/m',
+    keyword: 'Receptionist',
   },
 ];
 
@@ -366,6 +429,82 @@ const HorizontalMenuFilterBar: React.FC<HorizontalMenuFilterBarProps> = ({
             </button>
           )}
         </div>
+      )}
+    </div>
+  );
+};
+
+interface HorizontalCardsCarouselProps {
+  children: React.ReactNode;
+}
+
+const HorizontalCardsCarousel: React.FC<HorizontalCardsCarouselProps> = ({ children }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 8);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [checkScroll]);
+
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 120);
+    return () => clearTimeout(timer);
+  }, [children, checkScroll]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(360, Math.floor(el.clientWidth * 0.72));
+    el.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+    setTimeout(checkScroll, 320);
+  };
+
+  return (
+    <div className="home-horizontal-carousel-wrapper">
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => handleScroll('left')}
+          className="home-horizontal-arrow-btn home-horizontal-prev-btn"
+          title="Scroll left"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft size={22} strokeWidth={2.8} />
+        </button>
+      )}
+
+      <div
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className="home-horizontal-scroll"
+      >
+        {children}
+      </div>
+
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => handleScroll('right')}
+          className="home-horizontal-arrow-btn home-horizontal-next-btn"
+          title="Scroll right"
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={22} strokeWidth={2.8} />
+        </button>
       )}
     </div>
   );
@@ -1288,74 +1427,114 @@ export const HomePage: React.FC = () => {
           background-color: #E2E8F0;
         }
 
+        .home-horizontal-carousel-wrapper {
+          position: relative;
+          width: 100%;
+        }
+
+        .home-horizontal-arrow-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 20;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background-color: #FFFFFF;
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #1B4FDF;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          outline: none;
+        }
+
+        .home-horizontal-arrow-btn:hover {
+          background-color: #1B4FDF;
+          border-color: #1B4FDF;
+          color: #FFFFFF;
+          transform: translateY(-50%) scale(1.08);
+          box-shadow: 0 6px 20px rgba(27, 79, 223, 0.35);
+        }
+
+        .home-horizontal-arrow-btn:active {
+          transform: translateY(-50%) scale(0.96);
+        }
+
+        .home-horizontal-prev-btn {
+          left: -18px;
+        }
+
+        .home-horizontal-next-btn {
+          right: -18px;
+        }
+
+        @media (max-width: 768px) {
+          .home-horizontal-arrow-btn {
+            display: none !important;
+          }
+        }
+
         .home-horizontal-scroll {
           display: flex;
           flex-direction: row;
           gap: 14px;
           overflow-x: auto;
           width: 100%;
-          padding: 4px 2px 14px 2px;
+          padding: 4px 2px 8px 2px;
           box-sizing: border-box;
-          scrollbar-width: thin;
-          scrollbar-color: #CBD5E1 transparent;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
           -webkit-overflow-scrolling: touch;
         }
 
         .home-horizontal-scroll::-webkit-scrollbar {
-          height: 6px;
-        }
-
-        .home-horizontal-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .home-horizontal-scroll::-webkit-scrollbar-thumb {
-          background-color: #CBD5E1;
-          border-radius: 4px;
-        }
-
-        .home-horizontal-scroll::-webkit-scrollbar-thumb:hover {
-          background-color: #94A3B8;
+          display: none;
+          width: 0;
+          height: 0;
         }
 
         .home-horizontal-card {
-          flex: 0 0 162px;
-          width: 162px;
+          flex: 0 0 176px;
+          width: 176px;
           background-color: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          border-radius: 8px;
+          border: 1px solid #CBD5E1;
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
           cursor: pointer;
           display: flex;
           flex-direction: column;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           text-align: left;
         }
 
         .home-horizontal-card:hover {
           border-color: #1B4FDF;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(27, 79, 223, 0.1);
+          transform: translateY(-3px);
+          box-shadow: 0 6px 16px rgba(27, 79, 223, 0.12);
         }
 
         .home-horizontal-card-img {
           width: 100%;
-          height: 108px;
+          height: 116px;
           object-fit: cover;
           background-color: #F1F5F9;
           display: block;
         }
 
         .home-horizontal-card-body {
-          padding: 10px 12px 12px 12px;
+          padding: 12px 14px 14px 14px;
           display: flex;
           flex-direction: column;
           flex: 1;
         }
 
         .home-horizontal-card-title {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 700;
           color: #0F172A;
           line-height: 1.25;
@@ -1365,26 +1544,27 @@ export const HomePage: React.FC = () => {
         }
 
         .home-horizontal-job-count {
-          font-size: 11px;
+          font-size: 12px;
           color: #64748B;
-          margin-top: 4px;
+          margin-top: 5px;
+          font-weight: 500;
         }
 
         .home-horizontal-price-row {
           display: flex;
           align-items: baseline;
-          gap: 3px;
-          margin-top: 6px;
+          gap: 4px;
+          margin-top: 8px;
         }
 
         .home-horizontal-price-from {
-          font-size: 11px;
+          font-size: 12px;
           color: #64748B;
           font-weight: 400;
         }
 
         .home-horizontal-price-val {
-          font-size: 13px;
+          font-size: 14.5px;
           font-weight: 800;
           color: #0F172A;
         }
@@ -1757,6 +1937,116 @@ export const HomePage: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="home-main-container">
+        {/* Top Search Bar & Live Autocomplete */}
+        <div style={{ position: 'relative', width: '100%', zIndex: 100 }} ref={searchContainerRef}>
+          <div
+            className="home-top-search-bar"
+            onClick={() => navigate('/search')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              padding: '0 14px',
+              height: '48px',
+              gap: '10px',
+              boxSizing: 'border-box',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+              transition: 'all 0.15s ease',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+              <Search
+                size={18}
+                color="#1B4FDF"
+                style={{ flexShrink: 0 }}
+              />
+
+              <div
+                style={{
+                  flex: 1,
+                  fontSize: '14.5px',
+                  color: '#64748B',
+                  fontWeight: 500,
+                  userSelect: 'none',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {SEARCH_PLACEHOLDERS[placeholderIndex]}
+              </div>
+
+              <kbd style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#F1F5F9',
+                color: '#64748B',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                border: '1px solid #E2E8F0',
+                userSelect: 'none',
+                pointerEvents: 'none',
+                flexShrink: 0,
+              }}>
+                ⌘K
+              </kbd>
+            </div>
+
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0', flexShrink: 0 }} />
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHomeFilterDrawerOpen(true);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#1B4FDF',
+                flexShrink: 0,
+                position: 'relative',
+              }}
+              title="Filter Options"
+            >
+              <SlidersHorizontal size={18} color="#1B4FDF" />
+              {activeHomeFilterCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    backgroundColor: '#1764E8',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    minWidth: '16px',
+                    height: '16px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                  }}
+                >
+                  {activeHomeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Promotional Banner Carousel Slider */}
         <div style={{ width: '100%', overflow: 'hidden', borderRadius: '6px' }}>
           <BannerSlider />
@@ -2241,7 +2531,7 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="home-horizontal-scroll">
+            <HorizontalCardsCarousel>
               {visibleTradeCards.map((item) => {
                 const realCount = isTradeFiltered
                   ? getRealFilteredJobCount(item.keyword || item.name, tradeLocationFilter, tradeExpFilter)
@@ -2272,7 +2562,7 @@ export const HomePage: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
+            </HorizontalCardsCarousel>
           )}
         </div>
 
@@ -2339,7 +2629,7 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="home-horizontal-scroll">
+            <HorizontalCardsCarousel>
               {visibleEduCards.map((item) => {
                 const realCount = isEduFiltered
                   ? getRealFilteredJobCount(item.keyword || item.name, eduLocationFilter, eduExpFilter)
@@ -2370,7 +2660,7 @@ export const HomePage: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
+            </HorizontalCardsCarousel>
           )}
         </div>
 
@@ -2437,7 +2727,7 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="home-horizontal-scroll">
+            <HorizontalCardsCarousel>
               {visibleHospCards.map((item) => {
                 const realCount = isHospFiltered
                   ? getRealFilteredJobCount(item.keyword || item.name, hospLocationFilter, hospExpFilter)
@@ -2468,7 +2758,7 @@ export const HomePage: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
+            </HorizontalCardsCarousel>
           )}
         </div>
 

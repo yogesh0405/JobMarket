@@ -1187,3 +1187,25 @@
 .dashboard-main .profile-header-card {
   display: none !important;
 }
+
+/* ==========================================================================
+   Browse Candidates Section — Desktop View Only:
+   Hide Dashboard Side Menu & Allow Candidate Side Filter Layout
+   Mobile View is 100% unaffected
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .dashboard-layout.is-candidates-tab {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .dashboard-layout.is-candidates-tab > .dashboard-sidebar {
+    display: none !important;
+  }
+  .dashboard-layout.is-candidates-tab > .dashboard-main {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

@@ -246,11 +246,11 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
         }
         .filter-search-input {
           width: 100%;
-          height: 34px;
+          height: 36px;
           padding: 0 10px 0 32px;
           border-radius: 20px;
           border: 1px solid #CBD5E1;
-          font-size: 12px;
+          font-size: 13.5px;
           color: #0F172A;
           background-color: #FFFFFF;
           outline: none;
@@ -279,7 +279,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
         <h2
           style={{
             margin: 0,
-            fontSize: '16px',
+            fontSize: '18px',
             fontWeight: 800,
             color: '#0F172A',
             letterSpacing: '-0.2px',
@@ -296,7 +296,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               background: 'transparent',
               border: 'none',
               color: '#1764E8',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
               padding: 0,
@@ -325,7 +325,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Location</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Location</span>
             {openSections.location ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -401,7 +401,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                       <span
                         style={{
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: isChecked ? '#0F172A' : '#334155',
                           fontWeight: isChecked ? 600 : 400,
                           lineHeight: '18px',
@@ -458,7 +458,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Industry</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Industry</span>
             {openSections.industry ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -534,7 +534,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                       <span
                         style={{
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: isChecked ? '#0F172A' : '#334155',
                           fontWeight: isChecked ? 600 : 400,
                           lineHeight: '18px',
@@ -591,7 +591,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Trade / Role</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Trade / Role</span>
             {openSections.trade ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -667,7 +667,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                       <span
                         style={{
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: isChecked ? '#0F172A' : '#334155',
                           fontWeight: isChecked ? 600 : 400,
                           lineHeight: '18px',
@@ -724,7 +724,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Education</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Education</span>
             {openSections.education ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -767,7 +767,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                     <span
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: isChecked ? '#0F172A' : '#334155',
                         fontWeight: isChecked ? 600 : 400,
                         lineHeight: '18px',
@@ -823,7 +823,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Job type</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Job type</span>
             {openSections.jobType ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -866,7 +866,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                     <span
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: isChecked ? '#0F172A' : '#334155',
                         fontWeight: isChecked ? 600 : 400,
                         lineHeight: '18px',
@@ -900,7 +900,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Work mode</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Work mode</span>
             {openSections.workMode ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -943,7 +943,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                     <span
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: isChecked ? '#0F172A' : '#334155',
                         fontWeight: isChecked ? 600 : 400,
                         lineHeight: '18px',
@@ -977,7 +977,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               padding: '2px 0',
             }}
           >
-            <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Experience</span>
+            <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Experience</span>
             {openSections.experience ? (
               <ChevronUp size={16} color="#64748B" />
             ) : (
@@ -1020,7 +1020,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
 
                     <span
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: isChecked ? '#0F172A' : '#334155',
                         fontWeight: isChecked ? 600 : 400,
                         lineHeight: '18px',
@@ -1053,7 +1053,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
             padding: '2px 0',
           }}
         >
-          <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Perks & Facilities</span>
+          <span style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Perks & Facilities</span>
           {openSections.perks ? (
             <ChevronUp size={16} color="#64748B" />
           ) : (
@@ -1087,7 +1087,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               >
                 {currentFilters.busFacility && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
               </div>
-              <span style={{ fontSize: '13px', color: '#334155', flex: 1 }}>
+              <span style={{ fontSize: '14px', color: '#334155', flex: 1 }}>
                 Bus / Transport ({busCount})
               </span>
             </div>
@@ -1116,7 +1116,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               >
                 {currentFilters.canteen && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
               </div>
-              <span style={{ fontSize: '13px', color: '#334155', flex: 1 }}>
+              <span style={{ fontSize: '14px', color: '#334155', flex: 1 }}>
                 Canteen Facility ({canteenCount})
               </span>
             </div>
@@ -1145,7 +1145,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               >
                 {currentFilters.accommodation && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
               </div>
-              <span style={{ fontSize: '13px', color: '#334155', flex: 1 }}>
+              <span style={{ fontSize: '14px', color: '#334155', flex: 1 }}>
                 Hostel / Accommodation ({hostelCount})
               </span>
             </div>
@@ -1174,7 +1174,7 @@ export const JobDesktopSideFilter: React.FC<JobDesktopSideFilterProps> = ({
               >
                 {currentFilters.overtime && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
               </div>
-              <span style={{ fontSize: '13px', color: '#334155', flex: 1 }}>
+              <span style={{ fontSize: '14px', color: '#334155', flex: 1 }}>
                 Overtime (OT) Option ({otCount})
               </span>
             </div>

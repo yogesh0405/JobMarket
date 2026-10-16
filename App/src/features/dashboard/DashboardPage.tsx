@@ -7,6 +7,7 @@ import { apiFetch } from '../../utils/api';
 import { getInitials, formatNumber, formatSalary, capitalize, timeAgo, shareContent, safeJsonParse } from '../../utils/helpers';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
 import { CandidateDetailsModal } from '../../components/candidate/CandidateDetailsModal';
+import { CandidateDesktopSideFilter } from '../../components/candidate/CandidateDesktopSideFilter';
 import { useToast } from '../../hooks/useToast';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
@@ -325,7 +326,7 @@ export const DashboardPage: React.FC = () => {
     <>
       <div className="dashboard-page">
       <div className="container">
-        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume', 'interviews', 'scheduled-interviews'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''}`}>
+        <div className={`dashboard-layout ${['applied', 'applicants', 'candidates', 'manage', 'advertisements', 'banners', 'promotions', 'post-job', 'overview', 'security', 'about', 'support', 'saved', 'profile', 'resume', 'interviews', 'scheduled-interviews'].includes(tab) ? 'hide-sidebar-mobile candidates-tab-active' : ''} ${tab === 'candidates' ? 'is-candidates-tab' : ''}`}>
           {/* Sidebar */}
           <aside className="dashboard-sidebar">
             <div className="dashboard-profile">
@@ -1978,7 +1979,7 @@ const CANDIDATE_SEARCH_SUGGESTIONS = [
   'Search by Location (e.g. Waluj MIDC, Shendra MIDC)...',
 ];
 
-const INDUSTRY_FILTER_OPTIONS = [
+export const INDUSTRY_FILTER_OPTIONS = [
   'All Industries',
   'Automotive & Auto Components',
   'Industrial & Heavy Manufacturing',
@@ -1994,7 +1995,7 @@ const INDUSTRY_FILTER_OPTIONS = [
   'IT & Software Engineering',
 ];
 
-const EDUCATION_FILTER_OPTIONS = [
+export const EDUCATION_FILTER_OPTIONS = [
   'All Education Levels',
   'Fresher / Trainee',
   '10th / Below 10th',
@@ -2007,7 +2008,7 @@ const EDUCATION_FILTER_OPTIONS = [
   'Doctorate / PhD',
 ];
 
-const EXPERIENCE_FILTER_OPTIONS = [
+export const EXPERIENCE_FILTER_OPTIONS = [
   'All Experience',
   'Fresher (0 Yrs)',
   '1+ Years',
@@ -2018,7 +2019,7 @@ const EXPERIENCE_FILTER_OPTIONS = [
   '10+ Years',
 ];
 
-const LOCATION_FILTER_OPTIONS = [
+export const LOCATION_FILTER_OPTIONS = [
   'All Locations',
   'Waluj MIDC',
   'Shendra MIDC',
@@ -2040,7 +2041,7 @@ const LOCATION_FILTER_OPTIONS = [
   'Ahmednagar (Nagapur / Supa)',
 ];
 
-const TRADE_FILTER_OPTIONS = [
+export const TRADE_FILTER_OPTIONS = [
   'All Trades',
   'VMC Operator / Programmer',
   'CNC Machinist / Turner',
@@ -2094,7 +2095,7 @@ const extractNumericExperience = (candidate: any): number => {
   return 0;
 };
 
-const matchesIndustry = (candidate: any, filter: string | null): boolean => {
+export const matchesIndustry = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Industries') return true;
   const candInd = (candidate.industry || '').toLowerCase();
   const candTrade = (candidate.trade_specialization || candidate.tradeSpecialization || '').toLowerCase();
@@ -2134,7 +2135,7 @@ const matchesIndustry = (candidate: any, filter: string | null): boolean => {
   }
 };
 
-const matchesEducation = (candidate: any, filter: string | null): boolean => {
+export const matchesEducation = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Education Levels') return true;
   const eduStr = safeCandidateString(candidate.education || candidate.qualification).toLowerCase();
   const headline = (candidate.headline || '').toLowerCase();
@@ -2165,7 +2166,7 @@ const matchesEducation = (candidate: any, filter: string | null): boolean => {
   }
 };
 
-const matchesExperience = (candidate: any, filter: string | null): boolean => {
+export const matchesExperience = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Experience') return true;
   const numExp = extractNumericExperience(candidate);
   switch (filter) {
@@ -2188,7 +2189,7 @@ const matchesExperience = (candidate: any, filter: string | null): boolean => {
   }
 };
 
-const matchesLocation = (candidate: any, filter: string | null): boolean => {
+export const matchesLocation = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Locations') return true;
   const loc = (candidate.location || candidate.city || candidate.address || candidate.midc_zone || '').toLowerCase();
   const midc = (candidate.midc_zone || candidate.preferred_location || '').toLowerCase();
@@ -2217,7 +2218,7 @@ const matchesLocation = (candidate: any, filter: string | null): boolean => {
   return combined.includes(cleanFilter);
 };
 
-const matchesTrade = (candidate: any, filter: string | null): boolean => {
+export const matchesTrade = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Trades') return true;
   const trade = (candidate.trade_specialization || candidate.tradeSpecialization || '').toLowerCase();
   const headline = (candidate.headline || '').toLowerCase();
@@ -2291,7 +2292,7 @@ const getCandidateAvailabilityDays = (candidate: any): number => {
   return 0;
 };
 
-const matchesAvailability = (candidate: any, filter: string | null): boolean => {
+export const matchesAvailability = (candidate: any, filter: string | null): boolean => {
   if (!filter || filter === 'All Availability') return true;
   const days = getCandidateAvailabilityDays(candidate);
   switch (filter) {
@@ -2568,117 +2569,192 @@ const CandidatesTab: React.FC<{
   }
 
   return (
-    <div style={{
-      width: '100%',
-      maxWidth: '680px',
-      margin: '0 auto',
-      padding: '0px 16px 40px',
-      boxSizing: 'border-box'
-    }}>
-      {/* ── STICKY TOP SEARCH BAR + FILTER TRIGGER ── */}
-      <div style={{
-        position: 'sticky',
-        top: 'var(--navbar-height)',
-        zIndex: 40,
-        backgroundColor: '#FFFFFF',
-        margin: '0px -16px 12px -16px',
-        padding: '10px 16px 10px 16px',
-        borderBottom: '1px solid #E7EBF2',
-        boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
-      }}>
-        {/* Search Input Box */}
-        <div style={{ 
-          background: '#F8FAFC', 
-          padding: '0 12px', 
-          borderRadius: '8px', 
-          border: (isSearchFocused || searchQuery || activeFiltersCount > 0) ? '1px solid #1764E8' : '1px solid #CBD5E1', 
-          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-          display: 'flex',
-          alignItems: 'center',
-          height: '38px',
-          width: '100%',
-          boxSizing: 'border-box',
-          transition: 'border-color 0.15s ease'
+    <div className="candidates-page-wrapper">
+      <style>{`
+        .candidates-page-wrapper {
+          width: 100%;
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 0px 16px 40px;
+          box-sizing: border-box;
+        }
+
+        .candidate-desktop-side-filter {
+          display: none !important;
+        }
+
+        .candidates-main-content {
+          width: 100%;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        @media (min-width: 1024px) {
+          .candidates-page-wrapper {
+            max-width: 1240px !important;
+            padding: 16px 20px 80px 20px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 24px !important;
+            align-items: flex-start !important;
+          }
+
+          .candidate-desktop-side-filter {
+            display: block !important;
+          }
+
+          .candidates-main-content {
+            flex: 1 !important;
+          }
+
+          .mobile-filter-trigger {
+            display: none !important;
+          }
+
+          .candidate-search-sticky-header {
+            margin: 0 0 16px 0 !important;
+            padding: 0 !important;
+            border-bottom: none !important;
+            box-shadow: none !important;
+            position: static !important;
+            background: transparent !important;
+          }
+
+          .candidates-page-wrapper .candidates-grid-responsive {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 16px !important;
+          }
+        }
+      `}</style>
+
+      {/* Desktop Candidate Side Filter (Strictly desktop view >= 1024px) */}
+      <CandidateDesktopSideFilter
+        activeIndustry={activeIndustryFilter}
+        activeEducation={activeEducationFilter}
+        activeExp={activeExpFilter}
+        activeLocation={activeLocationFilter}
+        activeTrade={activeTradeFilter}
+        activeAvailability={activeAvailabilityFilter}
+        onSelectIndustry={(val) => setActiveIndustryFilter(val)}
+        onSelectEducation={(val) => setActiveEducationFilter(val)}
+        onSelectExp={(val) => setActiveExpFilter(val)}
+        onSelectLocation={(val) => setActiveLocationFilter(val)}
+        onSelectTrade={(val) => setActiveTradeFilter(val)}
+        onSelectAvailability={(val) => setActiveAvailabilityFilter(val)}
+        onResetFilters={handleResetAllFilters}
+        allCandidates={candidates}
+        activeFilterCount={activeFiltersCount}
+      />
+
+      {/* Main Content Column */}
+      <div className="candidates-main-content">
+        {/* ── STICKY TOP SEARCH BAR + FILTER TRIGGER ── */}
+        <div className="candidate-search-sticky-header" style={{
+          position: 'sticky',
+          top: 'var(--navbar-height)',
+          zIndex: 40,
+          backgroundColor: '#FFFFFF',
+          margin: '0px -16px 12px -16px',
+          padding: '10px 16px 10px 16px',
+          borderBottom: '1px solid #E7EBF2',
+          boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)'
         }}>
-          <Search size={14} color={isSearchFocused ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
-          <input 
-            type="text" 
-            placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-            style={{
-              flex: 1,
-              width: '100%',
-              fontSize: '12.5px',
-              height: '100%',
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              color: '#102A5C',
-              fontWeight: 500
-            }}
-          />
-          {searchQuery && (
-            <button 
-              type="button" 
-              onClick={() => setSearchQuery('')}
+          {/* Search Input Box */}
+          <div style={{ 
+            background: '#F8FAFC', 
+            padding: '0 12px', 
+            borderRadius: '8px', 
+            border: (isSearchFocused || searchQuery || activeFiltersCount > 0) ? '1px solid #1764E8' : '1px solid #CBD5E1', 
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            alignItems: 'center',
+            height: '38px',
+            width: '100%',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.15s ease'
+          }}>
+            <Search size={14} color={isSearchFocused ? '#1764E8' : '#91A0BA'} style={{ marginRight: '8px', flexShrink: 0 }} />
+            <input 
+              type="text" 
+              placeholder={CANDIDATE_SEARCH_SUGGESTIONS[suggestionIndex]}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               style={{
+                flex: 1,
+                width: '100%',
+                fontSize: '12.5px',
+                height: '100%',
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                color: '#102A5C',
+                fontWeight: 500
+              }}
+            />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#91A0BA',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '2px'
+                }}
+              >
+                ✕
+              </button>
+            )}
+
+            <div className="mobile-filter-trigger" style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0', margin: '0 6px', flexShrink: 0 }} />
+
+            {/* Filter Sliders Action Button with Badge Count */}
+            <button 
+              type="button"
+              className="mobile-filter-trigger"
+              onClick={() => handleOpenFilterModal('INDUSTRY')}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                cursor: 'pointer', 
+                padding: '4px 6px',
                 background: 'none',
                 border: 'none',
-                color: '#91A0BA',
-                cursor: 'pointer',
-                fontSize: '13px',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: '2px'
-              }}
+                color: activeFiltersCount > 0 ? '#1764E8' : '#657796',
+                position: 'relative'
+              }} 
+              title="Open Filters"
             >
-              ✕
+              <SlidersHorizontal size={15} />
+              {activeFiltersCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  backgroundColor: '#1764E8',
+                  color: '#FFFFFF',
+                  fontSize: '9px',
+                  fontWeight: '800',
+                  borderRadius: '8px',
+                  padding: '1px 4px',
+                  lineHeight: 1
+                }}>
+                  {activeFiltersCount}
+                </span>
+              )}
             </button>
-          )}
-
-          <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0', margin: '0 6px', flexShrink: 0 }} />
-
-          {/* Filter Sliders Action Button with Badge Count */}
-          <button 
-            type="button"
-            onClick={() => handleOpenFilterModal('INDUSTRY')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              cursor: 'pointer', 
-              padding: '4px 6px',
-              background: 'none',
-              border: 'none',
-              color: activeFiltersCount > 0 ? '#1764E8' : '#657796',
-              position: 'relative'
-            }} 
-            title="Open Filters"
-          >
-            <SlidersHorizontal size={15} />
-            {activeFiltersCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                backgroundColor: '#1764E8',
-                color: '#FFFFFF',
-                fontSize: '9px',
-                fontWeight: '800',
-                borderRadius: '8px',
-                padding: '1px 4px',
-                lineHeight: 1
-              }}>
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
-        </div>
+          </div>
 
         {/* ── ACTIVE FILTER TAGS ROW ── */}
         {activeFiltersCount > 0 && (
@@ -3652,9 +3728,9 @@ const CandidatesTab: React.FC<{
           </div>
           <h3 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>No candidates match filters</h3>
           <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#64748b' }}>Try resetting search or filters to see all available workers.</p>
-          {(searchQuery || selectedTrade || selectedLocation) && (
+          {hasActiveFilters && (
             <button
-              onClick={() => { setSearchQuery(''); setSelectedTrade(''); setSelectedLocation(''); }}
+              onClick={handleResetAllFilters}
               style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
             >
               Reset All Filters
@@ -3662,6 +3738,7 @@ const CandidatesTab: React.FC<{
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

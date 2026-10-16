@@ -660,4 +660,174 @@ export class CompanyRepository {
     const completed = fieldsToTrack.filter(val => val !== undefined && val !== null && String(val).trim() !== '').length;
     return Math.round((completed / fieldsToTrack.length) * 100);
   }
+
+  /**
+   * Helper to resolve company ID, Name, and Employer ID across both companies and users tables
+   */
+  static async resolveCompanyIdentifiers(identifier: string): Promise<{ primaryId: string; companyName: string; employerId?: string }> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    const decodedName = decodeURIComponent(identifier).trim();
+
+    // 1. Check companies table
+    const query = isUuid
+      ? 'SELECT id, name, employer_id FROM companies WHERE id = $1 OR employer_id = $1 OR name ILIKE $2 LIMIT 1;'
+      : "SELECT id, name, employer_id FROM companies WHERE name ILIKE $1 OR REPLACE(LOWER(name), ' ', '-') = LOWER($1) LIMIT 1;";
+    const params = isUuid ? [identifier, decodedName] : [decodedName];
+    const res = await pool.query(query, params);
+
+    if (res.rows.length > 0) {
+      return {
+        primaryId: res.rows[0].id,
+        companyName: res.rows[0].name,
+        employerId: res.rows[0].employer_id
+      };
+    }
+
+    // 2. Check users table
+    const userQuery = 'SELECT id, company_name, name FROM users WHERE id = $1 OR company_name ILIKE $2 OR name ILIKE $2 LIMIT 1;';
+    const userRes = await pool.query(userQuery, [isUuid ? identifier : '00000000-0000-0000-0000-000000000000', decodedName]);
+
+    if (userRes.rows.length > 0) {
+      const u = userRes.rows[0];
+      return {
+        primaryId: u.id,
+        companyName: u.company_name || u.name || decodedName,
+        employerId: u.id
+      };
+    }
+
+    // 3. Fallback to raw identifier & decodedName
+    return {
+      primaryId: identifier,
+      companyName: decodedName
+    };
+  }
+
+  /**
+   * Get real-time follower status and exact count for a company
+   */
+  static async getFollowStatus(companyIdentifier: string, userId?: string): Promise<{ isFollowing: boolean; followersCount: number }> {
+    const { primaryId, companyName } = await this.resolveCompanyIdentifiers(companyIdentifier);
+
+    // Exact count of genuine followers in database
+    const countQuery = `
+      SELECT COUNT(DISTINCT user_id)::int as count 
+      FROM company_followers 
+      WHERE company_id = $1 OR LOWER(TRIM(company_id)) = LOWER(TRIM($2));
+    `;
+    const countRes = await pool.query(countQuery, [primaryId, companyName]);
+    const followersCount = countRes.rows[0]?.count || 0;
+
+    let isFollowing = false;
+    if (userId) {
+      const followCheck = `
+        SELECT EXISTS(
+          SELECT 1 FROM company_followers 
+          WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))
+        ) as is_following;
+      `;
+      const followRes = await pool.query(followCheck, [userId, primaryId, companyName]);
+      isFollowing = Boolean(followRes.rows[0]?.is_following);
+    }
+
+    return {
+      isFollowing,
+      followersCount
+    };
+  }
+
+  /**
+   * Toggle follow/unfollow for a user on a company
+   */
+  static async toggleFollow(
+    companyIdentifier: string, 
+    userId: string, 
+    userName?: string
+  ): Promise<{ isFollowing: boolean; followersCount: number; message: string }> {
+    const { primaryId, companyName, employerId } = await this.resolveCompanyIdentifiers(companyIdentifier);
+
+    // Check current state
+    const followCheck = `
+      SELECT EXISTS(
+        SELECT 1 FROM company_followers 
+        WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))
+      ) as is_following;
+    `;
+    const followRes = await pool.query(followCheck, [userId, primaryId, companyName]);
+    const currentlyFollowing = Boolean(followRes.rows[0]?.is_following);
+
+    if (currentlyFollowing) {
+      // Unfollow: remove row
+      await pool.query(
+        'DELETE FROM company_followers WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))',
+        [userId, primaryId, companyName]
+      );
+    } else {
+      // Follow: insert row
+      await pool.query(
+        'INSERT INTO company_followers (user_id, company_id) VALUES ($1, $2) ON CONFLICT (user_id, company_id) DO NOTHING;',
+        [userId, primaryId]
+      );
+
+      // Notify the employer if registered and not the same user
+      if (employerId && employerId !== userId) {
+        import('../../notifications/repositories/NotificationRepository')
+          .then(({ NotificationRepository }) => {
+            NotificationRepository.createNotification(
+              employerId,
+              'New Company Follower',
+              `${userName || 'A candidate'} started following your company profile (${companyName}).`,
+              'COMPANY_FOLLOW',
+              `/company/${encodeURIComponent(companyName || primaryId)}`
+            ).catch(() => {});
+          })
+          .catch(() => {});
+      }
+    }
+
+    // Get updated exact follower count
+    const countRes = await pool.query(
+      'SELECT COUNT(DISTINCT user_id)::int as count FROM company_followers WHERE company_id = $1 OR LOWER(TRIM(company_id)) = LOWER(TRIM($2));',
+      [primaryId, companyName]
+    );
+    const updatedCount = countRes.rows[0]?.count || 0;
+
+    return {
+      isFollowing: !currentlyFollowing,
+      followersCount: updatedCount,
+      message: !currentlyFollowing ? 'Company followed successfully.' : 'Company unfollowed successfully.'
+    };
+  }
+
+  /**
+   * Fetch all companies followed by a user
+   */
+  static async getFollowedCompanies(userId: string): Promise<any[]> {
+    const query = `
+      SELECT 
+        cf.created_at as followed_at,
+        c.id,
+        COALESCE(c.name, cf.company_id) as name,
+        c.logo,
+        c.industry,
+        c.city,
+        c.midc_zone,
+        c.verified,
+        COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
+      FROM company_followers cf
+      LEFT JOIN companies c ON (
+        cf.company_id = c.id::text 
+        OR LOWER(TRIM(cf.company_id)) = LOWER(TRIM(c.name))
+      )
+      LEFT JOIN jobs j ON (
+        (c.employer_id IS NOT NULL AND j.employer_id = c.employer_id)
+        OR (LOWER(TRIM(j.company)) = LOWER(TRIM(c.name)))
+      )
+      WHERE cf.user_id = $1
+      GROUP BY cf.created_at, c.id, c.name, cf.company_id, c.logo, c.industry, c.city, c.midc_zone, c.verified
+      ORDER BY cf.created_at DESC;
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  }
 }

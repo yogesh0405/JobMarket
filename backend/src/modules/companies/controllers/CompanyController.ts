@@ -134,4 +134,101 @@ export class CompanyController {
       next(error);
     }
   }
+
+  /**
+   * GET /api/v1/companies/:companyId/follow-status
+   * Real-time follower status and exact count
+   */
+  static async getFollowStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const rawId = req.params.companyId;
+      const companyId = Array.isArray(rawId) ? rawId[0] : rawId;
+      const userId = (req.user as any)?.userId || req.user?.id;
+
+      if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Company identifier is required.'
+        });
+      }
+
+      const status = await CompanyRepository.getFollowStatus(companyId, userId);
+
+      return res.status(200).json({
+        success: true,
+        data: status
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/companies/:companyId/toggle-follow
+   * Toggle follow/unfollow for authenticated user
+   */
+  static async toggleFollow(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const rawId = req.params.companyId;
+      const companyId = Array.isArray(rawId) ? rawId[0] : rawId;
+      const userId = (req.user as any)?.userId || req.user?.id;
+      const userName = (req.user as any)?.name || (req.user as any)?.fullName;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          errorCode: 'AUTH_REQUIRED',
+          error: 'Authentication required to follow a company.'
+        });
+      }
+
+      if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Company identifier is required.'
+        });
+      }
+
+      const result = await CompanyRepository.toggleFollow(companyId, userId, userName);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: {
+          isFollowing: result.isFollowing,
+          followersCount: result.followersCount
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/companies/following/my
+   * Return companies followed by the current user
+   */
+  static async getFollowedCompanies(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = (req.user as any)?.userId || req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          errorCode: 'AUTH_REQUIRED',
+          error: 'Authentication required to view followed companies.'
+        });
+      }
+
+      const companies = await CompanyRepository.getFollowedCompanies(userId);
+
+      return res.status(200).json({
+        success: true,
+        data: companies,
+        count: companies.length
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

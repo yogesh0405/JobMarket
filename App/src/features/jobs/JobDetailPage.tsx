@@ -13,10 +13,10 @@ import { JobApplyModal } from '../../components/jobs/JobApplyModal';
 import {
   Zap,
   Calendar,
+  Clock,
   FileText,
   CheckCircle2,
   Phone,
-  Smartphone,
   ArrowLeft,
   Share2,
   Bookmark,
@@ -30,11 +30,18 @@ import {
   Ticket,
   Flag,
   ShieldAlert,
-  ShieldCheck
+  ShieldCheck,
+  Users,
+  Check,
+  AlertCircle,
+  ChevronRight,
+  Info
 } from 'lucide-react';
+import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
 import { ReportJobModal } from '../../components/jobs/ReportJobModal';
 import { reportedJobsStore, ReportedJobMetadata } from '../../utils/reportedJobsStore';
+import '../../styles/jobDetail.css';
 
 const ensureArray = (val: any): string[] => {
   if (Array.isArray(val)) return val.filter(Boolean).map(String);
@@ -65,7 +72,6 @@ export const JobDetailPage: React.FC = () => {
   const storeJob = id ? getJobById(id) : undefined;
   const job = storeJob || directJob || undefined;
 
-  const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
   const [isApplying, setIsApplying] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showWalkInPassModal, setShowWalkInPassModal] = useState(false);
@@ -209,10 +215,26 @@ export const JobDetailPage: React.FC = () => {
     }
   };
 
+  const handleShare = () => {
+    if (!job) return;
+    const shareUrl = `${window.location.origin}/job/${encodeURIComponent(job.id)}`;
+    shareContent(
+      `${job.title} - ${job.company}`,
+      `Check out this job opening for ${job.title} at ${job.company} on JobMarket: ${shareUrl}`,
+      shareUrl,
+      () => showToast('Job link copied to clipboard', 'success')
+    );
+  };
+
   if (isFetchingJob) {
     return (
-      <div className="container" style={{ padding: '40px 16px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ fontSize: '14px', color: '#64748B', fontWeight: '600' }}>Loading job details...</div>
+      <div className="jd-page-wrapper">
+        <div className="jd-container" style={{ padding: '60px 16px', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#64748B', fontWeight: 600 }}>
+            <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid #CBD5E1', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            Loading job opening details...
+          </div>
+        </div>
       </div>
     );
   }
@@ -234,174 +256,53 @@ export const JobDetailPage: React.FC = () => {
     const refCode = `REP-${String(meta?.jobId || job?.id || id || '000000').slice(-6).toUpperCase()}`;
 
     return (
-      <div className="job-detail-page-wrapper" style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', paddingBottom: '60px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '16px 14px', boxSizing: 'border-box' }}>
-          
-          {/* Top Return Navigation Bar */}
-          <div style={{
-            backgroundColor: '#2563EB',
-            padding: '12px 16px',
-            color: '#FFFFFF',
-            borderRadius: '0px',
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <button
-              onClick={handleBackToJobs}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#FFFFFF',
-                fontSize: '13.5px',
-                fontWeight: '700',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              <ArrowLeft size={18} />
-              <span>Back to Jobs</span>
+      <div className="jd-page-wrapper">
+        <div className="jd-container" style={{ maxWidth: '720px' }}>
+          <div className="jd-top-bar">
+            <button onClick={handleBackToJobs} className="jd-back-btn">
+              <ArrowLeft size={16} />
+              <span>Back to Jobs Directory</span>
             </button>
-            <span style={{ fontSize: '12.5px', fontWeight: '600', opacity: 0.9 }}>
-              Job Listing Moderation
-            </span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>Moderation Review</span>
           </div>
 
-          {/* Primary Reported Confirmation Card */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #CBD5E1',
-            borderRadius: '0px',
-            padding: '28px 24px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '0px',
-              backgroundColor: '#EFF6FF',
-              border: '1px solid #BFDBFE',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#2563EB',
-              marginBottom: '16px'
-            }}>
-              <ShieldCheck size={36} />
+          <div className="jd-card" style={{ textAlign: 'center', padding: '36px 24px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '12px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB', marginBottom: '16px' }}>
+              <ShieldCheck size={32} />
             </div>
-
-            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0' }}>
               Report Submitted Successfully
             </h2>
-            <p style={{ fontSize: '13.5px', color: '#64748B', maxWidth: '600px', margin: '0 auto 16px auto', lineHeight: '1.5' }}>
-              Thank you for reporting this job opening. The job details have been hidden from your view while our Trust & Safety team investigates the employer and listing.
+            <p style={{ fontSize: '13.5px', color: '#64748B', maxWidth: '520px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+              Thank you for reporting this job opening. The details have been hidden from your view while our Trust & Safety team investigates the employer and listing.
             </p>
 
-            {/* Slate 400 section separator per AGENTS.md */}
-            <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '18px 0' }} />
-
-            {/* Summary Information Table */}
-            <div style={{
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              borderRadius: '0px',
-              padding: '16px',
-              textAlign: 'left',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Investigation Status</span>
-                <span style={{
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: '#B45309',
-                  backgroundColor: '#FEF3C7',
-                  border: '1px solid #FDE68A',
-                  padding: '3px 8px',
-                  borderRadius: '0px'
-                }}>
-                  Pending Moderation Review
-                </span>
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '16px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Investigation Status</span>
+                <span style={{ color: '#B45309', fontWeight: 800, backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '4px' }}>Pending Review</span>
               </div>
-
-              <div style={{ height: '1px', backgroundColor: '#E2E8F0' }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Job Title</span>
-                <strong style={{ fontSize: '13px', color: '#0F172A' }}>{repTitle}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Job Title</span>
+                <strong style={{ color: '#0F172A' }}>{repTitle}</strong>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Company</span>
-                <span style={{ fontSize: '13px', color: '#334155', fontWeight: '600' }}>{repCompany}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Company</span>
+                <span style={{ color: '#334155', fontWeight: 700 }}>{repCompany}</span>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Report Reason</span>
-                <span style={{ fontSize: '13px', color: '#DC2626', fontWeight: '700' }}>{repReason}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Report Category</span>
+                <span style={{ color: '#DC2626', fontWeight: 700 }}>{repReason}</span>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Submitted On</span>
-                <span style={{ fontSize: '12.5px', color: '#475569' }}>{reportedDateStr}</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#64748B' }}>Reference Code</span>
-                <code style={{ fontSize: '12px', fontWeight: '700', color: '#0F172A', backgroundColor: '#E2E8F0', padding: '2px 6px', borderRadius: '0px' }}>
-                  #{refCode}
-                </code>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ color: '#64748B', fontWeight: 600 }}>Reference ID</span>
+                <code style={{ color: '#0F172A', fontWeight: 800 }}>#{refCode}</code>
               </div>
             </div>
 
-            {/* Slate 400 section separator per AGENTS.md */}
-            <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '20px 0' }} />
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={handleBackToJobs}
-                style={{
-                  backgroundColor: '#2563EB',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  padding: '10px 22px',
-                  borderRadius: '0px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <span>Browse Other Jobs</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('Trust & Safety team has been alerted for reference #' + refCode, 'info');
-                }}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  color: '#475569',
-                  border: '1px solid #CBD5E1',
-                  padding: '10px 18px',
-                  borderRadius: '0px',
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>Support Inquiry</span>
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <button onClick={handleBackToJobs} className="jd-cta-btn-primary" style={{ width: 'auto', padding: '10px 24px' }}>
+                Return to Jobs
               </button>
             </div>
           </div>
@@ -412,16 +313,19 @@ export const JobDetailPage: React.FC = () => {
 
   if (!job) {
     return (
-      <div className="container" style={{ padding: '40px 16px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', padding: '32px 24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>Job Opening Not Found</h2>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 16px 0' }}>The requested job post may have expired or been removed by the employer.</p>
-          <button
-            onClick={handleBackToJobs}
-            style={{ backgroundColor: '#2563EB', color: '#FFFFFF', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
-          >
-            Browse Other Jobs
-          </button>
+      <div className="jd-page-wrapper">
+        <div className="jd-container" style={{ maxWidth: '640px', padding: '60px 16px', textAlign: 'center' }}>
+          <div className="jd-card" style={{ padding: '40px 24px' }}>
+            <AlertCircle size={48} color="#EF4444" style={{ margin: '0 auto 16px auto' }} />
+            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0' }}>Job Opening Not Found</h2>
+            <p style={{ fontSize: '13.5px', color: '#64748B', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+              The requested job opening may have expired, reached hiring capacity, or been removed by the employer.
+            </p>
+            <button onClick={handleBackToJobs} className="jd-cta-btn-primary" style={{ width: 'auto', margin: '0 auto', padding: '10px 24px' }}>
+              <ArrowLeft size={16} />
+              <span>Browse Active Jobs</span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -429,7 +333,7 @@ export const JobDetailPage: React.FC = () => {
 
   const isEmployer = currentUser?.role?.toLowerCase() === 'employer';
   const isOwner = isEmployer && (currentUser?.id === job.employerId || currentUser?.id === job.employer_id);
-  
+
   const applicantRecord = job.applicants?.find((a: any) => a.userId === currentUser?.id || a.id === currentUser?.id);
   const userAppWithStatus = currentUser?.appliedJobsWithStatus?.find((a: any) => a.jobId === job.id);
   const hasApplied = Boolean(
@@ -467,749 +371,635 @@ export const JobDetailPage: React.FC = () => {
   const maxExp = job.max_experience ?? (job as any).maxExperience ?? 0;
   const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
   const expDisplay = isFresher ? 'Freshers (No Exp)' : (minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`);
+  
   const skillsList = ensureArray(job.skills);
   const respList = ensureArray(job.responsibilities);
   const reqList = ensureArray(job.requirements);
 
+  const companyTargetId = (job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company;
+  const companyUrl = `/company/${encodeURIComponent(companyTargetId)}`;
+
+  const minSalary = job.salary_min || (job as any).salaryMin;
+  const maxSalary = job.salary_max || (job as any).salaryMax;
+  const salaryDisplay = (minSalary && maxSalary)
+    ? `₹${formatNumber(minSalary)} - ₹${formatNumber(maxSalary)}`
+    : (minSalary ? `₹${formatNumber(minSalary)}+` : 'Best in Industry');
+
+  const postedTimeAgo = timeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || new Date());
+
   return (
-    <div className="job-detail-page-wrapper" style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', paddingBottom: '90px' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '16px 14px', boxSizing: 'border-box' }}>
+    <div className="jd-page-wrapper">
+      <div className="jd-container">
         
-        {/* Master Header Card with Solid Blue Banner (#2563EB) */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '8px',
-          border: '1px solid #CBD5E1',
-          overflow: 'hidden',
-          marginBottom: '14px',
-          boxShadow: '0 2px 10px rgba(15, 23, 42, 0.06)'
-        }}>
-          {/* Primary Blue Top Banner */}
-          <div style={{
-            backgroundColor: '#2563EB',
-            padding: '16px 18px 14px 18px',
-            color: '#FFFFFF',
-            position: 'relative'
-          }}>
-            {/* Top Navigation Row */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '14px'
-            }}>
-              <button
-                onClick={handleBackToJobs}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  fontSize: '13.5px',
-                  fontWeight: '700',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  padding: 0,
-                  opacity: 0.95,
-                  transition: 'opacity 0.15s ease'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.95')}
-              >
-                <ArrowLeft size={18} />
-                <span>Back to Jobs</span>
-              </button>
+        {/* 1. Top Utility Navigation Bar */}
+        <div className="jd-top-bar">
+          <button onClick={handleBackToJobs} className="jd-back-btn" title="Back to jobs directory">
+            <ArrowLeft size={16} />
+            <span>Back to Jobs</span>
+          </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={handleOpenReport}
-                  title="Report Fake or Suspicious Job"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.35)',
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                    padding: '3px 8px',
-                    borderRadius: '0px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    fontSize: '11.5px',
-                    fontWeight: '700',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)')}
-                >
-                  <Flag size={13} />
-                  <span>Report</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const shareUrl = `${window.location.origin}/job/${encodeURIComponent(job.id)}`;
-                    shareContent(
-                      `${job.title} - ${job.company}`,
-                      `Check out this job opening for ${job.title} at ${job.company} on JobMarket: ${shareUrl}`,
-                      shareUrl,
-                      () => showToast('Job link copied to clipboard', 'success')
-                    );
-                  }}
-                  title="Share Job Opening"
-                  style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-                >
-                  <Share2 size={18} />
-                </button>
-
-                <button
-                  onClick={handleToggleSave}
-                  title={saved ? 'Remove Bookmark' : 'Bookmark Job'}
-                  style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-                >
-                  <Bookmark size={18} fill={saved ? '#FFFFFF' : 'transparent'} />
-                </button>
-              </div>
-            </div>
-
-            {/* Avatar & Title Stack (Clickable Company Profile Link) */}
-            {(() => {
-              const companyTargetId = (job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company;
-              const companyUrl = `/company/${encodeURIComponent(companyTargetId)}`;
-
-              return (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                  <Link
-                    to={companyUrl}
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '50%',
-                      backgroundColor: '#FFFFFF',
-                      border: '2.5px solid #FFFFFF',
-                      boxShadow: '0 3px 8px rgba(0,0,0,0.18)',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      textDecoration: 'none'
-                    }}
-                    title={`View ${job.company} Profile`}
-                  >
-                    <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).logo} companyName={job.company} size={46} borderRadius="50%" />
-                  </Link>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                      <Link
-                        to={companyUrl}
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: '700',
-                          color: '#DBEAFE',
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        title={`View ${job.company} Profile`}
-                      >
-                        <span style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>{job.company || 'Industrial Partner'}</span>
-                        <ExternalLink size={12} color="#93C5FD" />
-                      </Link>
-                    </div>
-
-                    <h1 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: 0, lineHeight: '1.25' }}>{job.title}</h1>
-                    {hasApplied && (
-                      <div style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(255, 255, 255, 0.16)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255, 255, 255, 0.28)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', color: '#FFFFFF' }}>
-                        <CheckCircle2 size={12} color="#86EFAC" strokeWidth={2.5} />
-                        <span>{appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* White Secondary Body Metadata */}
-          <div style={{ padding: '12px 16px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {job.location && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                <MapPin size={14} color="#64748B" style={{ flexShrink: 0 }} />
-                <span>{job.location}</span>
-              </div>
-            )}
-
-            {(job as any).website && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#2563EB', fontWeight: '600' }}>
-                <Globe size={14} color="#2563EB" style={{ flexShrink: 0 }} />
-                <a href={(job as any).website.startsWith('http') ? (job as any).website : `https://${(job as any).website}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: '700' }}>
-                  {(job as any).website}
-                </a>
-              </div>
-            )}
-
-            {(job.industry || job.trade) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                <Building2 size={14} color="#64748B" style={{ flexShrink: 0 }} />
-                <span>Industry : {job.industry || job.trade}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Professional Standard Underlined Tab Navigation */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #E2E8F0',
-            borderBottom: '1px solid #E2E8F0',
-            padding: '0 6px'
-          }}>
+          <div className="jd-top-actions">
             <button
-              onClick={() => setActiveTab('job_overview')}
-              style={{
-                flex: 1,
-                padding: '12px 10px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                color: activeTab === 'job_overview' ? '#2563EB' : '#64748B',
-                fontWeight: activeTab === 'job_overview' ? '800' : '600',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-                transition: 'all 0.15s ease'
-              }}
+              type="button"
+              onClick={handleShare}
+              className="jd-btn-action-icon"
+              title="Share job opening"
             >
-              <Briefcase size={15} color={activeTab === 'job_overview' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
-              <span>Job Overview</span>
-              {activeTab === 'job_overview' && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2.5px',
-                  backgroundColor: '#2563EB',
-                  borderRadius: '2px 2px 0 0'
-                }} />
-              )}
+              <Share2 size={15} />
+              <span>Share</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('company_info')}
-              style={{
-                flex: 1,
-                padding: '12px 10px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                color: activeTab === 'company_info' ? '#2563EB' : '#64748B',
-                fontWeight: activeTab === 'company_info' ? '800' : '600',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-                transition: 'all 0.15s ease'
-              }}
+              type="button"
+              onClick={handleToggleSave}
+              className={`jd-btn-action-icon ${saved ? 'saved' : ''}`}
+              title={saved ? 'Remove from bookmarks' : 'Save this job'}
             >
-              <Award size={15} color={activeTab === 'company_info' ? '#2563EB' : '#64748B'} style={{ flexShrink: 0 }} />
-              <span>Requirements & Perks</span>
-              {activeTab === 'company_info' && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2.5px',
-                  backgroundColor: '#2563EB',
-                  borderRadius: '2px 2px 0 0'
-                }} />
-              )}
+              <Bookmark size={15} fill={saved ? '#1D4ED8' : 'none'} />
+              <span>{saved ? 'Saved' : 'Save'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenReport}
+              className="jd-btn-action-icon report"
+              title="Report fake or suspicious listing"
+            >
+              <Flag size={14} />
+              <span>Report</span>
             </button>
           </div>
         </div>
 
-        {/* Card Block Container */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '8px',
-          border: '1px solid #CBD5E1',
-          padding: '16px 18px',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-        }}>
-          {activeTab === 'job_overview' ? (
-            <>
-              {isWalkIn && (
-                <div style={{
-                  backgroundColor: '#F0F9FF',
-                  border: '1.5px solid #BAE6FD',
-                  borderRadius: '8px',
-                  padding: '14px 16px',
-                  marginBottom: '16px',
-                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.06)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Ticket size={18} color="#0284C7" strokeWidth={2.4} />
-                      <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0369A1' }}>
-                        Mega Walk-in Interview Drive
-                      </span>
-                    </div>
-                    <span style={{
-                      backgroundColor: '#E0F2FE',
-                      border: '1px solid #7DD3FC',
-                      color: '#0284C7',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      letterSpacing: '0.4px'
-                    }}>
-                      DIRECT INTERVIEW
-                    </span>
-                  </div>
+        {/* 2. Hero Header Card */}
+        <div className="jd-hero-card">
+          <div className="jd-hero-content">
+            {/* Company Logo */}
+            <Link to={companyUrl} className="jd-company-logo-box" title={`View ${job.company} Profile`}>
+              <CompanyDefaultLogo
+                logoUrl={job.companyLogo || (job as any).logo}
+                companyName={job.company}
+                size={56}
+                borderRadius="8px"
+              />
+            </Link>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', marginBottom: '10px' }}>
-                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>DRIVE DATE & TIMING</div>
-                      <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={13} color="#0284C7" />
-                        <span>{job.walkInDate || (job as any).walk_in_date || 'Drive Date Announced'}</span>
-                      </div>
-                      <div style={{ fontSize: '11.5px', fontWeight: 600, color: '#475569', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Clock size={12} color="#64748B" />
-                        <span>{job.walkInStartTime || (job as any).walk_in_start_time || '10:00 AM'} - {job.walkInEndTime || (job as any).walk_in_end_time || '04:00 PM'}</span>
-                      </div>
-                    </div>
-
-                    {(job.walkInContactPerson || (job as any).walk_in_contact_person || job.walkInContactNumber || (job as any).walk_in_contact_number) && (
-                      <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px' }}>DRIVE COORDINATOR</div>
-                        <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>
-                          {job.walkInContactPerson || (job as any).walk_in_contact_person || 'HR Department'}
-                        </div>
-                        {(job.walkInContactNumber || (job as any).walk_in_contact_number) && (
-                          <a
-                            href={`tel:${String(job.walkInContactNumber || (job as any).walk_in_contact_number).replace(/[^0-9+]/g, '')}`}
-                            style={{
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              color: '#0284C7',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              marginTop: '2px'
-                            }}
-                          >
-                            <Phone size={11} color="#0284C7" />
-                            <span>{job.walkInContactNumber || (job as any).walk_in_contact_number}</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {(job.interviewAddress || (job as any).interview_address || job.location) && (
-                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E0F2FE', borderRadius: '6px', padding: '10px', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '3px' }}>INTERVIEW VENUE ADDRESS</div>
-                      <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#334155', lineHeight: 1.45 }}>
-                        {job.interviewAddress || (job as any).interview_address || job.location}
-                      </p>
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.interviewAddress || (job as any).interview_address || job.location)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          color: '#0284C7',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          textDecoration: 'none',
-                          marginTop: '6px'
-                        }}
-                      >
-                        <MapPin size={12} color="#0284C7" />
-                        <span>Open Directions in Google Maps</span>
-                        <ExternalLink size={11} color="#0284C7" />
-                      </a>
-                    </div>
-                  )}
-
-                  <div style={{ backgroundColor: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '6px', padding: '10px 12px' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#475569', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                      MANDATORY DOCUMENTS TO CARRY
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: '#334155', fontWeight: 600, lineHeight: 1.45 }}>
-                      {job.walkInDocuments || (job as any).walk_in_documents || 'Updated Resume (2 Copies), Aadhar Card, Educational Marksheets, Passport Size Photographs, Bank Passbook'}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 10px 0' }}>
-                Key Specifications
-              </h3>
-
-              {/* 2-Column Specifications Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: '10px',
-                marginBottom: '12px'
-              }}>
-                <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Trade / Role</div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{job.trade || job.title}</div>
-                </div>
-
-                {(job.openings || (job as any).vacancies) ? (
-                  <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Total Openings</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>
-                      {job.openings || (job as any).vacancies} Vacancies
-                    </div>
-                  </div>
-                ) : null}
-
-                {Boolean((job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax)) ? (
-                  <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Salary Package</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#2563EB', marginTop: '2px' }}>
-                      ₹{job.salary_min || job.salaryMin} - ₹{job.salary_max || job.salaryMax} / mo
-                    </div>
-                  </div>
-                ) : null}
-
-                <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                  <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Experience Required</div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{expDisplay}</div>
-                </div>
-
-                {(job.work_mode || job.workMode || job.job_type || job.jobType) && (
-                  <div style={{ backgroundColor: '#F8FAFC', padding: '10px 12px', borderRadius: '6px', border: '1px solid #F1F5F9' }}>
-                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Work Mode</div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#0F172A', marginTop: '2px' }}>{job.work_mode || job.workMode || job.job_type || job.jobType}</div>
-                  </div>
-                )}
+            {/* Info Stack */}
+            <div className="jd-hero-info">
+              <div className="jd-company-badge-row">
+                <Link to={companyUrl} className="jd-company-link">
+                  <span>{job.company || 'Industrial Partner'}</span>
+                  <ExternalLink size={12} />
+                </Link>
+                <MetaVerifiedBadge size={16} color="#0095F6" title="Verified Employer" />
               </div>
 
-              {/* Technical Skills Section */}
-              {skillsList.length > 0 && (
-                <>
-                  <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />
-                  <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                    Required Technical Skills
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {skillsList.map((skill, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
-                        <span style={{ color: '#2563EB', fontWeight: '800', fontSize: '14px', lineHeight: '1' }}>•</span>
-                        <span>{skill}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+              <h1 className="jd-hero-title">{job.title}</h1>
 
-              {/* Role Description Section */}
-              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />
-              <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                Role Description
-              </h3>
-              <p style={{ fontSize: '12.5px', lineHeight: '1.5', color: '#334155', margin: 0 }}>
-                {job.description || 'No detailed description provided for this industrial opening.'}
+              {/* Badges Strip */}
+              <div className="jd-meta-pills-row">
+                {(job.industry || job.trade) && (
+                  <span className="jd-pill jd-pill-blue">
+                    <Building2 size={13} color="#1D4ED8" />
+                    <span>{job.industry || job.trade}</span>
+                  </span>
+                )}
+
+                {job.location && (
+                  <span className="jd-pill jd-pill-slate">
+                    <MapPin size={13} color="#64748B" />
+                    <span>{job.location}</span>
+                  </span>
+                )}
+
+                {(job.work_mode || job.workMode || job.job_type || job.jobType) && (
+                  <span className="jd-pill jd-pill-slate">
+                    <Briefcase size={13} color="#64748B" />
+                    <span>{job.work_mode || job.workMode || job.job_type || job.jobType}</span>
+                  </span>
+                )}
+
+                {(job as any).shift_details && (
+                  <span className="jd-pill jd-pill-slate">
+                    <Clock size={13} color="#64748B" />
+                    <span>{(job as any).shift_details}</span>
+                  </span>
+                )}
+
+                {Boolean(job.openings || (job as any).vacancies) && (
+                  <span className="jd-pill jd-pill-amber">
+                    <Users size={13} color="#B45309" />
+                    <span>{job.openings || (job as any).vacancies} Openings</span>
+                  </span>
+                )}
+
+                {isWalkIn && (
+                  <span className="jd-pill jd-pill-sky">
+                    <Ticket size={13} color="#0284C7" strokeWidth={2.4} />
+                    <span>Walk-in Drive</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Hero Bottom Bar */}
+          <div className="jd-hero-bottom-bar">
+            <div className="jd-salary-box">
+              <span className="jd-salary-amount">{salaryDisplay}</span>
+              <span className="jd-salary-sub">/ month (take-home salary)</span>
+            </div>
+
+            <div className="jd-posted-meta">
+              <Clock size={13} />
+              <span>Posted {postedTimeAgo}</span>
+              <span>•</span>
+              <span style={{ color: '#047857', fontWeight: 700 }}>Direct Industrial Hiring</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Main Dual-Column Grid Layout */}
+        <div className="jd-grid-layout">
+          
+          {/* Left Main Column */}
+          <div className="jd-main-col">
+
+
+            {/* Mega Walk-in Interview Card (if walk-in) */}
+            {isWalkIn && (
+              <div className="jd-walkin-card">
+                <div className="jd-walkin-header">
+                  <div className="jd-walkin-title">
+                    <Ticket size={18} color="#0284C7" strokeWidth={2.4} />
+                    <span>Mega Walk-in Interview Drive</span>
+                  </div>
+                  <span style={{ backgroundColor: '#E0F2FE', border: '1px solid #7DD3FC', color: '#0284C7', padding: '2px 8px', borderRadius: '4px', fontSize: '10.5px', fontWeight: 800 }}>
+                    DIRECT INTERVIEW
+                  </span>
+                </div>
+
+                <div className="jd-walkin-grid">
+                  <div className="jd-walkin-box">
+                    <div className="jd-walkin-label">DRIVE DATE & TIMING</div>
+                    <div className="jd-walkin-value">
+                      <Calendar size={13} color="#0284C7" />
+                      <span>{job.walkInDate || (job as any).walk_in_date || 'Drive Date Announced'}</span>
+                    </div>
+                    <div style={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={12} />
+                      <span>{job.walkInStartTime || (job as any).walk_in_start_time || '10:00 AM'} - {job.walkInEndTime || (job as any).walk_in_end_time || '04:00 PM'}</span>
+                    </div>
+                  </div>
+
+                  {(job.walkInContactPerson || (job as any).walk_in_contact_person || job.walkInContactNumber || (job as any).walk_in_contact_number) && (
+                    <div className="jd-walkin-box">
+                      <div className="jd-walkin-label">DRIVE COORDINATOR</div>
+                      <div className="jd-walkin-value">
+                        {job.walkInContactPerson || (job as any).walk_in_contact_person || 'HR Department'}
+                      </div>
+                      {(job.walkInContactNumber || (job as any).walk_in_contact_number) && (
+                        <a
+                          href={`tel:${String(job.walkInContactNumber || (job as any).walk_in_contact_number).replace(/[^0-9+]/g, '')}`}
+                          style={{ fontSize: '11.5px', fontWeight: 700, color: '#0284C7', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}
+                        >
+                          <Phone size={11} color="#0284C7" />
+                          <span>{job.walkInContactNumber || (job as any).walk_in_contact_number}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {(job.interviewAddress || (job as any).interview_address || job.location) && (
+                  <div className="jd-walkin-box" style={{ marginBottom: '10px' }}>
+                    <div className="jd-walkin-label">INTERVIEW VENUE ADDRESS</div>
+                    <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', fontWeight: 600, color: '#334155', lineHeight: 1.45 }}>
+                      {job.interviewAddress || (job as any).interview_address || job.location}
+                    </p>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.interviewAddress || (job as any).interview_address || job.location)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#0284C7', fontSize: '11.5px', fontWeight: 700, textDecoration: 'none', marginTop: '6px' }}
+                    >
+                      <MapPin size={12} color="#0284C7" />
+                      <span>Open Directions in Google Maps</span>
+                      <ExternalLink size={11} color="#0284C7" />
+                    </a>
+                  </div>
+                )}
+
+                <div style={{ backgroundColor: '#FFFFFF', border: '1px dashed #BAE6FD', borderRadius: '6px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#0369A1', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                    MANDATORY DOCUMENTS TO CARRY
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#334155', fontWeight: 600, lineHeight: 1.45 }}>
+                    {job.walkInDocuments || (job as any).walk_in_documents || 'Updated Resume (2 Copies), Aadhar Card, Educational Marksheets, Passport Size Photographs, Bank Passbook'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Key Specifications Grid Card */}
+            <div className="jd-card">
+              <div className="jd-card-header">
+                <h2 className="jd-card-title">
+                  <Award size={18} color="#2563EB" />
+                  <span>Key Specifications</span>
+                </h2>
+              </div>
+
+              <div className="jd-specs-grid">
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Trade / Designation</span>
+                  <span className="jd-spec-value">{job.trade || job.title}</span>
+                </div>
+
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Experience Required</span>
+                  <span className="jd-spec-value">{expDisplay}</span>
+                </div>
+
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Monthly Compensation</span>
+                  <span className="jd-spec-value" style={{ color: '#16A34A' }}>{salaryDisplay}</span>
+                </div>
+
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Work Mode & Type</span>
+                  <span className="jd-spec-value">{job.work_mode || job.workMode || job.job_type || job.jobType || 'Full Time'}</span>
+                </div>
+
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Openings Available</span>
+                  <span className="jd-spec-value">{job.openings || (job as any).vacancies || '1'} Vacancies</span>
+                </div>
+
+                <div className="jd-spec-tile">
+                  <span className="jd-spec-label">Location / MIDC Zone</span>
+                  <span className="jd-spec-value">{job.midc_zone || job.location || 'Chhatrapati Sambhajinagar'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Role Description Card */}
+            <div className="jd-card">
+              <div className="jd-card-header">
+                <h2 className="jd-card-title">
+                  <FileText size={18} color="#2563EB" />
+                  <span>About the Role & Job Description</span>
+                </h2>
+              </div>
+              <div style={{ fontSize: '13.5px', lineHeight: 1.65, color: '#334155' }}>
+                <p style={{ margin: 0, whiteSpace: 'pre-line' }}>
+                  {job.description || 'No detailed description provided for this industrial opening.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Key Responsibilities Card */}
+            {respList.length > 0 && (
+              <div className="jd-card">
+                <div className="jd-card-header">
+                  <h2 className="jd-card-title">
+                    <CheckCircle2 size={18} color="#2563EB" />
+                    <span>Key Responsibilities</span>
+                  </h2>
+                </div>
+                <div className="jd-bullet-list">
+                  {respList.map((resp, idx) => (
+                    <div key={idx} className="jd-bullet-item">
+                      <Check size={16} className="jd-bullet-icon" strokeWidth={2.5} />
+                      <span>{resp}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Requirements & Eligibility Card */}
+            {reqList.length > 0 && (
+              <div className="jd-card">
+                <div className="jd-card-header">
+                  <h2 className="jd-card-title">
+                    <Award size={18} color="#2563EB" />
+                    <span>Requirements & Candidate Eligibility</span>
+                  </h2>
+                </div>
+                <div className="jd-bullet-list">
+                  {reqList.map((req, idx) => (
+                    <div key={idx} className="jd-bullet-item">
+                      <Check size={16} className="jd-bullet-icon" strokeWidth={2.5} />
+                      <span>{req}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Technical Skills Card */}
+            {skillsList.length > 0 && (
+              <div className="jd-card">
+                <div className="jd-card-header">
+                  <h2 className="jd-card-title">
+                    <Zap size={18} color="#2563EB" />
+                    <span>Required Technical Skills</span>
+                  </h2>
+                </div>
+                <div className="jd-skills-wrap">
+                  {skillsList.map((skill, idx) => (
+                    <span key={idx} className="jd-skill-chip">
+                      <span>{skill}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Perks & Facilities Card */}
+            {uniquePerks.length > 0 && (
+              <div className="jd-card">
+                <div className="jd-card-header">
+                  <h2 className="jd-card-title">
+                    <Building2 size={18} color="#2563EB" />
+                    <span>Perks & Plant Facilities Offered</span>
+                  </h2>
+                </div>
+                <div className="jd-perks-grid">
+                  {uniquePerks.map((perk, idx) => (
+                    <div key={idx} className="jd-perk-item">
+                      <div className="jd-perk-icon-box">
+                        <Check size={15} strokeWidth={2.5} />
+                      </div>
+                      <span>{perk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Plant Location & Map Preview Card */}
+            <div className="jd-card">
+              <div className="jd-card-header">
+                <h2 className="jd-card-title">
+                  <MapPin size={18} color="#2563EB" />
+                  <span>Workplace & Plant Location</span>
+                </h2>
+              </div>
+              <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#475569', fontWeight: 600 }}>
+                {job.location} {job.midc_zone ? `• ${job.midc_zone}` : ''}
               </p>
-
-              {/* Responsibilities Section */}
-              {respList.length > 0 && (
-                <>
-                  <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />
-                  <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                    Key Responsibilities
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {respList.map((resp, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
-                        <span style={{ color: '#2563EB', fontWeight: '800', fontSize: '14px', lineHeight: '1' }}>•</span>
-                        <span>{resp}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Requirements & Eligibility */}
-              {reqList.length > 0 && (
-                <div style={{ marginBottom: '12px' }}>
-                  <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                    Requirements & Eligibility
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {reqList.map((req, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
-                        <span style={{ color: '#2563EB', fontWeight: '800', fontSize: '14px', lineHeight: '1' }}>•</span>
-                        <span>{req}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Perks & Facilities */}
-              {uniquePerks.length > 0 && (
-                <div style={{ marginBottom: '12px' }}>
-                  {reqList.length > 0 && <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />}
-                  <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                    Perks & Facilities Offered
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {uniquePerks.map((perk, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
-                        <span style={{ color: '#2563EB', fontWeight: '800', fontSize: '14px', lineHeight: '1' }}>•</span>
-                        <span>{perk}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Location & Map Preview */}
-              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '12px 0' }} />
-              <h3 style={{ fontSize: '13.5px', fontWeight: '800', color: '#0F172A', margin: '0 0 8px 0' }}>
-                Location
-              </h3>
               <JobLocationMapPreview
                 locationName={job.location}
                 latitude={(job as any).latitude ? Number((job as any).latitude) : undefined}
                 longitude={(job as any).longitude ? Number((job as any).longitude) : undefined}
               />
+            </div>
 
-              {/* Trust & Safety Report Prompt */}
-              <div style={{ height: '1px', backgroundColor: '#94A3B8', margin: '14px 0 10px 0' }} />
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  backgroundColor: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '0px',
-                  boxSizing: 'border-box',
-                  gap: '12px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748B' }}>
-                  <ShieldAlert size={16} color="#DC2626" style={{ flexShrink: 0 }} />
-                  <span>Encountered suspicious fees, fake recruiter, or misleading terms?</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleOpenReport}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#DC2626',
-                    fontSize: '12.5px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    padding: 0,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Report this job opening
-                </button>
+            {/* Candidate Safety Advisory Card */}
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: '#64748B' }}>
+                <ShieldAlert size={18} color="#DC2626" style={{ flexShrink: 0 }} />
+                <span>JobMarket Safety Guarantee: Employers are strictly forbidden from demanding fees for interviews.</span>
               </div>
-            </>
-          )}
+              <button
+                type="button"
+                onClick={handleOpenReport}
+                style={{ background: 'transparent', border: 'none', color: '#DC2626', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Report this opening
+              </button>
+            </div>
+
+          </div>
+
+          {/* Right Sidebar Column (Sticky) */}
+          <div className="jd-sidebar-col">
+            
+            {/* Primary Action Card */}
+            <div className="jd-cta-card">
+              {hasApplied ? (
+                <div>
+                  <div className="jd-applied-badge-card">
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <CheckCircle2 size={16} color="#16A34A" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#15803D' }}>
+                        Application Submitted
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#166534', marginTop: '1px' }}>
+                        {appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied'} • Status: <span style={{ textTransform: 'capitalize', fontWeight: 700 }}>{applicationStatus}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isWalkIn ? (
+                    <button
+                      onClick={() => setShowWalkInPassModal(true)}
+                      className="jd-cta-btn-primary"
+                      style={{ backgroundColor: '#0284C7' }}
+                    >
+                      <Ticket size={16} />
+                      <span>View Walk-in Admit Pass</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate('/dashboard?tab=applied')}
+                      className="jd-cta-btn-secondary"
+                    >
+                      Track Application Status
+                    </button>
+                  )}
+                </div>
+              ) : isEmployer ? (
+                <div>
+                  <button
+                    onClick={() => navigate(isOwner ? '/dashboard?tab=manage' : '/dashboard')}
+                    className="jd-cta-btn-primary"
+                  >
+                    {isOwner ? 'Manage in Employer Workspace' : 'Go to Employer Dashboard'}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={handleApply}
+                    disabled={isApplying}
+                    className="jd-cta-btn-primary"
+                  >
+                    {isWalkIn ? (
+                      <>
+                        <Ticket size={16} />
+                        <span>Register for Walk-in Drive</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        <span>Apply for this Job</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleToggleSave}
+                    className="jd-cta-btn-secondary"
+                  >
+                    <Bookmark size={15} fill={saved ? '#1D4ED8' : 'none'} />
+                    <span>{saved ? 'Saved in Bookmarks' : 'Save for Later'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    className="jd-cta-btn-secondary"
+                  >
+                    <Share2 size={15} />
+                    <span>Share with Friends</span>
+                  </button>
+
+                  <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11.5px', color: '#64748B' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Check size={13} color="#16A34A" strokeWidth={2.5} />
+                      <span>100% Free Application — Zero charges</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Check size={13} color="#16A34A" strokeWidth={2.5} />
+                      <span>Direct application delivered to employer</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Company Snapshot Card */}
+            <div className="jd-company-card">
+              <div className="jd-company-card-top">
+                <Link to={companyUrl}>
+                  <CompanyDefaultLogo
+                    logoUrl={job.companyLogo || (job as any).logo}
+                    companyName={job.company}
+                    size={46}
+                    borderRadius="6px"
+                  />
+                </Link>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h3 className="jd-company-card-name">{job.company}</h3>
+                    <MetaVerifiedBadge size={14} color="#0095F6" />
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    {job.industry || 'Industrial Manufacturing'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#475569', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={13} color="#64748B" />
+                  <span>{job.location || 'Chhatrapati Sambhajinagar'}</span>
+                </div>
+                {(job as any).website && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Globe size={13} color="#2563EB" />
+                    <a href={(job as any).website.startsWith('http') ? (job as any).website : `https://${(job as any).website}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>
+                      Company Website
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <Link to={companyUrl} className="jd-company-card-btn">
+                <span>View Full Company Profile</span>
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+
+            {/* Direct Recruiter Contact Card (if available) */}
+            {(job.walkInContactNumber || (job as any).walk_in_contact_number) && (
+              <div className="jd-card" style={{ padding: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
+                  Hiring Contact
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                  {job.walkInContactPerson || (job as any).walk_in_contact_person || 'HR Department'}
+                </div>
+                <a
+                  href={`tel:${String(job.walkInContactNumber || (job as any).walk_in_contact_number).replace(/[^0-9+]/g, '')}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#2563EB', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginTop: '4px' }}
+                >
+                  <Phone size={13} />
+                  <span>{job.walkInContactNumber || (job as any).walk_in_contact_number}</span>
+                </a>
+              </div>
+            )}
+
+            {/* Authenticity Guarantee Card */}
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <ShieldCheck size={18} color="#15803D" strokeWidth={2.4} />
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>JobMarket Authenticity</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11.5px', color: '#64748B', lineHeight: 1.45 }}>
+                Every job listed on JobMarket undergoes automated business and employer verification to protect factory and industrial job seekers.
+              </p>
+            </div>
+
+          </div>
+
         </div>
 
       </div>
 
-      {/* Permanently Anchored Bottom Action Dock (No Bottom Gap) */}
+      {/* Mobile Fixed Action Dock */}
       {createPortal(
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: '#FFFFFF',
-          borderTop: '1px solid #CBD5E1',
-          padding: '10px 16px max(10px, env(safe-area-inset-bottom, 10px)) 16px',
-          zIndex: 20000,
-          display: 'flex',
-          justifyContent: 'center',
-          boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)'
-        }}>
-          <div style={{ width: '100%', maxWidth: '800px', display: 'flex', justifyContent: 'center' }}>
-            {hasApplied ? (
-              <div style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                backgroundColor: isWalkIn ? '#F0F9FF' : '#F0FDF4',
-                border: isWalkIn ? '1.5px solid #7DD3FC' : '1.5px solid #86EFAC',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                boxShadow: isWalkIn ? '0 1px 4px rgba(2, 132, 199, 0.08)' : '0 1px 4px rgba(22, 163, 74, 0.08)',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: isWalkIn ? '#E0F2FE' : '#DCFCE7',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    {isWalkIn ? (
-                      <Ticket size={18} color="#0284C7" strokeWidth={2.5} />
-                    ) : (
-                      <CheckCircle2 size={18} color="#16A34A" strokeWidth={2.5} />
-                    )}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '13.5px', fontWeight: '800', color: isWalkIn ? '#0369A1' : '#15803D', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {isWalkIn ? 'Walk-in Pass Issued' : (appliedAtDate ? `Applied on ${formatDate(appliedAtDate)}` : 'Applied')}
-                    </div>
-                    <div style={{ fontSize: '11px', color: isWalkIn ? '#0284C7' : '#166534', fontWeight: '600', marginTop: '1px' }}>
-                      {isWalkIn ? 'Confirmed Admit Card available' : <>Status: <span style={{ textTransform: 'capitalize', fontWeight: '700' }}>{applicationStatus}</span></>}
-                    </div>
-                  </div>
-                </div>
-
-                {isWalkIn ? (
-                  <button
-                    onClick={() => setShowWalkInPassModal(true)}
-                    style={{
-                      backgroundColor: '#0284C7',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      padding: '8px 14px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#0369A1')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0284C7')}
-                  >
-                    <Ticket size={13} color="#FFFFFF" strokeWidth={2.4} />
-                    <span>View Pass</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate('/dashboard?tab=applied')}
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      color: '#15803D',
-                      border: '1px solid #86EFAC',
-                      padding: '8px 14px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#DCFCE7')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
-                  >
-                    Track Status
-                  </button>
-                )}
+        <div className="jd-mobile-dock">
+          {hasApplied ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={16} color="#16A34A" strokeWidth={2.5} />
+                <span style={{ fontSize: '12px', fontWeight: 800, color: '#15803D' }}>Applied</span>
               </div>
-            ) : isEmployer ? (
               <button
-                onClick={() => navigate(isOwner ? '/dashboard?tab=manage' : '/dashboard')}
-                style={{
-                  width: '100%',
-                  height: '46px',
-                  backgroundColor: '#1764E8',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '800',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
+                onClick={() => navigate('/dashboard?tab=applied')}
+                style={{ backgroundColor: '#FFFFFF', color: '#15803D', border: '1px solid #86EFAC', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
               >
-                {isOwner ? 'Manage Job' : 'Back to Workspace'}
+                Track Status
               </button>
-            ) : (
+            </div>
+          ) : isEmployer ? (
+            <button
+              onClick={() => navigate(isOwner ? '/dashboard?tab=manage' : '/dashboard')}
+              className="jd-cta-btn-primary"
+              style={{ flex: 1 }}
+            >
+              Manage in Workspace
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              <button
+                onClick={handleToggleSave}
+                style={{ width: '44px', height: '44px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+                title="Save job"
+              >
+                <Bookmark size={18} fill={saved ? '#1D4ED8' : 'none'} color={saved ? '#1D4ED8' : '#475569'} />
+              </button>
+
               <button
                 onClick={handleApply}
                 disabled={isApplying}
-                style={{
-                  width: '100%',
-                  height: '46px',
-                  backgroundColor: isApplying ? '#6366F1' : (isWalkIn ? '#1D4ED8' : '#2563EB'),
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '800',
-                  fontSize: '14px',
-                  cursor: isApplying ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'background 0.2s ease'
-                }}
+                className="jd-cta-btn-primary"
+                style={{ flex: 1, height: '44px' }}
               >
-                {isWalkIn ? (
-                  <>
-                    <Ticket size={16} strokeWidth={2.4} color="#FFFFFF" />
-                    <span>{isApplying ? 'Registering...' : 'Register for Walk-in Drive'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} strokeWidth={2.5} color="#FFFFFF" />
-                    <span>{isApplying ? 'Applying...' : 'Apply Now'}</span>
-                  </>
-                )}
+                {isWalkIn ? 'Register for Walk-in' : 'Apply Now'}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>,
         document.body
       )}
 
-      {/* Industry-Grade Application Review & Confirmation Modal */}
+      {/* Application Review & Confirmation Modal */}
       {showApplyModal && currentUser && (
         <JobApplyModal
           job={job}
