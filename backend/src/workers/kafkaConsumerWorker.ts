@@ -80,6 +80,18 @@ async function handleSupportChatEvent(payload: any) {
 async function handleJobEvent(payload: any) {
   const { eventType, job } = payload;
   logger.info(`[Kafka Job Event] Processed ${eventType} for job: ${job?.title || job?.id}`);
+
+  if ((eventType === 'JOB_PUBLISHED' || eventType === 'JOB_APPROVED') && (job?.id || job)) {
+    import('../modules/job-alerts/services/JobMatchRecommendationService')
+      .then(({ JobMatchRecommendationService }) => {
+        JobMatchRecommendationService.processJobPublication(job).catch((err) => {
+          logger.error('Error in Kafka Job Alert Dispatch:', err?.message || err);
+        });
+      })
+      .catch((importErr) => {
+        logger.error('Failed to import JobMatchRecommendationService:', importErr);
+      });
+  }
 }
 
 async function handleAuthEvent(payload: any) {

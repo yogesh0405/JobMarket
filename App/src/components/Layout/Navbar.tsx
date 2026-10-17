@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
       setMobileMenuOpen(prev => !prev);
       if (syncUser) syncUser();
     } else {
-      navigate(currentUser?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+      navigate('/dashboard');
     }
   };
 

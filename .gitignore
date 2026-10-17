@@ -81,3 +81,15 @@ test-cases/
 *test_cases*
 *QA_Test*
 
+# ── AUDIT REPORTS (NEVER PUSH AUDIT REPORTS TO GIT) ──
+audit-reports/
+audit-reports/**
+*.audit.md
+security/
+
+# ── DEPLOYMENT & PRODUCTION GUIDES (NEVER PUSH TO GIT) ──
+deployment/
+*DEPLOYMENT_GUIDE*.md
+*PRODUCTION_GUIDE*.md
+
+

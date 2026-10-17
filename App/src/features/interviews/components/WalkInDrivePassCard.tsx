@@ -106,11 +106,11 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
   const handleOpenMap = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (mapsLink && typeof mapsLink === 'string' && mapsLink.startsWith('http')) {
-      window.open(mapsLink, '_blank');
+      window.open(mapsLink, '_blank', 'noopener,noreferrer');
       return;
     }
     const query = encodeURIComponent(`${venueAddress} ${companyName}`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
   };
 
   return (

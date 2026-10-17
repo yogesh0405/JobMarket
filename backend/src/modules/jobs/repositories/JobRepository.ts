@@ -1218,6 +1218,21 @@ export class JobRepository {
     const hired = parseInt(funnelRes.rows[0]?.hired || '0', 10);
     const rejected = parseInt(funnelRes.rows[0]?.rejected || '0', 10);
 
+    // Follower count for employer company
+    let followersCount = 0;
+    try {
+      const followCountRes = await pool.query(
+        `SELECT COUNT(DISTINCT user_id)::int as count 
+         FROM company_followers 
+         WHERE company_id = $1 
+            OR company_id IN (SELECT id::text FROM companies WHERE employer_id = $1::uuid)
+            OR LOWER(TRIM(company_id)) IN (SELECT LOWER(TRIM(name)) FROM companies WHERE employer_id = $1::uuid)
+            OR LOWER(TRIM(company_id)) IN (SELECT LOWER(TRIM(company_name)) FROM users WHERE id = $1::uuid);`,
+        [employerId]
+      );
+      followersCount = parseInt(followCountRes.rows[0]?.count || '0', 10);
+    } catch (_) {}
+
     return {
       totalJobs,
       activeJobs,
@@ -1226,6 +1241,7 @@ export class JobRepository {
       interviewed,
       hired,
       rejected,
+      followersCount,
       avgResponseTimeHours: 24,
     };
   }

@@ -224,7 +224,7 @@ export const ResumePreviewModal: React.FC<ResumePreviewModalProps> = ({ resume, 
       }
     } catch (err) {
       console.warn('Blob download fallback:', err);
-      window.open(rawUrl || objectUrl, '_blank');
+      window.open(rawUrl || objectUrl, '_blank', 'noopener,noreferrer');
     } finally {
       setIsDownloading(false);
     }

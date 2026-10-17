@@ -158,26 +158,49 @@ const appleAasaHandler = (req: express.Request, res: express.Response) => {
 app.get('/.well-known/apple-app-site-association', appleAasaHandler);
 app.get('/apple-app-site-association', appleAasaHandler);
 
+const escapeHtml = (str: string): string => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
 // Industry-Standard Smart Universal Share & Direct Web Application Route
 app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const rawId = req.params.id;
-  const jobId = (Array.isArray(rawId) ? rawId[0] : rawId) as string;
+  const rawJobId = (Array.isArray(rawId) ? rawId[0] : rawId) as string;
+  // Strictly sanitize jobId to alphanumeric/dash/underscore
+  const jobId = (rawJobId || '').replace(/[^a-zA-Z0-9_\-]/g, '');
+  if (!jobId) {
+    return next();
+  }
+
   let job: any = null;
   try {
     job = await JobRepository.getJobById(jobId);
   } catch (e) {}
 
-  const title = job?.title ? `${job.title} - ${job.company || 'JobMarket'}` : 'Industrial Job Vacancy | JobMarket';
-  const companyStr = job?.company || 'Industrial Company';
-  const locationStr = job?.location || 'MIDC Industrial Zone';
+  const rawTitle = job?.title ? `${job.title} - ${job.company || 'JobMarket'}` : 'Industrial Job Vacancy | JobMarket';
+  const rawCompany = job?.company || 'Industrial Company';
+  const rawLocation = job?.location || 'MIDC Industrial Zone';
   const minSal = job?.salary_min || job?.salaryMin;
   const maxSal = job?.salary_max || job?.salaryMax;
-  const salStr = minSal && maxSal ? `₹${Math.round(minSal / 1000)}k - ₹${Math.round(maxSal / 1000)}k / month` : 'Competitive Salary';
-  const tradeStr = job?.trade || 'Technical Specialist';
-  const description = job?.title
-    ? `Role: ${job.title} | Company: ${companyStr} | Location: ${locationStr} | Salary: ${salStr}`
+  const rawSal = minSal && maxSal ? `₹${Math.round(minSal / 1000)}k - ₹${Math.round(maxSal / 1000)}k / month` : 'Competitive Salary';
+  const rawTrade = job?.trade || 'Technical Specialist';
+  const rawDescription = job?.title
+    ? `Role: ${job.title} | Company: ${rawCompany} | Location: ${rawLocation} | Salary: ${rawSal}`
     : 'View industrial job vacancies and career opportunities on JobMarket.';
-  const appLink = `jobmarket://job/${jobId}`;
+  const appLink = `jobmarket://job/${encodeURIComponent(jobId)}`;
+
+  const title = escapeHtml(rawTitle);
+  const companyStr = escapeHtml(rawCompany);
+  const locationStr = escapeHtml(rawLocation);
+  const salStr = escapeHtml(rawSal);
+  const tradeStr = escapeHtml(rawTrade);
+  const description = escapeHtml(rawDescription);
 
   const rawLogo = job?.company_logo || job?.companyLogo || (job as any)?.companyLogoUrl || '';
   let formattedLogo = '';
@@ -190,6 +213,7 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
       formattedLogo = `https://jobmarket-ongn.onrender.com/${rawLogo}`;
     }
   }
+  const safeFormattedLogo = escapeHtml(formattedLogo);
 
   const userAgent = req.headers['user-agent'] || '';
   const isCrawler = /whatsapp|facebookexternalhit|twitterbot|linkedinbot|telegrambot|slackbot|discordbot|googlebot|bot|crawler|spider/i.test(userAgent);
@@ -204,8 +228,8 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://jobmarket-ongn.onrender.com/job/${jobId}" />
-  ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+  <meta property="og:url" content="https://jobmarket-ongn.onrender.com/job/${encodeURIComponent(jobId)}" />
+  ${safeFormattedLogo ? `<meta property="og:image" content="${safeFormattedLogo}" />` : ''}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
@@ -229,18 +253,18 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
       const injectionScript = `
         <meta property="og:title" content="${title}" />
         <meta property="og:description" content="${description}" />
-        ${formattedLogo ? `<meta property="og:image" content="${formattedLogo}" />` : ''}
+        ${safeFormattedLogo ? `<meta property="og:image" content="${safeFormattedLogo}" />` : ''}
         <script>
           window.addEventListener('DOMContentLoaded', function() {
             var isAndroid = /Android/i.test(navigator.userAgent);
             var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            var jobId = "${jobId}";
+            var jobId = ${JSON.stringify(jobId)};
             if (isAndroid || isIOS) {
               setTimeout(function() {
                 try {
                   var iframe = document.createElement('iframe');
                   iframe.style.display = 'none';
-                  iframe.src = "jobmarket://job/" + jobId;
+                  iframe.src = "jobmarket://job/" + encodeURIComponent(jobId);
                   document.body.appendChild(iframe);
                 } catch (e) {}
               }, 400);
@@ -423,13 +447,13 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
     window.addEventListener('DOMContentLoaded', function() {
       var isAndroid = /Android/i.test(navigator.userAgent);
       var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      var jobId = "${jobId}";
+      var jobId = ${JSON.stringify(jobId)};
       if (isAndroid || isIOS) {
         setTimeout(function() {
           try {
             var iframe = document.createElement('iframe');
             iframe.style.display = 'none';
-            iframe.src = "jobmarket://job/" + jobId;
+            iframe.src = "jobmarket://job/" + encodeURIComponent(jobId);
             document.body.appendChild(iframe);
           } catch (e) {}
         }, 400);
@@ -445,8 +469,8 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
 
   <div class="card">
     <div class="logo-box">
-      ${formattedLogo ? `
-        <img src="${formattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('company-fb').style.display='flex';" />
+      ${safeFormattedLogo ? `
+        <img src="${safeFormattedLogo}" class="logo-img" alt="${companyStr}" onError="this.style.display='none'; document.getElementById('company-fb').style.display='flex';" />
         <div id="company-fb" class="logo-fallback" style="display:none;">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v8h4"></path><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
         </div>
@@ -457,7 +481,7 @@ app.get(['/job/:id', '/jobs/:id'], async (req: express.Request, res: express.Res
       `}
     </div>
 
-    <h1>${job?.title || 'Industrial Job Vacancy'}</h1>
+    <h1>${title}</h1>
     <div class="company-name">${companyStr}</div>
 
     <div class="inset-group">

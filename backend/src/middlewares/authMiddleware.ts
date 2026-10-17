@@ -31,7 +31,22 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
       });
     }
 
-    const sessionId = (decoded.sessionId || req.headers['x-session-id'] || req.headers['x-session-token']) as string;
+    const tokenSessionId = decoded.sessionId;
+    const headerSessionId = (req.headers['x-session-id'] || req.headers['x-session-token']) as string;
+    let sessionId = tokenSessionId;
+
+    if (!sessionId && headerSessionId) {
+      try {
+        const { rows } = await pool.query(
+          'SELECT id FROM sessions WHERE id = $1 AND user_id = $2 LIMIT 1',
+          [headerSessionId, decoded.id || decoded.userId]
+        );
+        if (rows.length > 0) {
+          sessionId = headerSessionId;
+        }
+      } catch (_) {}
+    }
+
     if (sessionId) {
       const { SessionRepository } = await import('../modules/auth/repositories/SessionRepository');
       const isRevoked = await SessionRepository.isSessionRevoked(sessionId);

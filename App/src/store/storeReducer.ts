@@ -250,22 +250,6 @@ export const storeReducer = (state: StoreState, action: StoreAction): StoreState
       };
     }
 
-    case 'ACCOUNT_SUSPENDED':
-      return {
-        ...state,
-        accountSuspended: true,
-        suspensionDetail: action.payload,
-        currentUser: null
-      };
-
-    case 'LOGOUT':
-      return {
-        ...state,
-        currentUser: null,
-        accountSuspended: false,
-        suspensionDetail: null
-      };
-
     default:
       return state;
   }

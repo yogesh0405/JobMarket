@@ -11,6 +11,7 @@ import notificationApp from './services/notification-service/src/app';
 import supportApp from './services/support-service/src/app';
 import adApp from './services/ad-service/src/app';
 import adminApp from './services/admin-service/src/app';
+import jobAlertApp from './services/job-alert-service/src/app';
 import gatewayApp from './services/api-gateway/src/app';
 import { checkDatabaseConnection } from './shared/database/pool';
 import { connectRedis } from './shared/config/redis';
@@ -26,6 +27,7 @@ const services = [
   { name: 'Support Service', app: supportApp, port: 5006 },
   { name: 'Ad Service', app: adApp, port: 5007 },
   { name: 'Admin Service', app: adminApp, port: 5008 },
+  { name: 'Job Alert Service', app: jobAlertApp, port: 5010 },
   { name: 'API Gateway', app: gatewayApp, port: gatewayPort },
 ];
 

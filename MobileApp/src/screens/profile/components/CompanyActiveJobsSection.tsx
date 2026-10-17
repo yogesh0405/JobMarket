@@ -93,19 +93,23 @@ export const CompanyActiveJobsSection: React.FC<CompanyActiveJobsSectionProps> =
 
       {/* Search Field */}
       <View style={styles.searchBar}>
-        <Search size={12} color="#91A0BA" strokeWidth={2} />
+        <Search size={15} color="#94A3B8" strokeWidth={2} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search vacancies by title, trade, location..."
-          placeholderTextColor="#91A0BA"
+          placeholderTextColor="#94A3B8"
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TouchableOpacity activeOpacity={0.7}>
-          <SlidersHorizontal size={12} color="#91A0BA" strokeWidth={2} />
-        </TouchableOpacity>
+        {searchQuery ? (
+          <TouchableOpacity activeOpacity={0.7} onPress={() => setSearchQuery('')}>
+            <SlidersHorizontal size={14} color="#0A58E2" strokeWidth={2} />
+          </TouchableOpacity>
+        ) : (
+          <SlidersHorizontal size={14} color="#94A3B8" strokeWidth={2} />
+        )}
       </View>
 
       {/* Jobs List */}
@@ -241,20 +245,20 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.2,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 20,
-    height: 38,
+    borderRadius: 8,
+    height: 42,
     paddingHorizontal: 12,
-    gap: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     height: '100%',
-    fontSize: 12,
-    color: '#102A5C',
+    fontSize: 13,
+    color: '#0F172A',
     fontWeight: '500',
     padding: 0,
   },

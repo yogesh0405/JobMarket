@@ -130,6 +130,11 @@ export class JobController {
             data.id,
             { jobId: data.id, title: data.title }
           );
+
+          if (data.status === 'active' || data.status === 'APPROVED') {
+            const { JobMatchRecommendationService } = await import('../../../../src/modules/job-alerts/services/JobMatchRecommendationService');
+            JobMatchRecommendationService.processJobPublication(data).catch(() => {});
+          }
         } catch (notifErr) {
           // Non-blocking notification dispatch
         }

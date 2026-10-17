@@ -18,11 +18,13 @@ import {
   X,
   Navigation2,
   Share2,
+  Users,
 } from 'lucide-react-native';
 import { RADIUS, COLORS } from '../../../constants/theme';
 
 interface CompanyMetricsBarProps {
   jobsCount: number;
+  followersCount?: number;
   midcZone?: string;
   isVerified?: boolean;
   completionPct?: number;
@@ -32,6 +34,7 @@ interface CompanyMetricsBarProps {
 
 export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
   jobsCount,
+  followersCount = 0,
   midcZone,
   isVerified = true,
   completionPct = 75,
@@ -63,7 +66,7 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
       {/* 1. Active Jobs */}
       <View style={styles.statCol}>
         <View style={[styles.iconSquare, { backgroundColor: '#EFF5FF' }]}>
-          <Briefcase size={15} color={COLORS.primary} strokeWidth={2.2} />
+          <Briefcase size={14} color={COLORS.primary} strokeWidth={2.2} />
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.statValText}>{jobsCount || 0}</Text>
@@ -76,13 +79,14 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
 
       {/* 2. Middle Metric */}
       {isOwner ? (
+        /* Stat 2: Followers */
         <View style={styles.statCol}>
-          <View style={[styles.iconSquare, { backgroundColor: '#ECF9F6' }]}>
-            <Star size={15} color="#21A99B" strokeWidth={2} />
+          <View style={[styles.iconSquare, { backgroundColor: '#EFF6FF' }]}>
+            <Users size={14} color={COLORS.primary} strokeWidth={2.2} />
           </View>
           <View style={styles.textWrap}>
-            <Text style={styles.statValText}>{completionPct}%</Text>
-            <Text style={styles.statLabelText}>Profile Score</Text>
+            <Text style={styles.statValText}>{followersCount || 0}</Text>
+            <Text style={styles.statLabelText}>Followers</Text>
           </View>
         </View>
       ) : (
@@ -104,7 +108,7 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
       {/* Vertical Divider */}
       <View style={styles.colDivider} />
 
-      {/* 3. Third Metric */}
+      {/* 3. Action / Location */}
       {isOwner ? (
         <TouchableOpacity
           activeOpacity={0.7}
@@ -112,7 +116,7 @@ export const CompanyMetricsBar: React.FC<CompanyMetricsBarProps> = ({
           style={[styles.statCol, styles.postJobBtnCol]}
         >
           <View style={[styles.iconSquare, { backgroundColor: '#EEF4FF' }]}>
-            <Plus size={16} color="#1764E8" strokeWidth={2.4} />
+            <Plus size={15} color="#1764E8" strokeWidth={2.4} />
           </View>
           <View style={styles.textWrap}>
             <Text style={[styles.statValText, { color: '#1764E8' }]}>Post Job</Text>

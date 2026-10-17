@@ -28,6 +28,7 @@ import {
   Building2,
   MapPin,
   AlertTriangle,
+  Banknote,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
@@ -36,6 +37,8 @@ import { applicantsApi } from '../../api/applicantsApi';
 import { Job } from '../../types';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
+import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
+import { formatTimeAgo } from '../candidate/components/CandidateJobSearchUtils';
 import { shareJob } from '../../utils/shareUtils';
 import { Header } from '../../components/common/Header';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
@@ -212,16 +215,40 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderJobItem = ({ item }: { item: Job }) => {
     const pending = isPendingStatus(item.status);
-    const logoUri = item.companyLogo || (item as any).company_logo || user?.companyLogo || user?.company_logo;
+    const logoUri =
+      item.companyLogo ||
+      (item as any).company_logo ||
+      (item as any).logoUrl ||
+      (item as any).logo_url ||
+      user?.companyLogo ||
+      user?.company_logo;
+
+    const isExpNotRequired = item.experience_required === false || (item as any).experienceRequired === false;
+    const minExp = item.min_experience ?? (item as any).minExperience;
+    const maxExp = item.max_experience ?? (item as any).maxExperience;
+    const isFresher = isExpNotRequired || (minExp === 0 && (maxExp === 0 || maxExp === undefined || maxExp === null));
+    const expText =
+      isFresher
+        ? 'Fresher'
+        : minExp !== undefined && maxExp !== undefined
+        ? `${minExp}-${maxExp} Yrs Exp`
+        : minExp !== undefined
+        ? `${minExp}+ Yrs Exp`
+        : 'Fresher';
 
     const salMin = item.salary_min ?? item.salaryMin ?? (item as any).salary_min ?? (item as any).salaryMin;
     const salMax = item.salary_max ?? item.salaryMax ?? (item as any).salary_max ?? (item as any).salaryMax;
 
-    let salaryStr = 'Salary Undisclosed';
+    let salaryStr = 'Undisclosed';
     if (salMin && salMax) {
-      salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
+      if (salMin >= 100000) {
+        salaryStr = `${(salMin / 100000).toFixed(1)}-${(salMax / 100000).toFixed(1)} Lacs PA`;
+      } else {
+        salaryStr = `₹${Number(salMin).toLocaleString('en-IN')} - ₹${Number(salMax).toLocaleString('en-IN')}`;
+      }
     } else if (salMin || salMax) {
-      salaryStr = `₹${Number(salMin || salMax).toLocaleString('en-IN')}`;
+      const val = salMin || salMax;
+      salaryStr = val >= 100000 ? `₹${(val / 100000).toFixed(1)} Lacs PA` : `₹${Number(val).toLocaleString('en-IN')}`;
     }
 
     const totalVacancies = item.openings ?? (item as any).openings ?? 1;
@@ -246,66 +273,97 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
         : Math.max(parsedApps.length, directApiCount);
     const actualApplicantCount = Math.max(backendApplicantCount, storeAppsCount);
 
-    const locationText = item.location || (item as any).midcZone || 'MIDC Area';
+    const locationText = item.location || (item as any).midcZone || (item as any).city || 'MIDC Area';
+    const companyName = item.company || (item as any).company_name || user?.companyName || 'Company';
     const tradeText = (item as any).tradeSpecialization || (item as any).trade_specialization || item.industry;
+    const jobType = item.job_type || item.jobType || (item as any).type || 'Full-time';
+    const workMode = item.work_mode || (item as any).workMode || (item as any).shift || 'On-site';
+    const timeText = formatTimeAgo(item.posted_at || (item as any).postedAt || (item as any).created_at || (item as any).createdAt);
 
     return (
       <TouchableOpacity
-        activeOpacity={0.85}
+        activeOpacity={0.88}
         onPress={() => {
           navigation.navigate('CandidateJobDetail', {
             jobId: item.id,
             job: item,
           });
         }}
-        style={styles.jobCard3D}
+        style={styles.workJobCard}
       >
-        {/* Header Row with Logo, Title & Status */}
-        <View style={styles.cardHeaderRow}>
-          <View style={styles.companyLogoBox}>
-            {logoUri ? (
-              <Image source={{ uri: logoUri }} style={styles.companyLogoImage} resizeMode="cover" />
-            ) : (
-              <Building2 size={18} color="#1764E8" strokeWidth={2} />
-            )}
-          </View>
+        {/* Top Section: Logo, Title, Company + Trade, Status Badge */}
+        <View style={styles.workJobTopSection}>
+          <View style={styles.workJobTitleRow}>
+            <CompanyLogoAvatar
+              logoUrl={logoUri}
+              companyName={companyName}
+              size={42}
+              borderRadius={8}
+            />
 
-          <View style={styles.headerTextCol}>
-            <View style={styles.titleBadgeRow}>
-              <Text style={styles.jobTitleText} numberOfLines={1}>
+            <View style={styles.workJobHeaderCol}>
+              <Text style={styles.workJobTitle} numberOfLines={1}>
                 {item.title}
               </Text>
-              <Badge status={item.status} />
+              <Text style={styles.workJobCompanyText} numberOfLines={1}>
+                {companyName}{tradeText ? ` • ${tradeText}` : ''}
+              </Text>
             </View>
 
-            <Text style={styles.companyNameText} numberOfLines={1}>
-              {item.company}{tradeText ? ` • ${tradeText}` : ''}
-            </Text>
+            <Badge
+              status={item.status}
+              style={isRejectedStatus(item.status) ? styles.rejectedBadgeClean : undefined}
+            />
+          </View>
+
+          {/* Specs Row: Experience | Salary | Location */}
+          <View style={styles.workJobSpecsRow}>
+            <View style={styles.workJobSpecItem}>
+              <Briefcase size={12.5} color="#64748B" />
+              <Text style={styles.workJobSpecText}>{expText}</Text>
+            </View>
+
+            <Text style={styles.workJobDivider}>|</Text>
+
+            <View style={styles.workJobSpecItem}>
+              <Text style={styles.workJobRupeeText}>₹</Text>
+              <Text style={styles.workJobSpecText}>{salaryStr}</Text>
+            </View>
+
+            <Text style={styles.workJobDivider}>|</Text>
+
+            <View style={[styles.workJobSpecItem, { flex: 1, minWidth: 0 }]}>
+              <MapPin size={12.5} color="#64748B" style={{ flexShrink: 0 }} />
+              <Text style={[styles.workJobSpecText, { flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">
+                {locationText}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Chips / Meta Details Row */}
-        <View style={styles.metaChipsRow}>
-          <View style={styles.metaChip}>
-            <MapPin size={11} color="#657796" />
-            <Text style={styles.metaChipText} numberOfLines={1}>
-              {locationText}
-            </Text>
+        {/* Middle Section: Job Type, Work Mode, Time Ago */}
+        <View style={styles.workJobMiddleSection}>
+          <View style={styles.workJobSpecItem}>
+            <Clock size={12} color="#64748B" />
+            <Text style={styles.workJobSimpleText}>{jobType}</Text>
           </View>
-          <View style={styles.metaChip}>
-            <Text style={styles.metaChipText}>{salaryStr}</Text>
+
+          <View style={styles.workJobSpecItem}>
+            <Building2 size={12} color="#64748B" />
+            <Text style={styles.workJobSimpleText}>{workMode}</Text>
           </View>
-          {item.job_type || item.jobType || (item as any).type ? (
-            <View style={styles.metaChip}>
-              <Text style={styles.metaChipText}>{item.job_type || item.jobType || (item as any).type}</Text>
-            </View>
-          ) : null}
+
+          <View style={{ flex: 1 }} />
+
+          <Text style={styles.workJobTimeAgoText}>
+            {timeText}
+          </Text>
         </View>
 
         {/* Rejection / Changes Requested Notice Banner */}
         {((item.status || '').toUpperCase() === 'REJECTED' || (item as any).dbStatus === 'REJECTED') && (
           <View style={styles.rejectedNoticeBanner}>
-            <AlertTriangle size={12} color="#DC2626" strokeWidth={2.4} />
+            <AlertTriangle size={13} color="#DC2626" strokeWidth={2.4} />
             <Text style={styles.rejectedNoticeBannerText} numberOfLines={2}>
               <Text style={{ fontWeight: '700' }}>Admin Remark: </Text>
               {(item as any).rejectReason || (item as any).reject_reason || (item as any).rejection_reason || 'Listing was rejected during moderation. Click Edit & Resubmit to review notes and update.'}
@@ -313,10 +371,8 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
-        <View style={styles.cardRowDivider} />
-
-        {/* Action Footer Bar */}
-        <View style={styles.cardFooterInline}>
+        {/* Bottom Section: Employer Action Footer */}
+        <View style={styles.workJobBottomSection}>
           <View style={styles.footerLeftPills}>
             <TouchableOpacity
               style={styles.applicantPillBtn}
@@ -325,7 +381,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 navigation.navigate('JobApplicants', { jobId: item.id, jobTitle: item.title });
               }}
             >
-              <Users size={13} color="#475569" strokeWidth={2} />
+              <Users size={12.5} color="#1764E8" strokeWidth={2} />
               <Text style={styles.applicantPillText}>
                 {actualApplicantCount} {actualApplicantCount === 1 ? 'Applicant' : 'Applicants'}
               </Text>
@@ -360,6 +416,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 style={styles.actionBtnSmall}
                 activeOpacity={0.7}
                 onPress={() => handleShareJob(item)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Share2 size={13} color="#475569" strokeWidth={2} />
               </TouchableOpacity>
@@ -370,6 +427,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 onPress={() => {
                   navigation.navigate('PostTab', { jobId: item.id });
                 }}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Edit3 size={13} color="#475569" strokeWidth={2} />
               </TouchableOpacity>
@@ -378,6 +436,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
                 style={[styles.actionBtnSmall, styles.deleteBtnSmall]}
                 activeOpacity={0.7}
                 onPress={() => handleDeleteJob(item.id, item.title)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               >
                 <Trash2 size={13} color="#EF4444" strokeWidth={2} />
               </TouchableOpacity>
@@ -569,167 +628,157 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 130,
   },
-  jobCard3D: {
+  workJobCard: {
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E7EBF2',
-    padding: 13,
+    borderColor: '#E2E8F0',
     marginBottom: 12,
-    shadowColor: '#142A50',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
+    overflow: 'hidden',
   },
-  cardHeaderRow: {
+  workJobTopSection: {
+    padding: 14,
+  },
+  workJobTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  companyLogoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#EEF4FF',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  companyLogoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  headerTextCol: {
+  workJobHeaderCol: {
     flex: 1,
     justifyContent: 'center',
   },
-  titleBadgeRow: {
+  workJobTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.15,
+  },
+  workJobCompanyText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    marginTop: 2,
+  },
+  workJobSpecsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 6,
+    marginTop: 10,
   },
-  jobTitleText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#102A5C',
-    letterSpacing: -0.2,
-    flex: 1,
-  },
-  companyNameText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#657796',
-    marginTop: 1.5,
-  },
-  metaChipsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 8,
-  },
-  metaChip: {
+  workJobSpecItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
   },
-  metaChipText: {
-    fontSize: 10.5,
-    fontWeight: '500',
-    color: '#657796',
+  workJobRupeeText: {
+    fontWeight: '700',
+    color: '#64748B',
+    fontSize: 12,
   },
-  pendingNoticeBanner: {
+  workJobSpecText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  workJobDivider: {
+    fontSize: 11,
+    color: '#CBD5E1',
+  },
+  workJobMiddleSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    marginTop: 8,
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
-  pendingNoticeBannerText: {
+  workJobSimpleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  workJobTimeAgoText: {
     fontSize: 10.5,
     fontWeight: '600',
-    color: '#B45309',
-    flex: 1,
+    color: '#94A3B8',
   },
   rejectedNoticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FEF2F2',
-    borderLeftWidth: 3,
-    borderLeftColor: '#DC2626',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 0,
-    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   rejectedNoticeBannerText: {
     fontSize: 10.5,
     lineHeight: 15,
     fontWeight: '600',
-    color: '#991B1B',
+    color: '#DC2626',
     flex: 1,
   },
-  cardRowDivider: {
-    height: 1,
-    backgroundColor: '#E7EBF2',
-    marginVertical: 9,
+  rejectedBadgeClean: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
-  cardFooterInline: {
+  workJobBottomSection: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
   },
   footerLeftPills: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flex: 1,
   },
   applicantPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
-    backgroundColor: 'transparent',
-    paddingVertical: 4,
-    paddingRight: 6,
+    gap: 5,
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 6,
   },
   applicantPillText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#334155',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1764E8',
   },
   vacanciesPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
-    backgroundColor: 'transparent',
-    paddingVertical: 4,
-    paddingHorizontal: 6,
+    gap: 5,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 6,
   },
   vacanciesPillText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#334155',
+    color: '#475569',
   },
   actionsGroupInline: {
     flexDirection: 'row',
@@ -737,8 +786,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionBtnSmall: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     borderRadius: 6,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
@@ -747,21 +796,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteBtnSmall: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
   },
   resubmitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
-    backgroundColor: '#1B4FDF',
+    gap: 5,
+    backgroundColor: '#1764E8',
     borderRadius: 6,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    shadowColor: '#1B4FDF',
+    paddingVertical: 6,
+    shadowColor: '#1764E8',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
     elevation: 2,
   },
   resubmitBtnText: {

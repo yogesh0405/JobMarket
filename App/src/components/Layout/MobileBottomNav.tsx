@@ -274,7 +274,7 @@ export const MobileBottomNav: React.FC = () => {
 
             {/* 5. Profile */}
             <Link
-              to={currentUser ? (currentUser.role === 'admin' ? '/admin/dashboard' : '/dashboard?tab=profile') : '/login'}
+              to={currentUser ? '/dashboard?tab=profile' : '/login'}
               className={`mobile-app-tab-item ${isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile') ? 'active' : ''}`}
             >
               {(isTabActive('/dashboard?tab=profile') || (currentUser && location.pathname === '/profile')) && <div className="tab-top-indicator" />}

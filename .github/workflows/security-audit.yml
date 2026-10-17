@@ -1,0 +1,81 @@
+name: Security & Secret Leakage CI/CD Gate
+
+on:
+  push:
+    branches: [main, master, release/**]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  secrets-scan:
+    name: Secrets & Credentials Exposure Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Verify Backend TypeScript & Compilation
+        run: |
+          cd backend
+          npx tsc --noEmit
+
+      - name: Execute Automated Secrets & Credentials Audit Suite
+        run: |
+          cd backend
+          npx tsx src/tests/secretsAudit.test.ts
+
+      - name: Execute Security & Access Control Regression Suite
+        run: |
+          cd backend
+          npx tsx src/tests/securityRegression.ts
+
+  frontend-bundle-scan:
+    name: Frontend Bundle Leakage Inspection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Web Frontend Dependencies
+        run: |
+          cd App
+          npm ci
+
+      - name: Build Web Application Bundle
+        run: |
+          cd App
+          npm run build
+
+      - name: Inspect Production Bundle for Leaked Credentials
+        run: |
+          if grep -i -E "(AWS_SECRET_ACCESS_KEY|JWT_ACCESS_SECRET|JWT_REFRESH_SECRET|BEGIN PRIVATE KEY|BEGIN RSA PRIVATE KEY|BREVO_API_KEY)" App/dist/assets/*.js; then
+            echo "❌ CRITICAL: Private server secret detected in client bundle!"
+            exit 1
+          else
+            echo "✅ Web bundle verified clean of server secrets."
+          fi

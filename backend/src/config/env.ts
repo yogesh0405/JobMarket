@@ -22,12 +22,38 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().default(''),
   AWS_REGION: z.string().default('ap-south-1'),
   AWS_S3_BUCKET_NAME: z.string().default(''),
+}).superRefine((data, ctx) => {
+  if (data.NODE_ENV === 'production') {
+    if (!process.env.JWT_ACCESS_SECRET || data.JWT_ACCESS_SECRET === 'dev_jwt_access_secret_key_jobmarket_secure' || data.JWT_ACCESS_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_ACCESS_SECRET'],
+        message: 'Production deployment requires a cryptographically strong, non-default JWT_ACCESS_SECRET (minimum 32 characters).',
+      });
+    }
+    if (!process.env.JWT_REFRESH_SECRET || data.JWT_REFRESH_SECRET === 'dev_jwt_refresh_secret_key_jobmarket_secure' || data.JWT_REFRESH_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_REFRESH_SECRET'],
+        message: 'Production deployment requires a cryptographically strong, non-default JWT_REFRESH_SECRET (minimum 32 characters).',
+      });
+    }
+    if (!process.env.DATABASE_URL || data.DATABASE_URL.includes('localhost:5432')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DATABASE_URL'],
+        message: 'Production deployment requires a secure, non-local DATABASE_URL.',
+      });
+    }
+  }
 });
 
 const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  console.error('❌ Invalid environment variables:', _env.error.format());
+  // Redact actual values from errors to prevent secret leakage in logs
+  const redactedErrors = _env.error.issues.map(iss => ({ path: iss.path.join('.'), message: iss.message }));
+  console.error('❌ FATAL: Invalid production environment configuration:', JSON.stringify(redactedErrors, null, 2));
   throw new Error('Invalid environment variables configuration');
 }
 

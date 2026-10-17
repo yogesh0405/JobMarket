@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -52,6 +52,18 @@ import { Resume } from '../../types';
 
 const TRADES_LIST = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
 
+const formatFollowers = (count: number) => {
+  if (count <= 0) return '0 followers';
+  if (count === 1) return '1 follower';
+  if (count < 1000) return `${count} followers`;
+  if (count < 1000000) {
+    const formatted = (count / 1000).toFixed(1).replace(/\.0$/, '');
+    return `${formatted}K followers`;
+  }
+  const formatted = (count / 1000000).toFixed(1).replace(/\.0$/, '');
+  return `${formatted}M followers`;
+};
+
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, updateUser, deleteResume, syncUser } = useAuth();
@@ -61,6 +73,30 @@ export const ProfilePage: React.FC = () => {
   const t = useTranslation(state.language);
 
   const [activeCandidateTab, setActiveCandidateTab] = useState<'PERSONAL' | 'PROFESSIONAL'>('PERSONAL');
+  const [employerFollowersCount, setEmployerFollowersCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (currentUser?.role === 'employer' && currentUser?.id) {
+      const companyQuery = encodeURIComponent(currentUser.companyName || currentUser.id);
+      apiFetch(`/api/v1/companies/${companyQuery}/follow-status`)
+        .then(res => res.json())
+        .then(json => {
+          if (json?.data?.followersCount !== undefined) {
+            setEmployerFollowersCount(Number(json.data.followersCount) || 0);
+          }
+        })
+        .catch(() => {
+          apiFetch(`/api/v1/companies/${encodeURIComponent(currentUser.id)}/follow-status`)
+            .then(res => res.json())
+            .then(json => {
+              if (json?.data?.followersCount !== undefined) {
+                setEmployerFollowersCount(Number(json.data.followersCount) || 0);
+              }
+            })
+            .catch(() => {});
+        });
+    }
+  }, [currentUser?.id, currentUser?.role, currentUser?.companyName]);
 
   const handleShare = () => {
     if (!currentUser) return;
@@ -874,7 +910,7 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Subtitle Category Pills */}
+                {/* Subtitle Category Pills & Follower Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
                   <div style={{
                     display: 'inline-flex',
@@ -958,23 +994,23 @@ export const ProfilePage: React.FC = () => {
 
             <div style={{ width: '1px', height: '20px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
 
-            {/* Stat 2: Profile Score */}
+            {/* Stat 2: Followers */}
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
               <div style={{
                 width: '30px',
                 height: '30px',
                 borderRadius: '6px',
-                backgroundColor: '#ECF9F6',
+                backgroundColor: '#EFF6FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Star size={14} color="#21A99B" strokeWidth={2} />
+                <Users size={14} color="#1764E8" strokeWidth={2} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{completionPct}%</div>
-                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Profile Score</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{employerFollowersCount}</div>
+                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Followers</div>
               </div>
             </div>
 
@@ -1254,7 +1290,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <button
-                onClick={() => navigate('/jobs')}
+                onClick={() => navigate('/dashboard?tab=jobs')}
                 style={{
                   background: 'none',
                   border: 'none',

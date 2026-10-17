@@ -238,7 +238,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
 
   const handleOpenMap = (venue?: string, mapsLink?: string) => {
     const url = mapsLink || (venue ? `https://maps.google.com/?q=${encodeURIComponent(venue)}` : null);
-    if (url) window.open(url, '_blank');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenJobDetails = (jobId: string) => {
@@ -1145,7 +1145,7 @@ export const CandidateInterviewsTab: React.FC<Props> = ({ currentUser, showToast
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(item.maps_link?.trim(), '_blank');
+                            window.open(item.maps_link?.trim(), '_blank', 'noopener,noreferrer');
                           }}
                           className="cand-venue-text"
                           style={{

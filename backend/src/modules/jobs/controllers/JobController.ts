@@ -529,6 +529,17 @@ export class JobController {
             data.id,
             { jobId: data.id, title: data.title, isDirectlyLive }
           );
+
+          // If the job is directly live, dispatch profile-matched candidate push alerts (LinkedIn/Naukri style)
+          if (isDirectlyLive) {
+            import('../../../config/kafka').then(({ publishKafkaEvent, TOPICS }) => {
+              publishKafkaEvent(TOPICS.JOB_EVENTS, { eventType: 'JOB_PUBLISHED', job: data }).catch(() => {});
+            }).catch(() => {});
+
+            import('../../job-alerts/services/JobMatchRecommendationService').then(({ JobMatchRecommendationService }) => {
+              JobMatchRecommendationService.processJobPublication(data).catch(() => {});
+            }).catch(() => {});
+          }
         } catch (notifErr) {
           // Non-blocking notification dispatch
         }

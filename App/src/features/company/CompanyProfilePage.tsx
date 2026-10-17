@@ -67,7 +67,7 @@ export const CompanyProfilePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Tabs & Filters
-  const [activeTab, setActiveTab] = useState<'jobs' | 'overview' | 'culture' | 'operations'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'overview' | 'operations'>('jobs');
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -332,18 +332,6 @@ export const CompanyProfilePage: React.FC = () => {
     return parts.join(', ') || city || address || 'Waluj MIDC, Chhatrapati Sambhajinagar';
   }, [company]);
 
-  // Dynamic Tagline
-  const companyTagline = useMemo(() => {
-    if (company?.tagline) return company.tagline;
-    if (company?.slogan) return company.slogan;
-    if (company?.description) {
-      const firstSentence = company.description.split('.')[0];
-      if (firstSentence && firstSentence.length > 15 && firstSentence.length < 90) {
-        return firstSentence.trim() + '.';
-      }
-    }
-    return 'New possibilities. Now possible.';
-  }, [company]);
 
   // Dynamic Department Listing for the Competitor Carousel
   const departmentsList = useMemo(() => {
@@ -495,17 +483,57 @@ export const CompanyProfilePage: React.FC = () => {
     );
   }
 
-  const completionPct = company.completion_percentage || 85;
+  const isMidcNonApplicable =
+    !company.midc_zone ||
+    ['na', 'n/a', 'none', 'null', 'undefined', '-', 'not applicable', 'not applicable (non-midc / commercial)'].includes(
+      String(company.midc_zone).trim().toLowerCase()
+    );
+  const locationBadgeText = !isMidcNonApplicable
+    ? `${company.midc_zone}${company.city ? ` • ${company.city}` : ''}`
+    : company.city || 'Location Available';
+
+  const companyBadgesMarkup = (
+    <>
+      <span className="cmp-pill-badge active-blue">
+        <Building2 size={13} color="#1D4ED8" style={{ flexShrink: 0 }} />
+        <span>{company.industry || 'Industrial Manufacturing'}</span>
+      </span>
+
+      <span className="cmp-pill-badge">
+        <Lock size={13} color="#64748B" style={{ flexShrink: 0 }} />
+        <span>{company.company_type || 'Public Limited / MNC'}</span>
+      </span>
+
+      <span className="cmp-pill-badge">
+        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
+        <span>{locationBadgeText}</span>
+      </span>
+
+      <span className="cmp-pill-badge">
+        <Users size={13} color="#64748B" style={{ flexShrink: 0 }} />
+        <span>{company.company_size || '500+ Employees'}</span>
+      </span>
+
+      {company.founded_year && (
+        <span className="cmp-pill-badge">
+          <Calendar size={13} color="#64748B" style={{ flexShrink: 0 }} />
+          <span>Est. {company.founded_year}</span>
+        </span>
+      )}
+    </>
+  );
 
   return (
     <div className="cmp-page-wrapper">
-      {/* 1. Hero Cover Banner with ambient styling, mission tagline & top utility bar */}
+      {/* 1. Hero Cover Banner with exact mobile app background */}
       <div
         className="cmp-hero-banner"
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(7, 21, 48, 0.90) 0%, rgba(15, 43, 102, 0.86) 50%, rgba(27, 79, 223, 0.84) 100%), url(${companyHeaderBg})`,
+          backgroundImage: `url(${companyHeaderBg})`,
+          backgroundColor: '#0A58E2',
           backgroundSize: 'cover',
-          backgroundPosition: 'center'
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
         }}
       >
         <div className="cmp-banner-inner">
@@ -514,11 +542,11 @@ export const CompanyProfilePage: React.FC = () => {
             <button
               type="button"
               onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/companies'))}
-              className="cmp-banner-btn-pill cmp-banner-back-btn"
+              className="cmp-banner-nav-btn cmp-banner-back-btn"
               title="Back"
+              aria-label="Back"
             >
-              <ArrowLeft size={16} strokeWidth={2.4} />
-              <span>Back</span>
+              <ArrowLeft size={22} color="#FFFFFF" strokeWidth={2.4} />
             </button>
 
             <div className="cmp-banner-actions">
@@ -526,11 +554,11 @@ export const CompanyProfilePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="cmp-banner-btn-pill"
+                  className="cmp-banner-nav-btn"
                   title="Edit Company Profile"
+                  aria-label="Edit Profile"
                 >
-                  <Edit3 size={15} strokeWidth={2.2} />
-                  <span>Edit Profile</span>
+                  <Edit3 size={18} color="#FFFFFF" strokeWidth={2.2} />
                 </button>
               )}
 
@@ -539,41 +567,28 @@ export const CompanyProfilePage: React.FC = () => {
                   href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="cmp-banner-btn-pill"
+                  className="cmp-banner-nav-btn"
                   title="Visit Website"
+                  aria-label="Visit Website"
                 >
-                  <Globe size={15} strokeWidth={2} />
-                  <span>Website</span>
-                  <ExternalLink size={12} strokeWidth={2.4} />
+                  <Globe size={18} color="#FFFFFF" strokeWidth={2} />
                 </a>
               )}
 
               <button
                 type="button"
                 onClick={handleShare}
-                className="cmp-banner-btn-pill"
+                className="cmp-banner-nav-btn"
                 title="Share Profile"
+                aria-label="Share Profile"
               >
-                {copiedLink ? <Check size={16} color="#4ADE80" strokeWidth={2.8} /> : <Share2 size={15} strokeWidth={2.2} />}
-                <span>{copiedLink ? 'Copied!' : 'Share'}</span>
+                {copiedLink ? (
+                  <Check size={20} color="#4ADE80" strokeWidth={2.8} />
+                ) : (
+                  <Share2 size={19} color="#FFFFFF" strokeWidth={2.2} />
+                )}
               </button>
             </div>
-          </div>
-
-          {/* Center Branded Headline (Competitor Tagline Feature, Elevated) */}
-          <div className="cmp-banner-center-text">
-            <h1 className="cmp-banner-headline">
-              {companyTagline}
-            </h1>
-            <p className="cmp-banner-subheadline">
-              Industrial Excellence • Certified Manufacturing • Empowering Careers
-            </p>
-          </div>
-
-          {/* Trust Seal in bottom corner */}
-          <div className="cmp-banner-trust-badge">
-            <ShieldCheck size={14} color="#10B981" strokeWidth={2.5} />
-            <span>Managed by Employer & Verified by JobMarket</span>
           </div>
         </div>
       </div>
@@ -612,58 +627,25 @@ export const CompanyProfilePage: React.FC = () => {
                     : 'Leading manufacturing and engineering operations plant.'}
                 </p>
 
-                {/* Modern Badges Row */}
-                <div className="cmp-badges-row">
-                  <span className="cmp-pill-badge verified-emerald">
-                    <ShieldCheck size={13} color="#059669" strokeWidth={2.4} />
-                    <span>Verified Employer</span>
-                    <span className="cmp-badge-subtext">• 100% Genuine</span>
-                  </span>
-
-                  <span className="cmp-pill-badge active-blue">
-                    <Building2 size={13} color="#1D4ED8" />
-                    <span>{company.industry || 'Industrial Manufacturing'}</span>
-                  </span>
-
-                  <span className="cmp-pill-badge">
-                    <Lock size={13} color="#64748B" />
-                    <span>{company.company_type || 'Public Limited / MNC'}</span>
-                  </span>
-
-                  <span className="cmp-pill-badge">
-                    <MapPin size={13} color="#64748B" />
-                    <span>{company.midc_zone || 'Waluj MIDC'} • {company.city || 'Chhatrapati Sambhajinagar'}</span>
-                  </span>
-
-                  <span className="cmp-pill-badge">
-                    <Users size={13} color="#64748B" />
-                    <span>{company.company_size || '500+ Employees'}</span>
-                  </span>
-
-                  {company.founded_year && (
-                    <span className="cmp-pill-badge">
-                      <Calendar size={13} color="#64748B" />
-                      <span>Est. {company.founded_year}</span>
-                    </span>
-                  )}
+                {/* Modern Badges Row - Desktop */}
+                <div className="cmp-badges-row cmp-badges-desktop">
+                  {companyBadgesMarkup}
                 </div>
               </div>
             </div>
 
+            {/* Modern Badges Row - Mobile (spans full width under identity) */}
+            <div className="cmp-badges-row cmp-badges-mobile">
+              {companyBadgesMarkup}
+            </div>
+
             {/* Right Hub: Followers & Follow CTA */}
             <div className="cmp-header-actions">
-              <div className="cmp-header-actions-meta">
-                <div className="cmp-follower-count">
-                  <Users size={14} color="#64748B" />
-                  <span>
-                    <strong>{formatFollowers(followersCount)}</strong>
-                  </span>
-                </div>
-
-                <div className="cmp-vacancies-status-pill">
-                  <span className="cmp-pulse-dot" />
-                  <span>{jobs.length} Active Openings</span>
-                </div>
+              <div className="cmp-follower-count">
+                <Users size={14} color="#64748B" />
+                <span>
+                  <strong>{formatFollowers(followersCount)}</strong>
+                </span>
               </div>
 
               <button
@@ -712,16 +694,6 @@ export const CompanyProfilePage: React.FC = () => {
               >
                 <Building2 size={16} />
                 <span>Overview</span>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={() => setActiveTab('culture')}
-                className={`cmp-tab-button ${activeTab === 'culture' ? 'active' : ''}`}
-              >
-                <Heart size={16} />
-                <span>Why Join Us & Culture</span>
               </button>
             </li>
             <li>
@@ -873,7 +845,7 @@ export const CompanyProfilePage: React.FC = () => {
                 {/* Search & Active Department Toolbar */}
                 <div className="cmp-jobs-toolbar">
                   <div className="cmp-jobs-search-box">
-                    <Search size={16} color="#94A3B8" strokeWidth={2} />
+                    <Search size={16} color="#94A3B8" strokeWidth={2} style={{ flexShrink: 0 }} />
                     <input
                       type="text"
                       value={searchQuery}
@@ -885,9 +857,20 @@ export const CompanyProfilePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        aria-label="Clear search"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#94A3B8',
+                          flexShrink: 0
+                        }}
                       >
-                        <X size={14} color="#94A3B8" />
+                        <X size={14} />
                       </button>
                     )}
                   </div>
@@ -937,20 +920,25 @@ export const CompanyProfilePage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Highlight Pills */}
-                        <div className="cmp-job-highlight-badges">
-                          <span className="cmp-job-pill-tag salary">
+                        {/* Job Details Meta Row */}
+                        <div className="cmp-job-details-row">
+                          <span className="cmp-job-detail-item salary">
                             {jobItem.salaryRange || jobItem.salary || '₹18,000 - ₹28,000 / month'}
                           </span>
-                          <span className="cmp-job-pill-tag">
+                          <span className="cmp-job-detail-separator">•</span>
+                          <span className="cmp-job-detail-item">
                             {jobItem.experienceLevel || jobItem.experience || '1-3 Years Experience'}
                           </span>
                           {jobItem.trade && (
-                            <span className="cmp-job-pill-tag">
-                              Trade: {jobItem.trade}
-                            </span>
+                            <>
+                              <span className="cmp-job-detail-separator">•</span>
+                              <span className="cmp-job-detail-item">
+                                Trade: {jobItem.trade}
+                              </span>
+                            </>
                           )}
-                          <span className="cmp-job-pill-tag">
+                          <span className="cmp-job-detail-separator">•</span>
+                          <span className="cmp-job-detail-item">
                             {jobItem.shiftType || 'General / Rotational Shift'}
                           </span>
                         </div>
@@ -1104,100 +1092,7 @@ export const CompanyProfilePage: React.FC = () => {
               </>
             )}
 
-            {/* TAB CONTENT: 3. WHY JOIN US & CULTURE */}
-            {activeTab === 'culture' && (
-              <div className="cmp-surface-card">
-                <div className="cmp-card-header">
-                  <div className="cmp-card-title-group">
-                    <div className="cmp-card-icon-wrap">
-                      <Heart size={18} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h3 className="cmp-card-title">Why Join {displayCompanyName}</h3>
-                      <p className="cmp-card-subtitle">
-                        Perks, social security, skill advancement and safety values
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="cmp-perks-grid">
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#EFF6FF', color: '#1B4FDF' }}>
-                      <ShieldCheck size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">PF & ESIC Medical Coverage</h4>
-                      <p className="cmp-perk-desc">
-                        100% statutory Provident Fund and comprehensive ESIC medical healthcare for employees and family.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>
-                      <Coffee size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">Subsidized Canteen & Meals</h4>
-                      <p className="cmp-perk-desc">
-                        Nutritious hot lunch, breakfast, and tea served daily in certified hygienic plant facilities.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
-                      <Truck size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">Company Bus & Transport</h4>
-                      <p className="cmp-perk-desc">
-                        Free shuttle routes covering Chhatrapati Sambhajinagar, Waluj, Shendra, and key MIDC junctions.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#F5F3FF', color: '#7C3AED' }}>
-                      <Award size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">Attendance & Shift Bonus</h4>
-                      <p className="cmp-perk-desc">
-                        Consistent production incentives, 100% attendance awards, and statutory overtime allowances.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#EFF6FF', color: '#2563EB' }}>
-                      <GraduationCap size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">Apprenticeship & Skill Training</h4>
-                      <p className="cmp-perk-desc">
-                        Hands-on tooling certification, advanced CNC simulation, and fast-track career promotion.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="cmp-perk-card">
-                    <div className="cmp-perk-icon-wrap" style={{ backgroundColor: '#ECFDF5', color: '#10B981' }}>
-                      <CheckCircle2 size={20} strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h4 className="cmp-perk-title">Zero-Harm Safety Standards</h4>
-                      <p className="cmp-perk-desc">
-                        Top-tier PPE gear, ergonomic workstations, and safety-first manufacturing protocol.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT: 4. OPERATIONS & LOCATIONS */}
+            {/* TAB CONTENT: 3. OPERATIONS & LOCATIONS */}
             {activeTab === 'operations' && (
               <div className="cmp-surface-card">
                 <div className="cmp-card-header">

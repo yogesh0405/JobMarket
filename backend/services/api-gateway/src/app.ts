@@ -108,6 +108,7 @@ app.use(['/api/v1/jobs', '/api/jobs'], (req, res, next) => {
 
 app.use(['/api/v1/companies', '/api/companies'], userServiceProxy);
 app.use('/api/v1/notifications', createServiceProxy(env.NOTIFICATION_SERVICE_PORT));
+app.use(['/api/v1/job-alerts', '/api/job-alerts'], createServiceProxy(env.JOB_ALERT_SERVICE_PORT || 5010));
 app.use('/api/support', createServiceProxy(env.SUPPORT_SERVICE_PORT));
 app.use('/api/admin/support', createServiceProxy(env.SUPPORT_SERVICE_PORT));
 app.use('/api/v1/home', createServiceProxy(env.AD_SERVICE_PORT));

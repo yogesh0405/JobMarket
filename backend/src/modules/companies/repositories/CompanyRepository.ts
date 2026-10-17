@@ -296,6 +296,9 @@ export class CompanyRepository {
         const companyJobs = await this.getCompanyJobs(row.name, row.employer_id);
         (company as any).open_jobs_count = companyJobs.length;
         company.completion_percentage = this.calculateProfileCompletion(company);
+        const followData = await this.getFollowStatus(row.id || identifier);
+        (company as any).followers_count = followData.followersCount;
+        (company as any).followersCount = followData.followersCount;
         return company;
       }
 
@@ -327,6 +330,9 @@ export class CompanyRepository {
         const companyJobs = await this.getCompanyJobs(compName, u.id);
         (company as any).open_jobs_count = companyJobs.length;
         company.completion_percentage = this.calculateProfileCompletion(company);
+        const followData = await this.getFollowStatus(u.id || identifier);
+        (company as any).followers_count = followData.followersCount;
+        (company as any).followersCount = followData.followersCount;
         return company;
       }
 
@@ -484,8 +490,16 @@ export class CompanyRepository {
       const inserted = await pool.query(insertQuery, insertParams);
       companyDbId = inserted.rows[0].id;
     } else {
-      companyDbId = checkRes.rows[0].id;
-      if (safeEmployerId && (!checkRes.rows[0].employer_id || checkRes.rows[0].employer_id !== safeEmployerId)) {
+      const existingCompany = checkRes.rows[0];
+      companyDbId = existingCompany.id;
+
+      // Strict Authorization Check: If the company is already owned by a different employer, block takeover
+      if (existingCompany.employer_id && safeEmployerId && existingCompany.employer_id !== safeEmployerId) {
+        throw new Error('Unauthorized: You can only edit your own company profile.');
+      }
+
+      // Link employer to company only if it was previously unclaimed
+      if (safeEmployerId && !existingCompany.employer_id) {
         await pool.query('UPDATE companies SET employer_id = $1 WHERE id = $2;', [safeEmployerId, companyDbId]);
       }
     }
@@ -707,15 +721,23 @@ export class CompanyRepository {
    * Get real-time follower status and exact count for a company
    */
   static async getFollowStatus(companyIdentifier: string, userId?: string): Promise<{ isFollowing: boolean; followersCount: number }> {
-    const { primaryId, companyName } = await this.resolveCompanyIdentifiers(companyIdentifier);
+    const { primaryId, companyName, employerId } = await this.resolveCompanyIdentifiers(companyIdentifier);
 
-    // Exact count of genuine followers in database
+    // Exact count of genuine followers in database (matching company UUID, employer user UUID, company name, or raw identifier)
     const countQuery = `
       SELECT COUNT(DISTINCT user_id)::int as count 
       FROM company_followers 
-      WHERE company_id = $1 OR LOWER(TRIM(company_id)) = LOWER(TRIM($2));
+      WHERE company_id = $1 
+         OR company_id = $2 
+         OR LOWER(TRIM(company_id)) = LOWER(TRIM($3))
+         OR company_id = $4;
     `;
-    const countRes = await pool.query(countQuery, [primaryId, companyName]);
+    const countRes = await pool.query(countQuery, [
+      primaryId,
+      employerId || primaryId,
+      companyName,
+      companyIdentifier
+    ]);
     const followersCount = countRes.rows[0]?.count || 0;
 
     let isFollowing = false;
@@ -723,10 +745,21 @@ export class CompanyRepository {
       const followCheck = `
         SELECT EXISTS(
           SELECT 1 FROM company_followers 
-          WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))
+          WHERE user_id = $1 AND (
+            company_id = $2 
+            OR company_id = $3 
+            OR LOWER(TRIM(company_id)) = LOWER(TRIM($4))
+            OR company_id = $5
+          )
         ) as is_following;
       `;
-      const followRes = await pool.query(followCheck, [userId, primaryId, companyName]);
+      const followRes = await pool.query(followCheck, [
+        userId,
+        primaryId,
+        employerId || primaryId,
+        companyName,
+        companyIdentifier
+      ]);
       isFollowing = Boolean(followRes.rows[0]?.is_following);
     }
 
@@ -750,20 +783,31 @@ export class CompanyRepository {
     const followCheck = `
       SELECT EXISTS(
         SELECT 1 FROM company_followers 
-        WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))
+        WHERE user_id = $1 AND (
+          company_id = $2 
+          OR company_id = $3 
+          OR LOWER(TRIM(company_id)) = LOWER(TRIM($4))
+          OR company_id = $5
+        )
       ) as is_following;
     `;
-    const followRes = await pool.query(followCheck, [userId, primaryId, companyName]);
+    const followRes = await pool.query(followCheck, [
+      userId,
+      primaryId,
+      employerId || primaryId,
+      companyName,
+      companyIdentifier
+    ]);
     const currentlyFollowing = Boolean(followRes.rows[0]?.is_following);
 
     if (currentlyFollowing) {
-      // Unfollow: remove row
+      // Unfollow: remove row across all alias matches
       await pool.query(
-        'DELETE FROM company_followers WHERE user_id = $1 AND (company_id = $2 OR LOWER(TRIM(company_id)) = LOWER(TRIM($3)))',
-        [userId, primaryId, companyName]
+        'DELETE FROM company_followers WHERE user_id = $1 AND (company_id = $2 OR company_id = $3 OR LOWER(TRIM(company_id)) = LOWER(TRIM($4)) OR company_id = $5)',
+        [userId, primaryId, employerId || primaryId, companyName, companyIdentifier]
       );
     } else {
-      // Follow: insert row
+      // Follow: insert row with primary company ID
       await pool.query(
         'INSERT INTO company_followers (user_id, company_id) VALUES ($1, $2) ON CONFLICT (user_id, company_id) DO NOTHING;',
         [userId, primaryId]
@@ -787,8 +831,13 @@ export class CompanyRepository {
 
     // Get updated exact follower count
     const countRes = await pool.query(
-      'SELECT COUNT(DISTINCT user_id)::int as count FROM company_followers WHERE company_id = $1 OR LOWER(TRIM(company_id)) = LOWER(TRIM($2));',
-      [primaryId, companyName]
+      `SELECT COUNT(DISTINCT user_id)::int as count 
+       FROM company_followers 
+       WHERE company_id = $1 
+          OR company_id = $2 
+          OR LOWER(TRIM(company_id)) = LOWER(TRIM($3))
+          OR company_id = $4;`,
+      [primaryId, employerId || primaryId, companyName, companyIdentifier]
     );
     const updatedCount = countRes.rows[0]?.count || 0;
 

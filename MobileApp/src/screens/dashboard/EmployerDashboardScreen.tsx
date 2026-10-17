@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   MapPin,
   Zap,
+  Clock,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
@@ -337,14 +338,13 @@ export const EmployerDashboardScreen: React.FC<Props> = ({ navigation }) => {
                           {locationText}
                         </Text>
                       </View>
-                      <View style={[
-                        styles.dashAvailPill,
-                        Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? styles.dashAvailPillImm : styles.dashAvailPillDays
-                      ]}>
-                        <Text style={[
-                          styles.dashAvailPillText,
-                          Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? styles.dashAvailPillTextImm : styles.dashAvailPillTextDays
-                        ]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Clock size={10} color={Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '#059669' : '#1764E8'} />
+                        <Text style={{
+                          fontSize: 10,
+                          fontWeight: '600',
+                          color: Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? '#059669' : '#1764E8',
+                        }}>
                           {Number(c.availableInDays ?? c.available_in_days ?? 0) === 0 ? 'Immediate' : `In ${c.availableInDays ?? c.available_in_days}d`}
                         </Text>
                       </View>

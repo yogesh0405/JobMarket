@@ -22,11 +22,15 @@ import {
   SlidersHorizontal,
   X,
   RotateCcw,
+  Check,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Header } from '../../components/common/Header';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { apiFetch } from '../../api/client';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
+import { companyApi, FollowedCompany } from '../../api/companyApi';
 import { COLORS, RADIUS } from '../../constants/theme';
 import { CompanyFilterState } from '../company/CompanyFilterScreen';
 
@@ -42,11 +46,18 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   navigation,
   route,
 }) => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const [companies, setCompanies] = useState<any[]>(memoryCompaniesCache);
   const [loading, setLoading] = useState(memoryCompaniesCache.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Following Capsule Filter State
+  const [followingOnly, setFollowingOnly] = useState(false);
+  const [followedCompanies, setFollowedCompanies] = useState<FollowedCompany[]>([]);
+  const [loadingFollowed, setLoadingFollowed] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,15 +75,35 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
     onlyHiring: false,
   });
 
+  const fetchFollowedCompanies = useCallback(async () => {
+    if (!user) {
+      setFollowedCompanies([]);
+      return;
+    }
+    try {
+      setLoadingFollowed(true);
+      const res = await companyApi.getFollowedCompanies();
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list)) {
+        setFollowedCompanies(list);
+      }
+    } catch (err) {
+      console.warn('Live followed companies fetch notice:', err);
+    } finally {
+      setLoadingFollowed(false);
+    }
+  }, [user]);
+
   useFocusEffect(
     useCallback(() => {
+      fetchFollowedCompanies();
       if (route?.params?.appliedCompanyFilters) {
         setFilters(route.params.appliedCompanyFilters);
       }
       if (route?.params?.searchQuery !== undefined) {
         setSearchQuery(route.params.searchQuery);
       }
-    }, [route?.params?.appliedCompanyFilters, route?.params?.searchQuery])
+    }, [route?.params?.appliedCompanyFilters, route?.params?.searchQuery, fetchFollowedCompanies])
   );
 
   const handleOpenFilterScreen = (tabKey: string = 'LOCATION') => {
@@ -121,26 +152,40 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
     }
     // 2. Fetch fresh records from database
     fetchCompanies();
-  }, []);
+    if (user) {
+      fetchFollowedCompanies();
+    }
+  }, [user, fetchFollowedCompanies]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchCompanies();
+    await Promise.all([fetchCompanies(), fetchFollowedCompanies()]);
     setRefreshing(false);
   };
 
+  const followedCompanyIds = useMemo(() => {
+    const set = new Set<string>();
+    followedCompanies.forEach((c) => {
+      if (c.id) set.add(String(c.id).toLowerCase());
+      if (c.name) set.add(c.name.toLowerCase().trim());
+    });
+    return set;
+  }, [followedCompanies]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
+    if (followingOnly) count++;
     if (filters.midcZone !== 'All Locations') count++;
     if (filters.industry !== 'All Industries') count++;
     if (filters.companyType !== 'All Types') count++;
     if (filters.companySize !== 'All Sizes') count++;
     if (filters.onlyHiring) count++;
     return count;
-  }, [filters]);
+  }, [filters, followingOnly]);
 
   const resetAllFilters = () => {
     setSearchQuery('');
+    setFollowingOnly(false);
     setFilters({
       midcZone: 'All Locations',
       industry: 'All Industries',
@@ -236,15 +281,33 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
   }, []);
 
   const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => isCompanyMatching(c, filters, searchQuery));
-  }, [companies, filters, searchQuery, isCompanyMatching]);
+    let list = companies;
+    if (followingOnly) {
+      list = list.filter((c: any) =>
+        followedCompanyIds.has(String(c.id).toLowerCase()) ||
+        followedCompanyIds.has((c.name || '').toLowerCase().trim())
+      );
+    }
+    return list.filter((c) => isCompanyMatching(c, filters, searchQuery));
+  }, [companies, followingOnly, followedCompanyIds, filters, searchQuery, isCompanyMatching]);
 
   // Quick preset bar data for companies (matching candidates section design)
   const quickPillOptions = [
     {
       label: 'All Companies',
-      active: activeFilterCount === 0,
+      active: activeFilterCount === 0 && !followingOnly,
       onPress: resetAllFilters,
+    },
+    {
+      label: followedCompanies.length > 0 ? `Following (${followedCompanies.length})` : 'Following',
+      active: followingOnly,
+      onPress: () => {
+        if (!user) {
+          showToast('Please sign in to view your followed companies.', 'info');
+          return;
+        }
+        setFollowingOnly((prev) => !prev);
+      },
     },
     {
       label: 'Actively Hiring',
@@ -349,7 +412,7 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         showBack={false}
       />
 
-      {/* Filter Action Bar (Identical to Candidates section) */}
+      {/* Filter Action Bar with Quick Preset Chips */}
       <View style={styles.filterSectionWrapper}>
         <View style={styles.filterRowContainer}>
           <TouchableOpacity
@@ -383,6 +446,18 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         {activeFilterCount > 0 ? (
           <View style={styles.activeTagsRow}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              {followingOnly ? (
+                <View style={styles.activeFilterTag}>
+                  <Users size={11} color={COLORS.primary} />
+                  <Text style={styles.activeFilterTagText} numberOfLines={1}>
+                    Following {followedCompanies.length > 0 ? `(${followedCompanies.length})` : ''}
+                  </Text>
+                  <TouchableOpacity onPress={() => setFollowingOnly(false)}>
+                    <X size={12} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
               {filters.midcZone !== 'All Locations' && filters.midcZone !== 'All MIDC Zones & Cities' ? (
                 <View style={styles.activeFilterTag}>
                   <MapPin size={11} color={COLORS.primary} />
@@ -459,6 +534,9 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
           const locationText = comp.midc_zone || comp.midcZone || comp.city || 'Waluj MIDC, Chhatrapati Sambhajinagar';
           const companyType = comp.company_type || comp.companyType || 'Private Limited';
           const companySize = comp.company_size || comp.companySize || '500+ employees';
+          const isFollowed =
+            followedCompanyIds.has(String(comp.id).toLowerCase()) ||
+            followedCompanyIds.has((comp.name || '').toLowerCase().trim());
 
           return (
             <TouchableOpacity
@@ -482,9 +560,17 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
                 />
 
                 <View style={styles.cardHeaderTextWrap}>
-                  <Text style={styles.companyNameText} numberOfLines={1}>
-                    {comp.name}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.companyNameText, { flexShrink: 1 }]} numberOfLines={1}>
+                      {comp.name}
+                    </Text>
+                    {isFollowed && (
+                      <View style={styles.followingCardBadge}>
+                        <Check size={10} color="#059669" strokeWidth={2.5} />
+                        <Text style={styles.followingCardBadgeText}>Following</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.industryText} numberOfLines={1}>
                     {comp.industry || 'Industrial Manufacturing'} • {companyType}
                   </Text>
@@ -547,7 +633,8 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
         ListHeaderComponent={
           <View style={styles.countRow}>
             <Text style={styles.countText}>
-              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredCompanies.length})</Text> Verified Companies
+              Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredCompanies.length})</Text>{' '}
+              {followingOnly ? 'Followed' : 'Verified'} Companies
             </Text>
 
             {(activeFilterCount > 0 || searchQuery.trim()) && (
@@ -563,6 +650,36 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
             <View style={styles.loadingBox}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Loading verified industrial companies...</Text>
+            </View>
+          ) : followingOnly ? (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconCircle}>
+                <Users size={26} color={COLORS.primary} strokeWidth={2.2} />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {!user ? 'Sign In Required' : 'No Followed Companies Found'}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {!user
+                  ? 'Sign in to follow companies and receive live vacancy alerts when new jobs are published.'
+                  : followedCompanies.length === 0
+                  ? "You aren't following any companies yet. Tap 'Follow' on any company profile to receive instant vacancy notifications."
+                  : 'None of your followed companies match the current search query or filter.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyResetBtn}
+                onPress={() => {
+                  if (!user) {
+                    navigation.navigate('EmployerLogin');
+                  } else {
+                    resetAllFilters();
+                  }
+                }}
+              >
+                <Text style={styles.emptyResetBtnText}>
+                  {!user ? 'Sign In' : 'View All Companies'}
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -880,5 +997,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  followingCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  followingCardBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
   },
 });

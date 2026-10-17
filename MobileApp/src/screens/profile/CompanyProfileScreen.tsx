@@ -14,15 +14,18 @@ import {
 } from 'react-native';
 import {
   Building2,
-  BarChart3,
   ArrowLeft,
   Share2,
+  Briefcase,
+  Layers,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { apiFetch } from '../../api/client';
 import { jobsApi } from '../../api/jobsApi';
+import { companyApi } from '../../api/companyApi';
 import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { CompanySkeleton } from '../../components/common/SkeletonLoader';
@@ -32,7 +35,6 @@ import { CompanyMetricsBar } from './components/CompanyMetricsBar';
 import { CompanyOverviewSection } from './components/CompanyOverviewSection';
 import { CompanyDetailsCard } from './components/CompanyDetailsCard';
 import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection';
-import { CompanyProfileAnalyticsTab } from './components/CompanyProfileAnalyticsTab';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { shareCompany } from '../../utils/shareUtils';
 import { isJobLive } from '../../utils/jobStatusUtils';
@@ -45,6 +47,7 @@ interface Props {
 export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { user, updateUserProfile, refreshUser } = useAuth();
+  const { showToast } = useToast();
   const routeCompany = route?.params?.company;
   const routeCompanyId = route?.params?.companyId || route?.params?.id || routeCompany?.id;
 
@@ -57,10 +60,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     routeCompanyId ||
     route?.params?.name ||
     routeCompany?.name ||
-    (!isViewingExternal ? (userCompanyName || user?.id || '') : '');
+    (!isViewingExternal ? ((userCompanyName && userCompanyName !== 'My Company') ? userCompanyName : user?.id || '') : '');
 
-  // Tab State: PROFILE vs ANALYTICS
-  const [profileTab, setProfileTab] = useState<'PROFILE' | 'ANALYTICS'>('PROFILE');
+  // Tab State: JOBS vs OVERVIEW (Two options)
+  const [activeTab, setActiveTab] = useState<'jobs' | 'overview'>('jobs');
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   // Company State
   const [company, setCompany] = useState<any>(routeCompany || null);
@@ -69,6 +73,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Follower State
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [isSubmittingFollow, setIsSubmittingFollow] = useState<boolean>(false);
 
   // Apply blue status bar ONLY while on Employer Company Profile, restore on exit
   useFocusEffect(
@@ -305,6 +314,27 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     return (jobs || []).filter(isJobLive);
   }, [jobs]);
 
+  // Group live jobs by department / trade for interactive department filtering
+  const departmentsList = useMemo(() => {
+    const map = new Map<string, number>();
+    liveJobs.forEach((job) => {
+      const dept = (job.department || job.trade || job.category || 'Operations').trim();
+      map.set(dept, (map.get(dept) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, count]) => ({
+      name,
+      count,
+    }));
+  }, [liveJobs]);
+
+  const filteredByDeptJobs = useMemo(() => {
+    if (!selectedDept) return liveJobs;
+    return liveJobs.filter((job) => {
+      const dept = (job.department || job.trade || job.category || 'Operations').trim();
+      return dept.toLowerCase() === selectedDept.toLowerCase();
+    });
+  }, [liveJobs, selectedDept]);
+
   // Fetch 100% Real Live Recruitment Analytics Data from Backend
   const fetchAnalytics = useCallback(async () => {
     if (!isOwner) return;
@@ -347,20 +377,98 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     }));
   }, [isOwner, jobs]);
 
+  // Load Live Real-Time Follower Status and Count
+  const loadFollowStatus = useCallback(async () => {
+    const candidateId = company?.id || (targetCompanyId && targetCompanyId !== 'My Company' ? targetCompanyId : '') || user?.id || routeCompanyId;
+    if (!candidateId) return;
+    try {
+      const res = await companyApi.getFollowStatus(candidateId);
+      if (res?.success && res.data) {
+        setIsFollowing(Boolean(res.data.isFollowing));
+        setFollowersCount(Number(res.data.followersCount) || 0);
+      }
+    } catch (err) {
+      console.warn('Live follow status fetch notice:', err);
+    }
+  }, [company?.id, routeCompanyId, targetCompanyId, user?.id]);
+
+  // Handle Optimistic Toggle Follow / Unfollow
+  const handleToggleFollow = async () => {
+    if (!user) {
+      showToast('Please sign in to follow companies and receive live vacancy alerts.', 'info');
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in to follow companies and receive live vacancy notifications when new jobs are published.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign In',
+            onPress: () => {
+              navigation.navigate('EmployerLogin');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    const candidateId = company?.id || routeCompanyId || targetCompanyId;
+    if (isSubmittingFollow || !candidateId || candidateId === 'My Company') return;
+
+    const displayCompName = company?.name || targetCompanyId || 'Company';
+    const prevFollowing = isFollowing;
+    const prevCount = followersCount;
+    const nextFollowing = !prevFollowing;
+    const nextCount = nextFollowing ? prevCount + 1 : Math.max(0, prevCount - 1);
+
+    // Optimistic UI Update
+    setIsFollowing(nextFollowing);
+    setFollowersCount(nextCount);
+    setIsSubmittingFollow(true);
+
+    if (nextFollowing) {
+      showToast(`You are now following ${displayCompName}`, 'success');
+    } else {
+      showToast(`Unfollowed ${displayCompName}`, 'info');
+    }
+
+    try {
+      const res = await companyApi.toggleFollow(candidateId);
+      if (res?.success && res.data) {
+        setIsFollowing(Boolean(res.data.isFollowing));
+        setFollowersCount(Number(res.data.followersCount) || 0);
+      } else {
+        // Rollback on server rejection
+        setIsFollowing(prevFollowing);
+        setFollowersCount(prevCount);
+        showToast(res?.error || 'Unable to update follow status.', 'error');
+      }
+    } catch (err: any) {
+      // Rollback on network failure
+      setIsFollowing(prevFollowing);
+      setFollowersCount(prevCount);
+      showToast(err?.message || 'Network error while updating follow status.', 'error');
+    } finally {
+      setIsSubmittingFollow(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadCompanyDetails();
       loadCompanyJobs();
+      loadFollowStatus();
       if (isOwner) {
         fetchAnalytics();
       }
-    }, [targetCompanyId, isOwner])
+    }, [targetCompanyId, isOwner, loadFollowStatus])
   );
 
   useEffect(() => {
     loadCompanyDetails();
     loadCompanyJobs();
-  }, [targetCompanyId]);
+    loadFollowStatus();
+  }, [targetCompanyId, loadFollowStatus]);
 
   useEffect(() => {
     if (isOwner) {
@@ -395,6 +503,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         refreshUser(),
         loadCompanyDetails(),
         loadCompanyJobs(),
+        loadFollowStatus(),
         fetchAnalytics(),
       ]);
     } catch (_) {
@@ -476,6 +585,10 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           <CompanyHeaderCard
             company={company}
             isOwner={isOwner}
+            followersCount={followersCount}
+            isFollowing={isFollowing}
+            isSubmittingFollow={isSubmittingFollow}
+            onToggleFollow={handleToggleFollow}
             onEditPress={() => {
               navigation.navigate('EditCompanyProfile', {
                 company,
@@ -495,51 +608,196 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
               }
             }}
             formattedLocation={formattedLocation}
-            profileTab={profileTab}
-            onTabChange={(tab) => setProfileTab(tab)}
           />
         ) : null}
+
+        {/* 2. Metrics Bar with Live Active Jobs, Followers, and Post Job Action (Original Position) */}
+        <CompanyMetricsBar
+          jobsCount={liveJobs.length}
+          followersCount={followersCount}
+          midcZone={company?.midc_zone || company?.midcZone}
+          isVerified={company?.verified !== false}
+          isOwner={isOwner}
+          onPostJobPress={() => navigation.navigate('JobPost')}
+        />
+
+        {/* 3. Two-Option Tab Bar (Jobs & Overview exact below the metrics bar) */}
+        <View style={styles.tabBarWrapper}>
+          <View style={styles.tabBarRow}>
+            {/* Tab 1: Jobs */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setActiveTab('jobs')}
+              style={[
+                styles.tabItem,
+                activeTab === 'jobs' && styles.tabItemActive,
+              ]}
+            >
+              <Briefcase
+                size={16}
+                color={activeTab === 'jobs' ? '#0A58E2' : '#64748B'}
+                strokeWidth={activeTab === 'jobs' ? 2.4 : 2}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === 'jobs' && styles.tabLabelActive,
+                ]}
+              >
+                Jobs
+              </Text>
+              <View
+                style={[
+                  styles.counterBadge,
+                  activeTab === 'jobs' && styles.counterBadgeActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.counterBadgeText,
+                    activeTab === 'jobs' && styles.counterBadgeTextActive,
+                  ]}
+                >
+                  {liveJobs.length}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Tab 2: Overview */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setActiveTab('overview')}
+              style={[
+                styles.tabItem,
+                activeTab === 'overview' && styles.tabItemActive,
+              ]}
+            >
+              <Building2
+                size={16}
+                color={activeTab === 'overview' ? '#0A58E2' : '#64748B'}
+                strokeWidth={activeTab === 'overview' ? 2.4 : 2}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === 'overview' && styles.tabLabelActive,
+                ]}
+              >
+                Overview
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {error ? <ErrorBanner message={error} /> : null}
 
         {loadingCompany ? (
           <CompanySkeleton />
-        ) : profileTab === 'ANALYTICS' ? (
-          <CompanyProfileAnalyticsTab analyticsData={analyticsData} />
-        ) : (
+        ) : activeTab === 'overview' ? (
           <>
-            {/* 2. Metrics Bar with Live Active Jobs, Profile Score %, and Post Job Action */}
-            <CompanyMetricsBar
-              jobsCount={liveJobs.length}
-              completionPct={company?.completion_percentage || 75}
-              midcZone={company?.midc_zone || company?.midcZone}
-              isVerified={company?.verified !== false}
-              isOwner={isOwner}
-              onPostJobPress={() => navigation.navigate('JobPost')}
-            />
-
-            {/* 3. About Company & Operations Section */}
+            {/* About Company & Operations Section */}
             <CompanyOverviewSection
               description={company?.description}
               companyName={company?.name}
               specializations={company?.specializations}
             />
 
-            {/* 4. Company Details Sidebar Card */}
+            {/* Company Details Sidebar Card */}
             <CompanyDetailsCard
               company={company}
               formattedLocation={formattedLocation}
             />
+          </>
+        ) : (
+          /* activeTab === 'jobs' (DEFAULT) */
+          <>
+            {/* Departments Hiring Section (Filterable by trade) */}
+            {departmentsList.length > 0 && (
+              <View style={styles.deptCardContainer}>
+                <View style={styles.deptHeaderRow}>
+                  <View style={styles.deptTitleWrap}>
+                    <View style={styles.deptIconWrap}>
+                      <Layers size={16} color="#0A58E2" strokeWidth={2.2} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.deptTitleText}>
+                        Departments hiring at {company?.name || 'Company'}
+                      </Text>
+                      <Text style={styles.deptSubtitleText}>
+                        Explore vacancies categorized by trade
+                      </Text>
+                    </View>
+                  </View>
+                  {selectedDept && (
+                    <TouchableOpacity
+                      onPress={() => setSelectedDept(null)}
+                      style={styles.clearFilterBtn}
+                    >
+                      <Text style={styles.clearFilterText}>Clear</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
 
-            {/* 5. Active Job Openings Section - Strictly Live Openings Only */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.deptScrollContainer}
+                >
+                  {departmentsList.map((dept, idx) => {
+                    const isSelected = selectedDept === dept.name;
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        activeOpacity={0.7}
+                        onPress={() => setSelectedDept(isSelected ? null : dept.name)}
+                        style={[
+                          styles.deptChip,
+                          isSelected && styles.deptChipSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.deptChipName,
+                            isSelected && styles.deptChipNameSelected,
+                          ]}
+                        >
+                          {dept.name}
+                        </Text>
+                        <View
+                          style={[
+                            styles.deptCountBadge,
+                            isSelected && styles.deptCountBadgeSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.deptCountText,
+                              isSelected && styles.deptCountTextSelected,
+                            ]}
+                          >
+                            {dept.count}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Active Job Openings Section - Strictly Live Openings Only */}
             <CompanyActiveJobsSection
-              jobs={liveJobs}
+              jobs={filteredByDeptJobs}
               companyName={company?.name}
               onJobPress={(job: any) => {
                 navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
               }}
               onViewAllPress={() => {
-                navigation.navigate('CandidateJobSearch');
+                if (isOwner) {
+                  navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+                } else {
+                  navigation.navigate('CandidateJobSearch');
+                }
               }}
             />
           </>
@@ -554,34 +812,157 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F7F9FC',
   },
-  topTabBarRow: {
-    flexDirection: 'row',
+  tabBarWrapper: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  tabBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
   },
-  tabItemBtn: {
+  tabItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 7,
     paddingVertical: 12,
-    borderBottomWidth: 2,
+    borderBottomWidth: 2.5,
     borderBottomColor: 'transparent',
   },
-  tabItemBtnActive: {
-    borderBottomColor: COLORS.primary,
+  tabItemActive: {
+    borderBottomColor: '#0A58E2',
   },
-  tabItemText: {
+  tabLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#64748B',
   },
-  tabItemTextActive: {
-    color: COLORS.primary,
+  tabLabelActive: {
+    color: '#0A58E2',
     fontWeight: '800',
+  },
+  counterBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counterBadgeActive: {
+    backgroundColor: '#0A58E2',
+  },
+  counterBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#0A58E2',
+  },
+  counterBadgeTextActive: {
+    color: '#FFFFFF',
+  },
+  deptCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E7EBF2',
+    borderRadius: 8,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: '#142A50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  deptHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  deptTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  deptIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EEF4FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deptTitleText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  deptSubtitleText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  clearFilterBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 6,
+  },
+  clearFilterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0A58E2',
+  },
+  deptScrollContainer: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  deptChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  deptChipSelected: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#0A58E2',
+  },
+  deptChipName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  deptChipNameSelected: {
+    color: '#0A58E2',
+    fontWeight: '700',
+  },
+  deptCountBadge: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  deptCountBadgeSelected: {
+    backgroundColor: '#0A58E2',
+  },
+  deptCountText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  deptCountTextSelected: {
+    color: '#FFFFFF',
   },
   scrollContentBody: {
     paddingHorizontal: 0,

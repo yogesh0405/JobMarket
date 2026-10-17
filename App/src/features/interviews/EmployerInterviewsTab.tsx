@@ -280,7 +280,7 @@ export const EmployerInterviewsTab: React.FC<Props> = ({ currentUser, showToast,
 
   const handleOpenMap = (venue?: string, mapsLink?: string) => {
     const url = mapsLink || (venue ? `https://maps.google.com/?q=${encodeURIComponent(venue)}` : null);
-    if (url) window.open(url, '_blank');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleViewResume = (resumeData: any) => {

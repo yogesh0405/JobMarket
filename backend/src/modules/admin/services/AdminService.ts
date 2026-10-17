@@ -113,6 +113,18 @@ export class AdminService {
       ).catch(err => logger.error('Failed to notify employer on job approval:', err));
     }
 
+    // Trigger Industry-Grade Profile Matching & Push Notification Dispatch
+    const fullJobData = { ...job, ...updatedJob, id: jobId };
+    import('../../../config/kafka').then(({ publishKafkaEvent, TOPICS }) => {
+      publishKafkaEvent(TOPICS.JOB_EVENTS, { eventType: 'JOB_PUBLISHED', job: fullJobData }).catch(() => {});
+    }).catch(() => {});
+
+    import('../../job-alerts/services/JobMatchRecommendationService').then(({ JobMatchRecommendationService }) => {
+      JobMatchRecommendationService.processJobPublication(fullJobData).catch(err => {
+        logger.error('Failed to dispatch job match alerts on admin approval:', err?.message || err);
+      });
+    }).catch(() => {});
+
     return { success: true, job: updatedJob };
   }
 

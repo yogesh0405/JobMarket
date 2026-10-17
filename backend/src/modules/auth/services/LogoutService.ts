@@ -9,7 +9,7 @@ export class LogoutService {
     try {
       await client.query('BEGIN');
       
-      await SessionRepository.revokeSession(sessionId, client);
+      await SessionRepository.revokeSession(sessionId, userId, client);
       
       await AuditRepository.logAction(
         'USER_LOGOUT',

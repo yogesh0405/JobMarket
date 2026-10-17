@@ -114,32 +114,42 @@ export class SessionRepository {
     await CacheService.invalidate(`session:active:${sessionId}`);
   }
 
-  static async revokeSession(sessionId: string, client: any = pool): Promise<void> {
+  static async revokeSession(sessionId: string, userIdOrClient?: string | any, possibleClient?: any): Promise<boolean> {
+    const isUserId = typeof userIdOrClient === 'string';
+    const userId = isUserId ? userIdOrClient : undefined;
+    const client = isUserId ? (possibleClient || pool) : (userIdOrClient || pool);
+
+    const query = userId
+      ? 'UPDATE sessions SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *'
+      : 'UPDATE sessions SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *';
+    const params = userId ? [sessionId, userId] : [sessionId];
+    const res = await client.query(query, params);
+
+    if (res.rows.length === 0) {
+      return false;
+    }
+
     localRevokedSessions.add(sessionId);
-    const query = 'UPDATE sessions SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *';
-    const res = await client.query(query, [sessionId]);
-    
     await CacheService.invalidate(`session:active:${sessionId}`);
     await CacheService.invalidate(`session:revoked_state:${sessionId}`);
 
     // If session exists, also revoke any duplicates with identical IP and device_name for that user
-    if (res.rows.length > 0) {
-      const sess = res.rows[0];
-      if (sess.user_id && sess.ip_address) {
-        const clusterRes = await client.query(
-          `UPDATE sessions 
-           SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP 
-           WHERE user_id = $1 AND ip_address = $2 AND revoked = FALSE
-           RETURNING id;`,
-          [sess.user_id, sess.ip_address]
-        );
-        for (const row of clusterRes.rows) {
-          localRevokedSessions.add(row.id);
-          await CacheService.invalidate(`session:active:${row.id}`);
-          await CacheService.invalidate(`session:revoked_state:${row.id}`);
-        }
+    const sess = res.rows[0];
+    if (sess.user_id && sess.ip_address) {
+      const clusterRes = await client.query(
+        `UPDATE sessions 
+         SET revoked = TRUE, revoked_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $1 AND ip_address = $2 AND revoked = FALSE
+         RETURNING id;`,
+        [sess.user_id, sess.ip_address]
+      );
+      for (const row of clusterRes.rows) {
+        localRevokedSessions.add(row.id);
+        await CacheService.invalidate(`session:active:${row.id}`);
+        await CacheService.invalidate(`session:revoked_state:${row.id}`);
       }
     }
+    return true;
   }
 
   static async revokeAllUserSessions(userId: string, currentSessionId?: string, client: any = pool): Promise<void> {
@@ -165,6 +175,6 @@ export class SessionRepository {
   }
 
   static async revoke(sessionId: string, client: any = pool): Promise<void> {
-    return this.revokeSession(sessionId, client);
+    await this.revokeSession(sessionId, undefined, client);
   }
 }

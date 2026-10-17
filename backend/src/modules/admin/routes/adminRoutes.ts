@@ -8,7 +8,7 @@ const router = Router();
 
 // Apply auth and admin role check on all admin routes
 router.use(requireAuth);
-router.use(requireRole(['admin']));
+router.use(requireRole(['admin', 'superadmin', 'super_admin']));
 
 // Rate limiter for sensitive administration actions (30 reqs per minute)
 const adminActionLimiter = rateLimiter('admin_action', 30, 60);

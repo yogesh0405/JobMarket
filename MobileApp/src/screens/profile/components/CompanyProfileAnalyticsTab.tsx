@@ -19,10 +19,12 @@ interface CompanyProfileAnalyticsTabProps {
     rejected: number;
     avgResponseTimeHours: number;
   };
+  followersCount?: number;
 }
 
 export const CompanyProfileAnalyticsTab: React.FC<CompanyProfileAnalyticsTabProps> = ({
   analyticsData,
+  followersCount = 0,
 }) => {
   return (
     <View style={styles.tabContainer}>
@@ -53,7 +55,19 @@ export const CompanyProfileAnalyticsTab: React.FC<CompanyProfileAnalyticsTabProp
           <Text style={styles.metricValueText}>{analyticsData.totalApplications}</Text>
         </View>
 
-        {/* Row 3: Interviews Held */}
+        {/* Row 3: Company Followers & Talent Network */}
+        <View style={styles.metricRowCard}>
+          <View style={styles.metricIconBadge}>
+            <Users size={18} color="#0A58E2" />
+          </View>
+          <View style={styles.metricTextWrap}>
+            <Text style={styles.metricLabelText}>Company Followers & Talent Network</Text>
+            <Text style={styles.metricSubText}>Candidates tracking your job postings</Text>
+          </View>
+          <Text style={[styles.metricValueText, { color: '#0A58E2' }]}>{followersCount}</Text>
+        </View>
+
+        {/* Row 4: Interviews Held */}
         <View style={styles.metricRowCard}>
           <View style={styles.metricIconBadge}>
             <CalendarCheck size={18} color="#0F172A" />
@@ -65,7 +79,7 @@ export const CompanyProfileAnalyticsTab: React.FC<CompanyProfileAnalyticsTabProp
           <Text style={styles.metricValueText}>{analyticsData.interviewed}</Text>
         </View>
 
-        {/* Row 4: Successful Hires */}
+        {/* Row 5: Successful Hires */}
         <View style={styles.metricRowCard}>
           <View style={styles.metricIconBadge}>
             <CheckCircle2 size={18} color="#0F172A" />

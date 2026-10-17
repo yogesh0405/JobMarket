@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { JobController } from '../controllers/JobController';
 import { requireAuth, optionalAuth } from '../../../middlewares/authMiddleware';
+import { requireRole } from '../../../middlewares/rbacMiddleware';
 import { rateLimiter } from '../../../middlewares/rateLimiter';
 
 const router = Router();
@@ -13,7 +14,7 @@ router.get('/map', JobController.getMapJobs);
 router.get('/nearby', JobController.getNearbyJobs);
 router.post('/geocode', JobController.triggerGeocoding);
 router.post('/resolve-map-url', JobController.resolveMapUrl);
-router.get('/admin/map-analytics', requireAuth, JobController.getAdminMapAnalytics);
+router.get('/admin/map-analytics', requireAuth, requireRole(['admin', 'superadmin', 'super_admin']), JobController.getAdminMapAnalytics);
 
 // Meta & Application Schedules
 router.get('/meta/categories', JobController.getCategories);

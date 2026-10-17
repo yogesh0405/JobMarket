@@ -19,7 +19,15 @@ import { generateTokens } from '../../../utils/jwt';
 
 export function sanitizeUserForResponse(user: any) {
   if (!user) return user;
-  const { password_hash, ...safeUser } = user;
+  const {
+    password_hash,
+    two_factor_secret,
+    two_factor_recovery_codes,
+    otp_secret,
+    password_reset_token,
+    refresh_token_hash,
+    ...safeUser
+  } = user;
   
   if (safeUser.resume) {
     if (typeof safeUser.resume === 'string') {
@@ -567,7 +575,11 @@ export class AuthController {
   static async revokeSession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const sessionId = req.params.sessionId as string;
-      await SessionRepository.revokeSession(sessionId);
+      const userId = req.user!.userId;
+      const success = await SessionRepository.revokeSession(sessionId, userId);
+      if (!success) {
+        return res.status(404).json({ success: false, message: 'Session not found or unauthorized' });
+      }
       res.status(200).json({ success: true, message: 'Session revoked successfully' });
     } catch (error) {
       next(error);

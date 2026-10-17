@@ -88,7 +88,16 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
   return (
     <div
       className="job-card-naukri-style"
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${job.title} at ${job.company}`}
       onClick={() => navigate(`/job/${job.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/job/${job.id}`);
+        }
+      }}
       style={{
         background: '#FFFFFF',
         border: '1.5px solid #cbd5e1',

@@ -111,7 +111,7 @@ export const openBase64InNewTab = (base64Data: string, mimeType: string, fileNam
     const blob = new Blob([byteArray], { type: actualMimeType });
     const blobUrl = URL.createObjectURL(blob);
     
-    const win = window.open(blobUrl, '_blank');
+    const win = window.open(blobUrl, '_blank', 'noopener,noreferrer');
     if (!win) {
       const a = document.createElement('a');
       a.href = blobUrl;
