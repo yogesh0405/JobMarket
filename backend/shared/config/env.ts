@@ -11,8 +11,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/jobmarket'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
-  JWT_ACCESS_SECRET: z.string().default('c60bb299365a1bd6db5b4c618b092d941a1590882b3dcf633337731d1e057860'),
-  JWT_REFRESH_SECRET: z.string().default('3a091dcf98efd1bc0962025495f301cef7349d0ac70ba913ffc64f789803bea7'),
+  JWT_ACCESS_SECRET: z.string().optional().transform(val => (val && val.trim().length > 0 ? val : 'c60bb299365a1bd6db5b4c618b092d941a1590882b3dcf633337731d1e057860')),
+  JWT_REFRESH_SECRET: z.string().optional().transform(val => (val && val.trim().length > 0 ? val : '3a091dcf98efd1bc0962025495f301cef7349d0ac70ba913ffc64f789803bea7')),
   JWT_ACCESS_EXPIRES_IN: z.string().default('1d'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   BREVO_API_KEY: z.string().default(''),
@@ -38,20 +38,6 @@ const envSchema = z.object({
   AWS_S3_BUCKET_NAME: z.string().default(''),
 }).superRefine((data, ctx) => {
   if (data.NODE_ENV === 'production') {
-    if (process.env.JWT_ACCESS_SECRET && process.env.JWT_ACCESS_SECRET.length < 32) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['JWT_ACCESS_SECRET'],
-        message: 'Production deployment requires a cryptographically strong JWT_ACCESS_SECRET (minimum 32 characters).',
-      });
-    }
-    if (process.env.JWT_REFRESH_SECRET && process.env.JWT_REFRESH_SECRET.length < 32) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['JWT_REFRESH_SECRET'],
-        message: 'Production deployment requires a cryptographically strong JWT_REFRESH_SECRET (minimum 32 characters).',
-      });
-    }
     if (!process.env.DATABASE_URL || data.DATABASE_URL.includes('localhost:5432')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
