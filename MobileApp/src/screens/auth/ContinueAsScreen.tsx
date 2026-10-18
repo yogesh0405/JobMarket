@@ -11,6 +11,7 @@ import {
   Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, RADIUS } from '../../constants/theme';
 
 interface Props {
@@ -22,6 +23,21 @@ const GREETINGS = ['HELLO !', 'WELCOME !', 'नमस्ते !'];
 export const ContinueAsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [greetingIndex, setGreetingIndex] = useState(0);
+
+  // Automatically transition to Login screen if user recently deleted their account
+  useEffect(() => {
+    AsyncStorage.getItem('ACCOUNT_DELETED_FLAG')
+      .then((flag) => {
+        if (flag === 'true') {
+          AsyncStorage.removeItem('ACCOUNT_DELETED_FLAG').catch(() => {});
+          navigation.replace('EmployerLogin', {
+            deletedSuccess: true,
+            successMessage: 'Your account has been deleted successfully.',
+          });
+        }
+      })
+      .catch(() => {});
+  }, [navigation]);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;

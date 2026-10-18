@@ -18,7 +18,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
   longitude,
   locationName = 'Job Location',
   height = '280px',
-  readOnly = false,
+  readOnly = true,
   onLocationSelect
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -81,8 +81,8 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
         }
       });
 
-      // Add marker pin (draggable if not readOnly or onLocationSelect provided)
-      const isDraggable = !readOnly || !!onLocationSelect;
+      // Fixed marker pin pinned to employer's set / fetched location
+      const isDraggable = !readOnly && !!onLocationSelect;
       const marker = L.marker([safeLat, safeLng], {
         icon: createPinIcon(),
         draggable: isDraggable
@@ -93,13 +93,6 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
           const latLng = marker.getLatLng();
           if (onLocationSelect) {
             onLocationSelect(latLng.lat, latLng.lng);
-          }
-        });
-
-        map.on('click', (e: L.LeafletMouseEvent) => {
-          marker.setLatLng(e.latlng);
-          if (onLocationSelect) {
-            onLocationSelect(e.latlng.lat, e.latlng.lng);
           }
         });
       }
@@ -150,7 +143,7 @@ export const JobLocationMapPreview: React.FC<JobLocationMapPreviewProps> = ({
 
   const handleRecenter = () => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([latitude, longitude], 15, { animate: true });
+      mapInstanceRef.current.setView([safeLat, safeLng], 15, { animate: true });
     }
   };
 

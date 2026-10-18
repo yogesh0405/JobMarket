@@ -20,7 +20,11 @@ import {
   ShieldCheck,
   LogOut,
   AlertTriangle,
+  Trash2,
+  ExternalLink,
+  FileText,
 } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authApi } from '../../api/authApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -31,7 +35,11 @@ import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { COLORS, RADIUS } from '../../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useToast } from '../../context/ToastContext';
+import { PushNotificationManager } from '../../services/PushNotificationManager';
 import { SecurityPasswordModals } from './components/SecurityPasswordModals';
+import { DeleteAccountModal } from './components/DeleteAccountModal';
 
 interface Props {
   navigation: any;
@@ -40,6 +48,7 @@ interface Props {
 export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { user, refreshUser, logout } = useAuth();
+  const { showToast } = useToast();
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -60,6 +69,7 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   // OTP Modal State
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState(user?.email || '');
   const [otpCode, setOtpCode] = useState('');
   const [otpNewPass, setOtpNewPass] = useState('');
@@ -381,6 +391,54 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleOpenPrivacyPolicy = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/privacy');
+    } catch (_) {
+      Alert.alert('Privacy Policy', 'Please visit https://job-market-wine.vercel.app/privacy to review our full data privacy policy.');
+    }
+  };
+
+  const handleDeleteAccountPress = () => {
+    setConfirmModalConfig({
+      visible: true,
+      title: 'Delete Your Account?',
+      message: 'This will permanently delete your account, login credentials, uploaded resumes, and application history. This action cannot be undone.',
+      highlightText: '⚠️ Permanent Action • All personal data will be erased',
+      confirmText: 'Confirm & Send OTP',
+      cancelText: 'Keep Account',
+      type: 'danger',
+      loading: false,
+      icon: <Trash2 size={28} color="#DC2626" strokeWidth={2.4} />,
+      iconBgColor: '#FEF2F2',
+      onConfirm: async () => {
+        setConfirmModalConfig((prev) => ({ ...prev, visible: false }));
+        setIsDeleteModalVisible(true);
+      },
+    });
+  };
+
+  const handleDeleteSuccess = async () => {
+    setIsDeleteModalVisible(false);
+    const userRole = (user as any)?.role || 'candidate';
+    try {
+      await AsyncStorage.setItem('ACCOUNT_DELETED_FLAG', 'true');
+      await AsyncStorage.setItem(
+        'ACCOUNT_DELETED_MSG',
+        'Your account has been deleted successfully.'
+      );
+    } catch (_) {}
+    showToast('Your account has been deleted successfully.', 'success');
+    await logout();
+    setTimeout(() => {
+      PushNotificationManager.navigate('EmployerLogin', {
+        deletedSuccess: true,
+        successMessage: 'Your account has been deleted successfully.',
+        initialRole: userRole,
+      });
+    }, 200);
+  };
+
   return (
     <View style={styles.container}>
       <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
@@ -609,16 +667,13 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.sessionLoadingText}>Checking live device connections...</Text>
             </View>
           ) : sessions.length === 0 ? (
-            <View style={styles.sessionPillItem}>
+            <View style={styles.sessionRowItem}>
               <View style={[styles.sessionIconWrapper, { backgroundColor: '#EEF4FF' }]}>
-                <Smartphone size={14} color="#1764E8" />
+                <Smartphone size={16} color="#1764E8" />
               </View>
               <View style={styles.sessionInfoCol}>
-                <Text style={styles.sessionDeviceName}>Current Mobile Device</Text>
-                <Text style={styles.sessionMetaText}>Active Session • Verified</Text>
-              </View>
-              <View style={styles.thisDeviceBadge}>
-                <Text style={styles.thisDeviceBadgeText}>Current</Text>
+                <Text style={styles.sessionDeviceName}>{Platform.OS === 'ios' ? 'Apple iPhone' : 'Android Device'}</Text>
+                <Text style={styles.sessionMetaText}>Active Now • This Device</Text>
               </View>
             </View>
           ) : (
@@ -627,36 +682,55 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
                 const isCurrent = session.isCurrent || session.is_current;
                 const isDesktop = session.deviceType === 'desktop' || session.device_type === 'desktop' || (session.browser && !session.os);
                 const IconComponent = isDesktop ? Laptop : Smartphone;
-                const deviceLabel = session.deviceName || session.device_name || session.browser || (isDesktop ? 'Desktop Web' : 'Mobile App');
+
+                // Sanitize and format clean device name without "JobMarket", "Web App", or "Mobile App"
+                let rawName = (session.deviceName || session.device_name || '').trim();
+                let cleanName = rawName
+                  .replace(/\s*\(JobMarket[^)]*\)/gi, '')
+                  .replace(/JobMarket\s*(Android|iOS)?\s*App/gi, '')
+                  .replace(/JobMarket/gi, '')
+                  .replace(/Desktop\s*Web/gi, '')
+                  .replace(/Web\s*App/gi, '')
+                  .replace(/Mobile\s*App/gi, '')
+                  .replace(/\s*\(\s*\)/g, '')
+                  .trim();
+
+                if (!cleanName) {
+                  if (isDesktop) {
+                    cleanName = session.browser && session.os ? `${session.browser} on ${session.os}` : (session.os ? `${session.os} Device` : 'Desktop Browser');
+                  } else {
+                    cleanName = session.os === 'iOS' ? 'Apple iPhone' : 'Android Device';
+                  }
+                }
+                const deviceLabel = cleanName;
                 const locationLabel = session.location || session.ipAddress || session.ip || 'Active Session';
 
                 return (
-                  <View key={session.id || index} style={styles.sessionPillItem}>
-                    <View style={[styles.sessionIconWrapper, { backgroundColor: isCurrent ? '#EEF4FF' : '#F1F5F9' }]}>
-                      <IconComponent size={14} color={isCurrent ? '#1764E8' : '#64748B'} />
-                    </View>
-                    <View style={styles.sessionInfoCol}>
-                      <Text style={styles.sessionDeviceName} numberOfLines={1}>
-                        {deviceLabel}
-                      </Text>
-                      <Text style={styles.sessionMetaText} numberOfLines={1}>
-                        {locationLabel}
-                      </Text>
-                    </View>
-                    {isCurrent ? (
-                      <View style={styles.thisDeviceBadge}>
-                        <Text style={styles.thisDeviceBadgeText}>Current</Text>
+                  <React.Fragment key={session.id || index}>
+                    {index > 0 && <View style={styles.sessionDivider} />}
+                    <View style={styles.sessionRowItem}>
+                      <View style={[styles.sessionIconWrapper, { backgroundColor: isCurrent ? '#EEF4FF' : '#F1F5F9' }]}>
+                        <IconComponent size={16} color={isCurrent ? '#1764E8' : '#64748B'} />
                       </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.revokeSessionBtn}
-                        activeOpacity={0.7}
-                        onPress={() => handleRevokeSession(session.id, deviceLabel)}
-                      >
-                        <Text style={styles.revokeSessionBtnText}>Logout</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                      <View style={styles.sessionInfoCol}>
+                        <Text style={styles.sessionDeviceName} numberOfLines={1}>
+                          {deviceLabel}
+                        </Text>
+                        <Text style={styles.sessionMetaText} numberOfLines={1}>
+                          {locationLabel} {isCurrent ? '• This Device' : ''}
+                        </Text>
+                      </View>
+                      {!isCurrent && (
+                        <TouchableOpacity
+                          style={styles.revokeSessionBtn}
+                          activeOpacity={0.7}
+                          onPress={() => handleRevokeSession(session.id, deviceLabel)}
+                        >
+                          <Text style={styles.revokeSessionBtnText}>Logout</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </React.Fragment>
                 );
               })}
             </View>
@@ -679,6 +753,67 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
               )}
             </TouchableOpacity>
           ) : null}
+        </View>
+
+        {/* CARD 4: PRIVACY & DATA PROTECTION */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <Text style={styles.cardTitle}>Privacy & Data Protection</Text>
+              <Text style={styles.cardSubtitle}>
+                Review how we collect, store, and safeguard your personal information and documents.
+              </Text>
+            </View>
+            <View style={styles.cardHeaderIconBox}>
+              <ShieldCheck size={18} color="#1764E8" />
+            </View>
+          </View>
+
+          {/* Privacy Policy Link Row */}
+          <TouchableOpacity
+            style={styles.privacyLinkRow}
+            activeOpacity={0.7}
+            onPress={handleOpenPrivacyPolicy}
+          >
+            <View style={styles.privacyLinkLeft}>
+              <FileText size={15} color="#1764E8" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.privacyLinkText}>Platform Privacy Policy</Text>
+                <Text style={styles.privacyLinkSub}>Data handling & candidate privacy rights</Text>
+              </View>
+            </View>
+            <ExternalLink size={14} color="#1764E8" />
+          </TouchableOpacity>
+        </View>
+
+        {/* CARD 5: DELETE ACCOUNT (Google Play Compliant) */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderCol}>
+              <View style={styles.dangerTitleRow}>
+                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.4} />
+                <Text style={[styles.cardTitle, { color: '#DC2626', marginBottom: 0 }]}>Delete Account</Text>
+              </View>
+              <Text style={styles.cardSubtitle}>
+                Permanently erase your account, login credentials, and all personal data.
+              </Text>
+            </View>
+          </View>
+
+          {/* Account Deletion Notice */}
+          <Text style={styles.dangerNoticeText}>
+            Permanent Action: Deleting your account will immediately erase your profile, credentials, uploaded resumes, and application history. This action cannot be undone.
+          </Text>
+
+          {/* Delete Account CTA Button */}
+          <TouchableOpacity
+            style={styles.deleteAccountBtn}
+            activeOpacity={0.8}
+            onPress={handleDeleteAccountPress}
+          >
+            <Trash2 size={15} color="#DC2626" />
+            <Text style={styles.deleteAccountBtnText}>Permanently Delete Account</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
 
@@ -740,6 +875,15 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
         buttonText={successModalConfig.buttonText}
         onButtonPress={successModalConfig.onButtonPress || (() => setSuccessModalConfig((prev) => ({ ...prev, visible: false })))}
       />
+
+      {/* Dedicated Professional Account Deletion with Email OTP Verification Modal */}
+      <DeleteAccountModal
+        visible={isDeleteModalVisible}
+        onClose={() => setIsDeleteModalVisible(false)}
+        userEmail={user?.email || ''}
+        hasPassword={(user as any)?.has_password ?? (user as any)?.hasPassword ?? true}
+        onSuccess={handleDeleteSuccess}
+      />
     </View>
   );
 };
@@ -752,19 +896,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 14,
     paddingTop: 12,
+    paddingBottom: 48,
     gap: 15,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.card,
     borderWidth: 1,
-    borderColor: '#E7EBF2',
-    padding: 14,
-    shadowColor: '#142A50',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -775,6 +920,12 @@ const styles = StyleSheet.create({
   cardHeaderCol: {
     flex: 1,
     paddingRight: 8,
+  },
+  dangerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
   },
   cardTitle: {
     fontSize: 13.5,
@@ -807,7 +958,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 6,
+    borderRadius: 8,
     height: 40,
     paddingHorizontal: 12,
   },
@@ -821,7 +972,7 @@ const styles = StyleSheet.create({
   primarySaveBtn: {
     backgroundColor: '#1764E8',
     height: 40,
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
@@ -861,7 +1012,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 38,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
@@ -901,24 +1052,22 @@ const styles = StyleSheet.create({
     color: '#657796',
   },
   sessionsListContainer: {
-    gap: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  sessionPillItem: {
+  sessionRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 8,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  sessionDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
   },
   sessionIconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -926,36 +1075,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sessionDeviceName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: '#102A5C',
-    marginBottom: 1,
+    marginBottom: 2,
   },
   sessionMetaText: {
-    fontSize: 10.5,
+    fontSize: 11,
     color: '#657796',
-  },
-  thisDeviceBadge: {
-    backgroundColor: '#EEF4FF',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  thisDeviceBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#1764E8',
+    fontWeight: '500',
   },
   revokeSessionBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#FCA5A5',
     backgroundColor: '#FEF2F2',
   },
   revokeSessionBtnText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#DC2626',
   },
@@ -970,6 +1109,61 @@ const styles = StyleSheet.create({
   logoutOthersBtnText: {
     fontSize: 11.5,
     fontWeight: '600',
+    color: '#DC2626',
+  },
+  privacyLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+    marginBottom: 6,
+    minHeight: 44,
+  },
+  privacyLinkLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  privacyLinkText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1764E8',
+  },
+  privacyLinkSub: {
+    fontSize: 10.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  dangerNoticeText: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
+    fontWeight: '400',
+    marginBottom: 14,
+  },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#FCA5A5',
+    borderRadius: 8,
+    minHeight: 44,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  deleteAccountBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
     color: '#DC2626',
   },
 });

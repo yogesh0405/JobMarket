@@ -38,6 +38,7 @@ import { savedJobsStore } from '../../utils/savedJobsStore';
 import { reportedJobsStore, ReportedJobMetadata } from '../../utils/reportedJobsStore';
 import { CandidateJobDetailHeader } from './components/CandidateJobDetailHeader';
 import { shareJob } from '../../utils/shareUtils';
+import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 
 interface Props {
   navigation: any;
@@ -108,6 +109,24 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [reportMeta, setReportMeta] = useState<ReportedJobMetadata | undefined>(() => {
     return initialJobId ? reportedJobsStore.getReportMetadata(initialJobId) : undefined;
   });
+
+  // Apply blue status bar ONLY while on Candidate Job Details, restore on exit
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#0A58E2', true);
+        StatusBar.setBarStyle('light-content', true);
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor('#FFFFFF', true);
+          StatusBar.setBarStyle('dark-content', true);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [])
+  );
 
   // Synchronize state whenever screen receives new navigation parameters
   useEffect(() => {
@@ -403,7 +422,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+        <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
 
         {/* Top Header Container with Safe Area Inset */}
         <View style={{ backgroundColor: '#FFFFFF', paddingTop: topSafeArea, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
@@ -520,7 +539,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: '#0A58E2' }]}>
+        <FocusAwareStatusBar barStyle="light-content" backgroundColor="#0A58E2" translucent={true} />
         <ScrollView contentContainerStyle={styles.scrollContentBody} showsVerticalScrollIndicator={false}>
           <View style={styles.profileHeaderMasterCard}>
             <SkeletonLoader width="100%" height={110} style={{ borderRadius: 0 }} />
@@ -537,6 +557,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   if (!job) {
     return (
       <View style={styles.container}>
+        <FocusAwareStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
         <View style={{ paddingTop: Math.max(insets.top, 12), paddingHorizontal: 16 }}>
           <TouchableOpacity onPress={handleBackNavigation} style={{ padding: 4 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <ArrowLeft size={22} color="#1E293B" strokeWidth={2} />
@@ -595,8 +616,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const expDisplay = isFresher ? 'Freshers (No Exp)' : (minExp === maxExp ? `${minExp} Years` : `${minExp} - ${maxExp} Years`);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+    <View style={[styles.container, { backgroundColor: '#0A58E2' }]}>
+      <FocusAwareStatusBar barStyle="light-content" backgroundColor="#0A58E2" translucent={true} />
 
       {/* 1. Full-Width Edge-to-Edge Blue Header Banner with Tabs */}
       <CandidateJobDetailHeader
@@ -622,6 +643,7 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
       {/* 2. Main Content Scroll Area */}
       <ScrollView
+        style={{ flex: 1, backgroundColor: '#F7F7F7' }}
         contentContainerStyle={[
           styles.scrollContentBody,
           { paddingBottom: Math.max(insets.bottom + 140, 160) },
@@ -648,14 +670,14 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                   </Text>
                 </View>
 
-                {(job.salary_min || job.salaryMin || job.salary_max || job.salaryMax) ? (
-                  <View style={styles.specGridItem}>
-                    <Text style={styles.specLabelText}>Salary Package</Text>
-                    <Text style={styles.specValueText} numberOfLines={1}>
-                      ₹{job.salary_min || job.salaryMin || 0} - ₹{job.salary_max || job.salaryMax || 0} / mo
-                    </Text>
-                  </View>
-                ) : null}
+                <View style={styles.specGridItem}>
+                  <Text style={styles.specLabelText}>Salary Package</Text>
+                  <Text style={styles.specValueText} numberOfLines={1}>
+                    {(job as any).disclose_salary !== false && (job as any).discloseSalary !== false && (job.salary_min || job.salaryMin || job.salary_max || job.salaryMax)
+                      ? `₹${job.salary_min || job.salaryMin || 0} - ₹${job.salary_max || job.salaryMax || 0} / mo`
+                      : 'Salary Not Disclosed'}
+                  </Text>
+                </View>
 
                 <View style={styles.specGridItem}>
                   <Text style={styles.specLabelText}>Experience Required</Text>

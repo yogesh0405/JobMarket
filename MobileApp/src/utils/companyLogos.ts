@@ -90,17 +90,7 @@ export function createCorporateSvgBadge(companyName?: string): string {
 }
 
 export function getCompanyLogoUrl(companyName?: string, existingLogo?: string): string {
-  const normName = companyName && companyName.trim() ? companyName.trim() : '';
-
-  // 1. Check live global cache first
-  if (normName) {
-    const cached = GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()];
-    if (cached && typeof cached === 'string' && cached.trim().length > 5) {
-      return cached.trim();
-    }
-  }
-
-  // 2. Return real database logo image URL if present and valid
+  // 1. Return real job-uploaded logo image URL FIRST as the absolute source of truth
   if (
     existingLogo &&
     typeof existingLogo === 'string' &&
@@ -115,11 +105,17 @@ export function getCompanyLogoUrl(companyName?: string, existingLogo?: string): 
       existingLogo.startsWith('content://')
     )
   ) {
-    const trimmed = existingLogo.trim();
-    if (normName) {
-      GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()] = trimmed;
+    return existingLogo.trim();
+  }
+
+  const normName = companyName && companyName.trim() ? companyName.trim() : '';
+
+  // 2. Check live global company cache only if no job-specific logo was uploaded
+  if (normName) {
+    const cached = GLOBAL_COMPANY_LOGO_CACHE[normName.toLowerCase()];
+    if (cached && typeof cached === 'string' && cached.trim().length > 5) {
+      return cached.trim();
     }
-    return trimmed;
   }
 
   // 3. Match against real corporate brand logos

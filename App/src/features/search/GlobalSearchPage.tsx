@@ -681,7 +681,7 @@ export const GlobalSearchPage: React.FC = () => {
                   MATCHING JOBS
                 </div>
                 {autocompleteSuggestions.jobs.map((job, idx) => {
-                  const jobLogo = job.companyLogo || (job as any)?.company_logo || (job as any)?.logo;
+                  const jobLogo = job.companyLogo || (job as any)?.company_logo || (job as any)?.logoUrl || (job as any)?.logo_url || (job as any)?.logo;
                   return (
                     <div
                       key={`match-job-${job.id}-${idx}`}

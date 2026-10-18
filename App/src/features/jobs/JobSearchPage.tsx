@@ -696,7 +696,7 @@ export const JobSearchPage: React.FC = () => {
                   >
                     <CompanyDefaultLogo
                       name={job.company}
-                      logoUrl={job.companyLogo}
+                      logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                       size={42}
                       borderRadius="6px"
                     />
@@ -927,7 +927,7 @@ export const JobSearchPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                       <CompanyDefaultLogo
                         name={job.company}
-                        logoUrl={job.companyLogo}
+                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                         size={40}
                         borderRadius="6px"
                       />

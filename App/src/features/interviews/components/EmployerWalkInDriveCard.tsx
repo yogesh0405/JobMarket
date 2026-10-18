@@ -69,7 +69,7 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
   const contactPerson = job.walkInContactPerson || job.walk_in_contact_person;
   const contactNumber = job.walkInContactNumber || job.walk_in_contact_number;
   const companyName = job.company || job.company_name || 'Your Company';
-  const logoUrl = job.company_logo || job.companyLogo || (job as any).logo;
+  const logoUrl = job.companyLogo || job.company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo;
 
   const handleOpenMap = (e: React.MouseEvent) => {
     e.stopPropagation();

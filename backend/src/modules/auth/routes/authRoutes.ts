@@ -46,6 +46,9 @@ router.post('/2fa/toggle', requireAuth, AuthController.toggle2FA);
 
 // Security & Sessions (Protected)
 router.post('/change-password', requireAuth, AuthController.changePassword);
+router.post('/delete-account/request-otp', requireAuth, authLimiter, AuthController.requestDeleteAccountOTP);
+router.delete('/delete-account', requireAuth, AuthController.deleteAccount);
+router.post('/delete-account', requireAuth, AuthController.deleteAccount);
 router.get('/sessions', requireAuth, AuthController.getSessions);
 router.delete('/sessions/:sessionId', requireAuth, AuthController.revokeSession);
 // Public Profile (No Auth required for shared link)

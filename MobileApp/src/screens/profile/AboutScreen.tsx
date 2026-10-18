@@ -25,7 +25,11 @@ import {
   Info,
   PhoneCall,
   Lock,
+  ExternalLink,
+  FileText,
+  ChevronRight,
 } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { COLORS } from '../../constants/theme';
 
 interface Props {
@@ -35,6 +39,18 @@ interface Props {
 export const AboutScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
+
+  const handleOpenPrivacy = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/privacy');
+    } catch (_) {}
+  };
+
+  const handleOpenTerms = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/terms');
+    } catch (_) {}
+  };
 
   const CORPORATE_PROFESSIONAL_IMG = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
   const INDUSTRIAL_WELDER_IMG = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80';
@@ -398,6 +414,63 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
+        {/* 7. LEGAL & PRIVACY COMPLIANCE (Google Play Policy Compliant) */}
+        <View style={[styles.sectionCard, { marginBottom: 12 }]}>
+          <View style={styles.cardHeaderRow}>
+            <ShieldCheck size={16} color={COLORS.primary} />
+            <Text style={styles.serifCardTitleInline}>Legal & Data Privacy</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.legalRow}
+            activeOpacity={0.7}
+            onPress={handleOpenPrivacy}
+          >
+            <View style={styles.legalRowLeft}>
+              <FileText size={16} color={COLORS.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.legalRowTitle}>Privacy Policy</Text>
+                <Text style={styles.legalRowSub}>How we collect, store, and protect candidate data</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <View style={styles.cardDivider} />
+
+          <TouchableOpacity
+            style={styles.legalRow}
+            activeOpacity={0.7}
+            onPress={handleOpenTerms}
+          >
+            <View style={styles.legalRowLeft}>
+              <FileText size={16} color={COLORS.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.legalRowTitle}>Terms of Service</Text>
+                <Text style={styles.legalRowSub}>Usage conditions, candidate rights, and employer policies</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <View style={styles.cardDivider} />
+
+          <TouchableOpacity
+            style={styles.legalRow}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('SecuritySettings')}
+          >
+            <View style={styles.legalRowLeft}>
+              <ShieldCheck size={16} color="#DC2626" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.legalRowTitle, { color: '#DC2626' }]}>Account & Data Deletion</Text>
+                <Text style={styles.legalRowSub}>Request permanent erasure of personal data & account</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+
         {/* Footer Note */}
         <View style={styles.footerWrap}>
           <Text style={styles.footerCopyText}>© 2026 JobMarket Technologies Inc. All rights reserved.</Text>
@@ -460,15 +533,15 @@ const styles = StyleSheet.create({
   /* Section Containers */
   sectionCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    shadowColor: COLORS.textPrimary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
     gap: 8,
   },
   cardHeaderRow: {
@@ -925,5 +998,29 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: 14,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    minHeight: 46,
+  },
+  legalRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    paddingRight: 8,
+  },
+  legalRowTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  legalRowSub: {
+    fontSize: 10.5,
+    color: COLORS.textSecondary,
+    marginTop: 1,
   },
 });

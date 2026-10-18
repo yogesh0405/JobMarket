@@ -942,6 +942,7 @@ export const useJobPostForm = (navigation: any, route: any) => {
     requirements,
     setRequirements,
     skillsTags,
+    setSkillsTags,
     customSkillInput,
     setCustomSkillInput,
     handleAddCustomSkill,

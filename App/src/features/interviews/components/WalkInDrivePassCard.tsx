@@ -81,7 +81,7 @@ export const WalkInDrivePassCard: React.FC<WalkInDrivePassCardProps> = ({
   const mapsLink = item.maps_link || item.mapsLink || item.google_maps_url || item.googleMapsUrl;
   const coordinatorName = item.walk_in_contact_person || item.walkInContactPerson;
   const coordinatorPhone = item.walk_in_contact_number || item.walkInContactNumber;
-  const logoUrl = item.company_logo || item.companyLogo || (item as any).logo;
+  const logoUrl = item.companyLogo || item.company_logo || (item as any).logoUrl || (item as any).logo_url || (item as any).logo;
 
   const passPayload: WalkInPassData = {
     jobId: String(item.job_id || item.jobId || ''),

@@ -663,7 +663,7 @@ function matchAmenities(job: Job, filters: FilterOptions): boolean {
  * Matches category filter chips (e.g. 'All Jobs', 'HR Jobs', 'ITI & Trade Jobs')
  */
 function matchCategory(job: Job, category?: string): boolean {
-  if (!category || category === 'All Jobs') return true;
+  if (!category || category === 'All Jobs' || category === 'Following') return true;
 
   const cat = category.toLowerCase().trim();
   const title = (job.title || '').toLowerCase();
@@ -744,6 +744,78 @@ function matchCategory(job: Job, category?: string): boolean {
 }
 
 /**
+ * Normalizes company name by stripping legal suffixes, parenthesized content, punctuation, and extra whitespace
+ */
+export function normalizeCompanyName(name: string): string {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, ' ') // remove parenthesized content like (India), (Pune Plant)
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ') // replace punctuation with spaces
+    .replace(/\b(limited|ltd|pvt|private|inc|incorporated|corp|corporation|llp|llc|gmbh|technologies|technology|solutions|services|works|group|india)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Check if a job belongs to any followed company by name or id
+ */
+export function isJobFromFollowedCompany(job: Job, followedIds?: Set<string>): boolean {
+  if (!followedIds || followedIds.size === 0) return false;
+
+  const rawCompName = (
+    job.company ||
+    (job as any).company_name ||
+    (job as any).companyName ||
+    (job as any).employer_name ||
+    (job as any).employerName ||
+    ''
+  ).toLowerCase().trim();
+
+  const normCompName = normalizeCompanyName(rawCompName);
+  const compId = String((job as any).company_id || (job as any).companyId || '').toLowerCase().trim();
+  const employerId = String(job.employer_id || (job as any).employerId || '').toLowerCase().trim();
+
+  // 1. Direct ID match
+  if (compId && followedIds.has(compId)) return true;
+  if (employerId && followedIds.has(employerId)) return true;
+
+  // 2. Direct Name match (raw and normalized)
+  if (rawCompName && followedIds.has(rawCompName)) return true;
+  if (normCompName && followedIds.has(normCompName)) return true;
+
+  // 3. Substring & Token match against followed entities
+  for (const item of followedIds) {
+    if (!item || item.length < 3) continue;
+
+    // Skip UUID-like strings from text search
+    const isIdLike = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(item) || /^\d+$/.test(item);
+    if (isIdLike) continue;
+
+    if (item.length < 4) {
+      if (rawCompName === item || normCompName === item) return true;
+      const wordRegex = new RegExp(`\\b${escapeRegex(item)}\\b`, 'i');
+      if (wordRegex.test(rawCompName) || (normCompName && wordRegex.test(normCompName))) return true;
+    } else {
+      if (
+        rawCompName === item ||
+        rawCompName.includes(item) ||
+        item.includes(rawCompName) ||
+        (normCompName && (normCompName === item || normCompName.includes(item) || item.includes(normCompName)))
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Unified Industry-Grade Job Filter Engine
  * Evaluates whether a job passes all specified filter parameters.
  */
@@ -751,9 +823,23 @@ export function evaluateJobMatchesFilter(
   job: Job,
   filters: FilterOptions,
   searchQuery: string = '',
-  selectedCategory: string = 'All Jobs'
+  selectedCategory: string = 'All Jobs',
+  followedCompanyIds?: Set<string>
 ): boolean {
   if (!job) return false;
+
+  // Following Filter Check (Active via 'Following' category pill or filters.onlyFollowing)
+  const isFollowingActive =
+    selectedCategory === 'Following' || Boolean(filters.onlyFollowing);
+
+  if (isFollowingActive) {
+    if (!followedCompanyIds || followedCompanyIds.size === 0) {
+      return false;
+    }
+    if (!isJobFromFollowedCompany(job, followedCompanyIds)) {
+      return false;
+    }
+  }
 
   // 1. Text Search Query
   const cleanQ = searchQuery.toLowerCase().trim();
@@ -899,10 +985,11 @@ export function rankAndFilterJobs(
   jobs: Job[],
   filters: FilterOptions,
   searchQuery: string = '',
-  selectedCategory: string = 'All Jobs'
+  selectedCategory: string = 'All Jobs',
+  followedCompanyIds?: Set<string>
 ): Job[] {
   const matching = jobs.filter((job) =>
-    evaluateJobMatchesFilter(job, filters, searchQuery, selectedCategory)
+    evaluateJobMatchesFilter(job, filters, searchQuery, selectedCategory, followedCompanyIds)
   );
 
   return matching.sort((a, b) => {

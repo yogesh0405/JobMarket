@@ -220,6 +220,75 @@ export class EmailService {
   }
 
   /**
+   * Send Account Deletion Verification OTP Email
+   */
+  static async sendAccountDeletionOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Account Deletion OTP - JobMarket</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:36px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:0;">
+          <tr>
+            <td style="padding:24px 32px;border-bottom:1px solid #e2e8f0;">
+              <span style="font-size:20px;font-weight:800;color:#1e3a8a;letter-spacing:-0.5px;">JobMarket</span>
+              <span style="display:inline-block;margin-left:10px;padding:3px 8px;background:#fef2f2;color:#dc2626;font-size:11px;font-weight:700;border:1px solid #fecaca;">SECURITY VERIFICATION</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 12px;color:#0f172a;font-size:20px;font-weight:700;">Account Deletion Request</h2>
+              <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px;">
+                Hello <strong>${toName}</strong>,<br/><br/>
+                We received an authorization request to permanently delete your <strong>JobMarket</strong> account and erase all associated personal profiles, resumes, and job activity.
+              </p>
+              
+              <div style="background-color:#fef2f2;border-left:4px solid #dc2626;padding:12px 16px;margin-bottom:24px;">
+                <p style="margin:0;color:#991b1b;font-size:13px;line-height:1.5;font-weight:600;">
+                  ⚠️ Permanent Action: Once verified and completed, this deletion cannot be undone. All personal records will be permanently removed.
+                </p>
+              </div>
+
+              <p style="color:#475569;font-size:13px;line-height:1.5;margin:0 0 14px;">
+                Please use the single-use 6-digit confirmation code below to verify this deletion request:
+              </p>
+
+              <div style="background:#f1f5f9;border:1px dashed #94a3b8;padding:18px;text-align:center;margin-bottom:24px;">
+                <span style="font-size:32px;font-weight:800;letter-spacing:8px;color:#0f172a;font-family:monospace;">${otpCode}</span>
+              </div>
+
+              <p style="color:#64748b;font-size:12px;line-height:1.6;margin:0 0 8px;">
+                • This code expires in <strong>10 minutes</strong>.<br/>
+                • Never disclose this OTP to anyone.<br/>
+                • If you did not make this deletion request, someone else may have accessed your account. Please log in immediately and update your password.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+              <p style="margin:0;color:#94a3b8;font-size:11px;">
+                © ${new Date().getFullYear()} JobMarket Security Team. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    return EmailService.dispatchEmail(toEmail, toName, `${otpCode} is your Account Deletion Code - JobMarket`, htmlContent);
+  }
+
+  /**
    * Send Two-Factor Authentication (2FA) Login Verification OTP Email
    */
   static async send2FAOTP(toEmail: string, otpCode: string, toName: string = 'User'): Promise<boolean> {

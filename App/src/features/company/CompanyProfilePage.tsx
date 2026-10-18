@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Building2,
   MapPin,
@@ -56,13 +56,49 @@ import '../../styles/companyProfile.css';
 export const CompanyProfilePage: React.FC = () => {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser, syncUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
 
-  const [company, setCompany] = useState<any>(null);
+  const passedCompany = (location.state as any)?.companyData;
+
+  // Immediate Instant Initialization from passed router state or store jobs
+  const [company, setCompany] = useState<any>(() => {
+    if (passedCompany) return passedCompany;
+    if (companyId) {
+      const decoded = decodeURIComponent(companyId).toLowerCase().trim();
+      const allJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const match = allJobs.find(j =>
+        j && (
+          j.id === companyId ||
+          (j as any).employer_id === companyId ||
+          (j as any).employerId === companyId ||
+          (j as any).companyId === companyId ||
+          (j.company || '').toLowerCase().trim() === decoded ||
+          decoded.includes((j.company || '').toLowerCase().trim()) ||
+          (j.company || '').toLowerCase().trim().includes(decoded)
+        )
+      );
+      if (match) {
+        return {
+          id: companyId,
+          name: match.company,
+          logo: (match as any).realCompanyLogo || (match as any).companyProfileLogo || (match as any).real_company_logo || (match as any).company_profile_logo || null,
+          industry: (match as any).companyIndustry || match.industry || 'Industrial Manufacturing',
+          company_type: 'Private Limited',
+          city: (match as any).companyCity || match.location || 'Chhatrapati Sambhajinagar',
+          midc_zone: (match as any).companyMidcZone || match.midcZone || '',
+          description: match.description || `${match.company} is an active employer on JobMarket.`,
+          verified: true
+        };
+      }
+    }
+    return null;
+  });
+
   const [jobs, setJobs] = useState<any[]>([]);
-  const [loadingCompany, setLoadingCompany] = useState(true);
+  const [loadingCompany, setLoadingCompany] = useState(() => !company);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,53 +134,58 @@ export const CompanyProfilePage: React.FC = () => {
 
   const loadCompanyDetails = async () => {
     if (!companyId) return;
-    setLoadingCompany(true);
     setError(null);
 
     try {
       const res = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}`);
-      const json = await res.json();
-
-      if (res.ok && json && (json.data || json.success)) {
-        setCompany(json.data || json);
-        setLoadingCompany(false);
-        return;
+      if (res.ok) {
+        const json = await res.json();
+        if (json && (json.data || json.success)) {
+          setCompany((prev: any) => ({ ...(prev || {}), ...(json.data || json) }));
+          setLoadingCompany(false);
+          return;
+        }
       }
     } catch (err: any) {
       console.warn('API fetch company details failed, using store fallback:', err);
     }
 
-    // Fallback: derive company details from store jobs or users
-    const decoded = decodeURIComponent(companyId).toLowerCase().trim();
-    const allJobs = Array.isArray(state.jobs) ? state.jobs : [];
-    const matchingJob = allJobs.find(j =>
-      j && (
-        j.id === companyId ||
-        (j as any).employer_id === companyId ||
-        (j as any).employerId === companyId ||
-        (j as any).companyId === companyId ||
-        (j.company || '').toLowerCase().trim() === decoded ||
-        decoded.includes((j.company || '').toLowerCase().trim()) ||
-        (j.company || '').toLowerCase().trim().includes(decoded)
-      )
-    );
+    // Fallback: derive company details from store jobs or users if company not already present
+    setCompany((prev: any) => {
+      if (prev && prev.name) {
+        return prev;
+      }
+      const decoded = decodeURIComponent(companyId).toLowerCase().trim();
+      const allJobs = Array.isArray(state.jobs) ? state.jobs : [];
+      const matchingJob = allJobs.find(j =>
+        j && (
+          j.id === companyId ||
+          (j as any).employer_id === companyId ||
+          (j as any).employerId === companyId ||
+          (j as any).companyId === companyId ||
+          (j.company || '').toLowerCase().trim() === decoded ||
+          decoded.includes((j.company || '').toLowerCase().trim()) ||
+          (j.company || '').toLowerCase().trim().includes(decoded)
+        )
+      );
 
-    const compName = matchingJob ? matchingJob.company : decodeURIComponent(companyId);
+      const compName = matchingJob ? matchingJob.company : decodeURIComponent(companyId);
 
-    setCompany({
-      id: companyId,
-      name: compName,
-      logo: matchingJob?.companyLogo || (matchingJob as any)?.logo,
-      industry: matchingJob?.industry || 'Industrial Manufacturing',
-      company_type: 'Public Limited / MNC',
-      description: matchingJob?.description || `${compName} is a premier engineering and manufacturing enterprise delivering precision industrial systems, advanced fabrication, and world-class career growth.`,
-      city: matchingJob?.location || 'Chhatrapati Sambhajinagar',
-      midc_zone: matchingJob?.midcZone || 'Waluj MIDC',
-      company_size: '500+ employees',
-      founded_year: 1998,
-      website: 'https://www.jobmarket.in',
-      gst_number: '27AABCU9603R1ZN',
-      verified: true
+      return {
+        id: companyId,
+        name: compName,
+        logo: (matchingJob as any)?.realCompanyLogo || (matchingJob as any)?.companyProfileLogo || (matchingJob as any)?.real_company_logo || (matchingJob as any)?.company_profile_logo || null,
+        industry: (matchingJob as any)?.companyIndustry || matchingJob?.industry || 'Industrial Manufacturing',
+        company_type: 'Public Limited / MNC',
+        description: matchingJob?.description || `${compName} is a premier engineering and manufacturing enterprise delivering precision industrial systems, advanced fabrication, and world-class career growth.`,
+        city: matchingJob?.location || 'Chhatrapati Sambhajinagar',
+        midc_zone: matchingJob?.midcZone || 'Waluj MIDC',
+        company_size: '500+ employees',
+        founded_year: 1998,
+        website: 'https://www.jobmarket.in',
+        gst_number: '27AABCU9603R1ZN',
+        verified: true
+      };
     });
     setLoadingCompany(false);
   };
@@ -155,13 +196,14 @@ export const CompanyProfilePage: React.FC = () => {
 
     try {
       const res = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}/jobs`);
-      const json = await res.json();
-
-      if (res.ok && json && (json.data || Array.isArray(json))) {
-        const list = Array.isArray(json) ? json : (json.data || []);
-        setJobs(list);
-        setLoadingJobs(false);
-        return;
+      if (res.ok) {
+        const json = await res.json();
+        if (json && (json.data || Array.isArray(json))) {
+          const list = Array.isArray(json) ? json : (json.data || []);
+          setJobs(list);
+          setLoadingJobs(false);
+          return;
+        }
       }
     } catch (err) {
       console.warn('API fetch company jobs failed, falling back to local store:', err);
@@ -192,10 +234,12 @@ export const CompanyProfilePage: React.FC = () => {
     if (!companyId) return;
     try {
       const res = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}/follow-status`);
-      const json = await res.json();
-      if (res.ok && json?.success && json.data) {
-        setIsFollowing(Boolean(json.data.isFollowing));
-        setFollowersCount(Number(json.data.followersCount) || 0);
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.success && json.data) {
+          setIsFollowing(Boolean(json.data.isFollowing));
+          setFollowersCount(Number(json.data.followersCount) || 0);
+        }
       }
     } catch (err) {
       console.warn('Failed to load real-time follower status:', err);
@@ -203,10 +247,10 @@ export const CompanyProfilePage: React.FC = () => {
   };
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     loadCompanyDetails();
     loadCompanyJobs();
     loadFollowStatus();
-    window.scrollTo(0, 0);
   }, [companyId]);
 
   // Sync follow state when user signs in or out
@@ -446,13 +490,71 @@ export const CompanyProfilePage: React.FC = () => {
 
   if (loadingCompany) {
     return (
-      <div className="cmp-page-wrapper" style={{ padding: '32px 16px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div className="skeleton" style={{ width: '100%', height: '240px', borderRadius: '16px', marginBottom: '20px' }} />
-          <div className="skeleton" style={{ width: '100%', height: '140px', borderRadius: '16px', marginBottom: '20px' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
-            <div className="skeleton" style={{ height: '400px', borderRadius: '16px' }} />
-            <div className="skeleton" style={{ height: '400px', borderRadius: '16px' }} />
+      <div className="cmp-page-wrapper">
+        {/* Banner Skeleton */}
+        <div className="cmp-hero-banner" style={{ backgroundColor: '#0A58E2', opacity: 0.9 }}>
+          <div className="cmp-banner-inner">
+            <div className="cmp-banner-top-row">
+              <div className="skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="skeleton" style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Container */}
+        <div className="cmp-main-container">
+          {/* Header Card Skeleton */}
+          <div className="cmp-header-card">
+            <div className="cmp-header-top-row">
+              <div className="cmp-header-identity">
+                <div className="skeleton" style={{ width: '72px', height: '72px', borderRadius: '12px', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="skeleton" style={{ width: '55%', height: '24px', borderRadius: '6px', marginBottom: '10px' }} />
+                  <div className="skeleton" style={{ width: '80%', height: '14px', borderRadius: '4px', marginBottom: '12px' }} />
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="skeleton" style={{ width: '120px', height: '28px', borderRadius: '9999px' }} />
+                    <div className="skeleton" style={{ width: '90px', height: '28px', borderRadius: '9999px' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Navigation Skeleton */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px', marginBottom: '16px' }}>
+            <div className="skeleton" style={{ width: '100px', height: '38px', borderRadius: '8px' }} />
+            <div className="skeleton" style={{ width: '100px', height: '38px', borderRadius: '8px' }} />
+          </div>
+
+          {/* Layout Grid Skeleton */}
+          <div className="cmp-layout-grid">
+            <div className="cmp-main-column">
+              <div className="cmp-surface-card" style={{ padding: '16px' }}>
+                {/* Search Bar Skeleton */}
+                <div className="skeleton" style={{ width: '100%', height: '48px', borderRadius: '8px', marginBottom: '16px' }} />
+                {/* Job Card Skeletons */}
+                {[1, 2, 3].map((k) => (
+                  <div key={k} className="cmp-job-item-card" style={{ padding: '14px', border: '1px solid #E2E8F0', borderRadius: '8px', marginBottom: '10px', backgroundColor: '#FFFFFF' }}>
+                    <div className="skeleton" style={{ width: '48%', height: '18px', borderRadius: '4px', marginBottom: '10px' }} />
+                    <div className="skeleton" style={{ width: '65%', height: '13px', borderRadius: '4px', marginBottom: '12px' }} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <div className="skeleton" style={{ width: '110px', height: '22px', borderRadius: '4px' }} />
+                      <div className="skeleton" style={{ width: '80px', height: '22px', borderRadius: '4px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="cmp-side-column">
+              <div className="cmp-surface-card" style={{ padding: '16px' }}>
+                <div className="skeleton" style={{ width: '40%', height: '16px', borderRadius: '4px', marginBottom: '14px' }} />
+                <div className="skeleton" style={{ width: '100%', height: '70px', borderRadius: '6px', marginBottom: '14px' }} />
+                <div className="skeleton" style={{ width: '75%', height: '14px', borderRadius: '4px' }} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -483,41 +585,17 @@ export const CompanyProfilePage: React.FC = () => {
     );
   }
 
-  const isMidcNonApplicable =
-    !company.midc_zone ||
-    ['na', 'n/a', 'none', 'null', 'undefined', '-', 'not applicable', 'not applicable (non-midc / commercial)'].includes(
-      String(company.midc_zone).trim().toLowerCase()
-    );
-  const locationBadgeText = !isMidcNonApplicable
-    ? `${company.midc_zone}${company.city ? ` • ${company.city}` : ''}`
-    : company.city || 'Location Available';
-
   const companyBadgesMarkup = (
     <>
-      <span className="cmp-pill-badge active-blue">
-        <Building2 size={13} color="#1D4ED8" style={{ flexShrink: 0 }} />
-        <span>{company.industry || 'Industrial Manufacturing'}</span>
-      </span>
-
-      <span className="cmp-pill-badge">
-        <Lock size={13} color="#64748B" style={{ flexShrink: 0 }} />
-        <span>{company.company_type || 'Public Limited / MNC'}</span>
-      </span>
-
-      <span className="cmp-pill-badge">
-        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
-        <span>{locationBadgeText}</span>
-      </span>
-
-      <span className="cmp-pill-badge">
-        <Users size={13} color="#64748B" style={{ flexShrink: 0 }} />
-        <span>{company.company_size || '500+ Employees'}</span>
-      </span>
-
-      {company.founded_year && (
+      {(company.industry || 'Industrial Manufacturing') && (
         <span className="cmp-pill-badge">
-          <Calendar size={13} color="#64748B" style={{ flexShrink: 0 }} />
-          <span>Est. {company.founded_year}</span>
+          {company.industry || 'Industrial Manufacturing'}
+        </span>
+      )}
+
+      {(company.company_type || 'Public Limited / MNC') && (
+        <span className="cmp-pill-badge">
+          {company.company_type || 'Public Limited / MNC'}
         </span>
       )}
     </>
@@ -845,7 +923,7 @@ export const CompanyProfilePage: React.FC = () => {
                 {/* Search & Active Department Toolbar */}
                 <div className="cmp-jobs-toolbar">
                   <div className="cmp-jobs-search-box">
-                    <Search size={16} color="#94A3B8" strokeWidth={2} style={{ flexShrink: 0 }} />
+                    <Search size={18} color="#64748B" strokeWidth={2} style={{ flexShrink: 0 }} />
                     <input
                       type="text"
                       value={searchQuery}
@@ -889,8 +967,17 @@ export const CompanyProfilePage: React.FC = () => {
 
                 {/* Job Cards List */}
                 {loadingJobs ? (
-                  <div style={{ padding: '36px', textAlign: 'center', color: '#64748B' }}>
-                    Loading active job vacancies...
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {[1, 2, 3].map((sk) => (
+                      <div key={sk} className="cmp-job-item-card" style={{ padding: '14px', border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
+                        <div className="skeleton" style={{ width: '48%', height: '18px', borderRadius: '4px', marginBottom: '10px' }} />
+                        <div className="skeleton" style={{ width: '68%', height: '13px', borderRadius: '4px', marginBottom: '12px' }} />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <div className="skeleton" style={{ width: '110px', height: '22px', borderRadius: '4px' }} />
+                          <div className="skeleton" style={{ width: '80px', height: '22px', borderRadius: '4px' }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : filteredJobs.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column' }}>

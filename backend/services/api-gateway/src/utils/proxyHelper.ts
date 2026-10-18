@@ -13,16 +13,30 @@ const keepAliveAgent = new http.Agent({
 
 export const createServiceProxy = (targetPort: number, fallbackHandler?: (req: Request, res: Response, next: NextFunction) => void) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    const forwardHeaders: Record<string, any> = {
+      ...req.headers,
+      host: `127.0.0.1:${targetPort}`,
+    };
+
+    const hasBody = Boolean(req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0);
+    const bodyMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+    let bodyData: string | null = null;
+
+    if (bodyMethods.includes(req.method) && hasBody) {
+      bodyData = JSON.stringify(req.body);
+      forwardHeaders['content-type'] = 'application/json';
+      forwardHeaders['content-length'] = Buffer.byteLength(bodyData).toString();
+    } else if (!hasBody) {
+      delete forwardHeaders['content-length'];
+    }
+
     const options: http.RequestOptions = {
       hostname: '127.0.0.1',
       port: targetPort,
       path: req.originalUrl,
       method: req.method,
       agent: keepAliveAgent,
-      headers: {
-        ...req.headers,
-        host: `127.0.0.1:${targetPort}`,
-      },
+      headers: forwardHeaders,
       timeout: 15000,
     };
 
@@ -44,10 +58,7 @@ export const createServiceProxy = (targetPort: number, fallbackHandler?: (req: R
       });
     });
 
-    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
-      const bodyData = JSON.stringify(req.body);
-      proxyReq.setHeader('Content-Type', 'application/json');
-      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+    if (bodyData) {
       proxyReq.write(bodyData);
     }
 

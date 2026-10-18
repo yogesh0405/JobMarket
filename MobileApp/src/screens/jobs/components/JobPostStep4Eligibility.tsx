@@ -12,7 +12,6 @@ import {
   Users,
   User,
   UserCheck,
-  FileText,
   Building2,
   Phone,
   MapPin,
@@ -53,16 +52,16 @@ interface JobPostStep4EligibilityProps {
   setApplicationDeadline: (val: string) => void;
   maxApplicantsInput: string;
   setMaxApplicantsInput: (val: string) => void;
-  description: string;
-  setDescription: (val: string) => void;
-  showResponsibilities: boolean;
-  setShowResponsibilities: (val: boolean) => void;
-  responsibilities: string;
-  setResponsibilities: (val: string) => void;
-  showRequirements: boolean;
-  setShowRequirements: (val: boolean) => void;
-  requirements: string;
-  setRequirements: (val: string) => void;
+  description?: string;
+  setDescription?: (val: string) => void;
+  showResponsibilities?: boolean;
+  setShowResponsibilities?: (val: boolean) => void;
+  responsibilities?: string;
+  setResponsibilities?: (val: string) => void;
+  showRequirements?: boolean;
+  setShowRequirements?: (val: boolean) => void;
+  requirements?: string;
+  setRequirements?: (val: string) => void;
   skillsTags: string[];
   customSkillInput: string;
   setCustomSkillInput: (val: string) => void;
@@ -388,76 +387,11 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
       <View style={styles.sectionBlock}>
         <View style={styles.sectionHeaderRow}>
           <Wrench size={16} color={COLORS.primary} />
-          <Text style={styles.sectionTitleText}>Job Description, Responsibilities & Skills</Text>
+          <Text style={styles.sectionTitleText}>Required Key Skills & Competencies</Text>
         </View>
 
         <View style={styles.cardBody}>
-          <Input
-            label="Job Description"
-            required
-            multiline
-            numberOfLines={4}
-            placeholder="Describe machine operations, shop floor duties, and expectations..."
-            value={description}
-            onChangeText={setDescription}
-            onFocus={onFocusInput}
-            inputContainerStyle={{ borderRadius: 8 }}
-            style={{ minHeight: 90 }}
-          />
-
-          <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
-            <Text style={styles.fieldLabel}>Add Key Responsibilities</Text>
-            <Switch
-              value={showResponsibilities}
-              onValueChange={(val) => {
-                setShowResponsibilities(val);
-                if (!val) setResponsibilities('');
-              }}
-              trackColor={{ true: COLORS.primary }}
-            />
-          </View>
-
-          {showResponsibilities ? (
-            <Input
-              label="Key Responsibilities (One per line)"
-              multiline
-              numberOfLines={3}
-              placeholder="e.g. Operate CNC machine per job card&#10;Perform Quality Checks"
-              value={responsibilities}
-              onChangeText={setResponsibilities}
-              onFocus={onFocusInput}
-              inputContainerStyle={{ borderRadius: 8 }}
-              style={{ marginTop: 4, minHeight: 70 }}
-            />
-          ) : null}
-
-          <View style={[styles.switchHeaderRow, { marginTop: 14, paddingVertical: 4 }]}>
-            <Text style={styles.fieldLabel}>Add Job Requirements & Qualifications</Text>
-            <Switch
-              value={showRequirements}
-              onValueChange={(val) => {
-                setShowRequirements(val);
-                if (!val) setRequirements('');
-              }}
-              trackColor={{ true: COLORS.primary }}
-            />
-          </View>
-
-          {showRequirements ? (
-            <Input
-              label="Job Requirements & Qualification (One per line)"
-              multiline
-              numberOfLines={3}
-              placeholder="e.g. ITI / Diploma in Fitter Trade&#10;1+ year shopfloor experience"
-              value={requirements}
-              onChangeText={setRequirements}
-              onFocus={onFocusInput}
-              inputContainerStyle={{ borderRadius: 8 }}
-              style={{ marginTop: 4, minHeight: 70 }}
-            />
-          ) : null}
-
-          <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>
+          <Text style={styles.fieldLabel}>
             Key Skills <Text style={styles.required}>*</Text>
           </Text>
           
@@ -512,6 +446,7 @@ export const JobPostStep4Eligibility: React.FC<JobPostStep4EligibilityProps> = (
                 ))}
             </ScrollView>
           ) : null}
+
         </View>
       </View>
 

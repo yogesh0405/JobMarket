@@ -81,26 +81,22 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
         <View style={styles.jobItemContent}>
           {/* Top Info Row with Company Logo */}
           <View style={styles.jobTopRow}>
-            <TouchableOpacity
-              activeOpacity={onCompanyPress ? 0.75 : 1}
-              onPress={() => (onCompanyPress ? onCompanyPress(companyName) : onPress())}
-            >
+            <View>
               <CompanyLogoAvatar
                 logoUrl={jobLogo}
                 companyName={companyName}
                 size={40}
                 borderRadius={8}
               />
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.jobTextCol}>
               <Text style={styles.jobTitle} numberOfLines={1}>
                 {jobTitle}
               </Text>
               <Text
-                style={[styles.jobCompanySubText, onCompanyPress && { color: '#2563EB' }]}
+                style={styles.jobCompanySubText}
                 numberOfLines={1}
-                onPress={() => onCompanyPress && onCompanyPress(companyName)}
               >
                 {companyName}
               </Text>
@@ -145,17 +141,26 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
       ? `${minExp}+ Yrs Exp`
       : 'Fresher';
 
-  const sMin = job.salary_min ?? (job as any).salaryMin;
-  const sMax = job.salary_max ?? (job as any).salaryMax;
-  let salaryText = '3.5-5.5 Lacs PA';
-  if (sMin && sMax) {
-    if (sMin >= 100000) {
-      salaryText = `${(sMin / 100000).toFixed(1)}-${(sMax / 100000).toFixed(1)} Lacs PA`;
-    } else {
-      salaryText = `₹${Math.round(sMin / 1000)}k-${Math.round(sMax / 1000)}k/mo`;
+  const sMin = Number(job.salary_min ?? (job as any).salaryMin ?? 0);
+  const sMax = Number(job.salary_max ?? (job as any).salaryMax ?? 0);
+  const isSalaryDisclosed =
+    (job as any).disclose_salary !== false &&
+    (job as any).discloseSalary !== false &&
+    (sMin > 0 || sMax > 0);
+
+  let salaryText = 'Salary Not Disclosed';
+  if (isSalaryDisclosed) {
+    if (sMin > 0 && sMax > 0) {
+      if (sMin >= 100000) {
+        salaryText = `${(sMin / 100000).toFixed(1)}-${(sMax / 100000).toFixed(1)} Lacs PA`;
+      } else {
+        salaryText = `₹${Math.round(sMin / 1000)}k-${Math.round(sMax / 1000)}k/mo`;
+      }
+    } else if (sMin > 0) {
+      salaryText = sMin >= 100000 ? `₹${(sMin / 100000).toFixed(1)} Lacs+ PA` : `₹${sMin}/mo`;
+    } else if (sMax > 0) {
+      salaryText = sMax >= 100000 ? `Up to ₹${(sMax / 100000).toFixed(1)} Lacs PA` : `Up to ₹${sMax}/mo`;
     }
-  } else if (sMin) {
-    salaryText = sMin >= 100000 ? `₹${(sMin / 100000).toFixed(1)} Lacs+ PA` : `₹${sMin}/mo`;
   }
 
   return (
@@ -167,30 +172,22 @@ export const CandidateJobCardItem: React.FC<CandidateJobCardItemProps> = ({
       <View style={styles.naukriCardTopSection}>
         <View style={styles.naukriTitleRow}>
           {/* Company Logo at the Top */}
-          <TouchableOpacity
-            activeOpacity={onCompanyPress ? 0.75 : 1}
-            onPress={() => (onCompanyPress ? onCompanyPress(companyName) : onPress())}
-            style={{ marginRight: 10 }}
-          >
+          <View style={{ marginRight: 10 }}>
             <CompanyLogoAvatar
               logoUrl={jobLogo}
               companyName={companyName}
               size={42}
               borderRadius={8}
             />
-          </TouchableOpacity>
+          </View>
 
           <View style={{ flex: 1, justifyContent: 'center' }}>
             <Text style={styles.naukriJobTitle} numberOfLines={1}>
               {jobTitle}
             </Text>
             <Text
-              style={[
-                styles.naukriCompanyNameHeader,
-                onCompanyPress && { color: '#2563EB' },
-              ]}
+              style={styles.naukriCompanyNameHeader}
               numberOfLines={1}
-              onPress={() => onCompanyPress && onCompanyPress(companyName)}
             >
               {companyName}
             </Text>
@@ -279,13 +276,13 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   jobItemRowFirst: {
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     marginTop: 4,
   },
   jobItemRowLast: {
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     borderBottomWidth: 1,
     marginBottom: 16,
   },
@@ -364,13 +361,13 @@ const styles = StyleSheet.create({
   naukriJobCard: {
     width: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.02,
     shadowRadius: 2,
     elevation: 1,
   },

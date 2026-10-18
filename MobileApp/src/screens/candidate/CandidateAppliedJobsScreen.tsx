@@ -209,9 +209,9 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     return (
-      <View style={[styles.statusPillBadge, { backgroundColor: bg, borderColor: border }]}>
-        <IconComp size={11} color={color} strokeWidth={2.2} />
-        <Text style={[styles.statusPillBadgeText, { color }]}>{label}</Text>
+      <View style={styles.statusCleanRow}>
+        <IconComp size={12} color={color} strokeWidth={2.4} />
+        <Text style={[styles.statusCleanText, { color }]}>{label}</Text>
       </View>
     );
   };
@@ -288,9 +288,9 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                 <SkeletonLoader width={80} height={22} style={{ borderRadius: RADIUS.sm }} />
               </View>
 
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-                <SkeletonLoader width={95} height={22} style={{ borderRadius: RADIUS.xs }} />
-                <SkeletonLoader width={120} height={22} style={{ borderRadius: RADIUS.xs }} />
+              <View style={{ gap: 6, marginTop: 4 }}>
+                <SkeletonLoader width="65%" height={14} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width="45%" height={14} style={{ borderRadius: RADIUS.xs }} />
               </View>
             </View>
           ))}
@@ -378,32 +378,23 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   {/* Section Separator */}
                   <View style={styles.sectionDividerSlate} />
 
-                  {/* Metadata Info Tags */}
-                  <View style={styles.metaRow}>
-                    {job.location ? (
-                      <View style={styles.metaTagPill}>
-                        <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                        <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
-                          {job.location}
-                        </Text>
-                      </View>
-                    ) : null}
+                  {/* Metadata Info Rows (Clean, chip-free matching Best Fit card) */}
+                  <View style={styles.metaRowsContainer}>
+                    <View style={styles.metaLine}>
+                      <MapPin size={13} color="#64748B" />
+                      <Text style={styles.metaLineText} numberOfLines={1}>
+                        {job.location || 'Location Not Specified'}
+                        {job.job_type || job.jobType ? `   |   ${job.job_type || job.jobType}` : ''}
+                      </Text>
+                    </View>
 
                     {hasSalary ? (
-                      <View style={[styles.metaTagPill, styles.salaryTagPill]}>
-                        <IndianRupee size={12} color={COLORS.primary} style={{ flexShrink: 0 }} />
-                        <Text style={[styles.metaTagText, { color: COLORS.primary, fontWeight: '700' }]} numberOfLines={1} ellipsizeMode="tail">
+                      <View style={styles.metaLine}>
+                        <IndianRupee size={13} color={COLORS.primary} />
+                        <Text style={[styles.metaLineText, { color: COLORS.primary, fontWeight: '700' }]} numberOfLines={1}>
                           {job.salary_min || job.salaryMin ? `₹${job.salary_min || job.salaryMin}` : ''}
                           {(job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax) ? ' - ' : ''}
                           {job.salary_max || job.salaryMax ? `₹${job.salary_max || job.salaryMax}` : ''}/mo
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {job.job_type || job.jobType ? (
-                      <View style={styles.metaTagPill}>
-                        <Text style={styles.metaTagText} numberOfLines={1} ellipsizeMode="tail">
-                          {job.job_type || job.jobType}
                         </Text>
                       </View>
                     ) : null}
@@ -417,9 +408,7 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                           <Ticket size={13} color="#1764E8" strokeWidth={2.4} />
                           <Text style={styles.walkInPassTitle}>Walk-in Drive Entry Pass</Text>
                         </View>
-                        <View style={styles.walkInPassBadge}>
-                          <Text style={styles.walkInPassBadgeText}>PASS ISSUED</Text>
-                        </View>
+                        <Text style={styles.walkInPassBadgeText}>PASS ISSUED</Text>
                       </View>
 
                       <View style={styles.interviewDetailsRow}>
@@ -454,11 +443,11 @@ export const CandidateAppliedJobsScreen: React.FC<Props> = ({ navigation }) => {
                   ) : isShortlisted && (item.interviewDate || item.interview_date) ? (
                     <View style={styles.interviewSubLayout}>
                       <View style={styles.interviewHeaderRow}>
-                        <Calendar size={14} color={COLORS.primary} strokeWidth={2.2} />
-                        <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
-                        <View style={styles.actionPill}>
-                          <Text style={styles.actionPillText}>CONFIRMED</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <Calendar size={14} color={COLORS.primary} strokeWidth={2.2} />
+                          <Text style={styles.interviewHeaderTitle}>Interview Scheduled</Text>
                         </View>
+                        <Text style={styles.actionPillText}>CONFIRMED</Text>
                       </View>
 
                       <View style={styles.interviewDetailsRow}>
@@ -648,49 +637,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
     marginVertical: 2,
   },
-  statusPillBadge: {
+  statusCleanRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: RADIUS.xs,
-    borderWidth: 1,
-    flexShrink: 0,
+    gap: 5,
   },
-  statusPillBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-    width: '100%',
-  },
-  metaTagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3.5,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: RADIUS.xs,
-    flexShrink: 1,
-    maxWidth: '100%',
-  },
-  salaryTagPill: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#DBEAFE',
-  },
-  metaTagText: {
+  statusCleanText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#475569',
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  metaRowsContainer: {
+    gap: 4.5,
+    marginTop: 1,
+    marginBottom: 2,
+  },
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaLineText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
     flexShrink: 1,
   },
   walkInPassSubLayout: {
@@ -717,17 +687,9 @@ const styles = StyleSheet.create({
     color: '#1764E8',
     flex: 1,
   },
-  walkInPassBadge: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 0,
-  },
   walkInPassBadgeText: {
-    fontSize: 9,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
     color: '#1764E8',
     letterSpacing: 0.5,
   },
@@ -768,19 +730,11 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     flex: 1,
   },
-  actionPill: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: RADIUS.xs,
-    flexShrink: 0,
-  },
   actionPillText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: COLORS.primary,
+    letterSpacing: 0.5,
   },
   interviewDetailsRow: {
     flexDirection: 'row',

@@ -128,10 +128,10 @@ export const RADIUS = {
   none: 0,
   xs: 4,
   sm: 6,
-  card: 6, // Universal Card Radius (6dp) across entire Mobile App
-  md: 6,   // Standard card & container radius (6dp)
-  lg: 6,   // Major card radius (6dp)
-  xl: 8,   // Modal / bottom sheet top corners
+  card: 12, // Universal Card Radius (12dp) across entire Mobile App — matched to Best Fit for You cards
+  md: 12,   // Standard card & container radius (12dp)
+  lg: 12,   // Major card radius (12dp)
+  xl: 16,   // Modal / bottom sheet top corners
   full: 9999,
 };
 

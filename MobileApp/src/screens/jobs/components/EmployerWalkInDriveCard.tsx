@@ -89,6 +89,7 @@ export const EmployerWalkInDriveCard: React.FC<EmployerWalkInDriveCardProps> = (
   const logoUrl =
     job.company_logo ||
     (job as any).companyLogo ||
+    (job as any).logoUrl ||
     (job as any).logo_url ||
     (job as any).logo;
 

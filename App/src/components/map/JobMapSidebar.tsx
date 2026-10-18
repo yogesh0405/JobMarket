@@ -58,7 +58,7 @@ export const JobMapSidebar: React.FC<JobMapSidebarProps> = ({
               >
                 <div className="map-job-card-header">
                   <CompanyDefaultLogo
-                    logoUrl={job.companyLogo || (job as any).company_logo}
+                    logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                     companyName={job.company}
                     size={32}
                     borderRadius="6px"

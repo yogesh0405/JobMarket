@@ -81,9 +81,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
               {/* Optional Highlight Text */}
               {highlightText ? (
-                <Text style={styles.highlightText} numberOfLines={1}>
-                  {highlightText}
-                </Text>
+                <View style={styles.highlightBox}>
+                  <Text style={styles.highlightText}>
+                    {highlightText}
+                  </Text>
+                </View>
               ) : null}
 
               {children}
@@ -169,12 +171,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 20,
   },
+  highlightBox: {
+    width: '100%',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   highlightText: {
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.primary,
     textAlign: 'center',
-    marginBottom: 16,
+    lineHeight: 19,
+    width: '100%',
   },
   buttonRow: {
     flexDirection: 'row',

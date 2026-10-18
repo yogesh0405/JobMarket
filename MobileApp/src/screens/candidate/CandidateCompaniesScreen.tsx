@@ -556,7 +556,7 @@ export const CandidateCompaniesScreen: React.FC<CandidateCompaniesScreenProps> =
                   logoUrl={comp.logo || comp.logoUrl}
                   companyName={comp.name}
                   size={48}
-                  borderRadius={RADIUS.card}
+                  borderRadius={8}
                 />
 
                 <View style={styles.cardHeaderTextWrap}>
@@ -843,13 +843,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     marginBottom: 16,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
     overflow: 'hidden',
   },
   cardTopHeader: {
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 32,

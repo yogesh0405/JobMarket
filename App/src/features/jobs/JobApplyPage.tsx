@@ -391,7 +391,7 @@ export const JobApplyPage: React.FC = () => {
         {/* CARD 1: Target Job Opening Summary Card */}
         <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px', boxShadow: '0 2px 8px rgba(15,23,42,0.05)' }}>
           <div style={{ backgroundColor: '#2563EB', padding: '14px 18px', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).logo} companyName={job.company} size={44} borderRadius="50%" />
+            <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo} companyName={job.company} size={44} borderRadius="50%" />
             <div>
               <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#DBEAFE' }}>{job.company || 'Industrial Partner'}</div>
               <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>{job.title}</h1>

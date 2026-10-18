@@ -19,7 +19,7 @@ import { Header } from '../../components/common/Header';
 import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoader';
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { getRecommendedJobsForCandidate } from '../../utils/recommendationMatcher';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 import { appliedJobsStore } from '../../utils/appliedJobsStore';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { CandidateDashboardAnalyticsSection } from './components/CandidateDashboardAnalyticsSection';
@@ -206,8 +206,8 @@ export const CandidateDashboardScreen: React.FC<Props> = ({ navigation, hideHead
     }
 
     return (
-      <View style={[styles.statusBadgePill, { backgroundColor: bg, borderColor: border }]}>
-        <Text style={[styles.statusBadgeText, { color: text }]}>{label}</Text>
+      <View style={styles.statusCleanTagRow}>
+        <Text style={[styles.statusCleanTagText, { color: text }]}>{label}</Text>
       </View>
     );
   };
@@ -361,21 +361,21 @@ const styles = StyleSheet.create({
   },
   singleMasterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
   },
-  statusBadgePill: {
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
+  statusCleanTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
-  statusBadgeText: {
-    fontSize: 10,
+  statusCleanTagText: {
+    fontSize: 10.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   sectionDividerSlate: {
     height: 1,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   emptyStateContainer: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 20,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   squaredJobCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 10,

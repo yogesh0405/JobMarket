@@ -156,4 +156,27 @@ export const authApi = {
       }),
     });
   },
+
+  requestDeleteAccountOTP: async (): Promise<ApiResponse<{ email?: string; message?: string }>> => {
+    return apiFetch('/api/v1/auth/delete-account/request-otp', {
+      method: 'POST',
+    });
+  },
+
+  deleteAccount: async (payload: { otpCode: string; password?: string }): Promise<ApiResponse> => {
+    try {
+      return await apiFetch('/api/v1/auth/delete-account', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (err: any) {
+      if (err?.status === 404 || err?.status === 405) {
+        return await apiFetch('/api/v1/auth/delete-account', {
+          method: 'DELETE',
+          body: JSON.stringify(payload),
+        });
+      }
+      throw err;
+    }
+  },
 };

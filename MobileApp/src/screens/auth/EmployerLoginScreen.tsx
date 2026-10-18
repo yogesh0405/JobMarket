@@ -32,6 +32,7 @@ import { useToast } from '../../context/ToastContext';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { SuccessModal } from '../../components/common/SuccessModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, RADIUS } from '../../constants/theme';
 import { authApi } from '../../api/authApi';
 import { API_BASE_URL } from '../../api/client';
@@ -65,7 +66,31 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     if (route?.params?.initialRole) {
       setRole(route.params.initialRole);
     }
-  }, [route?.params]);
+    if (route?.params?.deletedSuccess) {
+      const msg = route?.params?.successMessage || 'Your account has been deleted successfully.';
+      showToast(msg, 'success');
+      setSuccessModalConfig({
+        visible: true,
+        title: 'Account Deleted',
+        message: 'Your account has been permanently deleted. All personal data, credentials, and active sessions have been wiped.',
+        buttonText: 'Got It',
+      });
+    }
+
+    // Double safety check if user came via storage flag
+    AsyncStorage.getItem('ACCOUNT_DELETED_FLAG').then((flag) => {
+      if (flag === 'true') {
+        AsyncStorage.removeItem('ACCOUNT_DELETED_FLAG').catch(() => {});
+        showToast('Your account has been deleted successfully.', 'success');
+        setSuccessModalConfig({
+          visible: true,
+          title: 'Account Deleted',
+          message: 'Your account has been permanently deleted. All personal data, credentials, and active sessions have been wiped.',
+          buttonText: 'Got It',
+        });
+      }
+    }).catch(() => {});
+  }, [route?.params, showToast]);
 
   // 2FA Flow States
   const [show2FAModal, setShow2FAModal] = useState(false);
@@ -103,6 +128,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
     visible: boolean;
     title: string;
     message?: string;
+    buttonText?: string;
   }>({
     visible: false,
     title: '',
@@ -497,7 +523,7 @@ export const EmployerLoginScreen: React.FC<Props> = ({ navigation, route }) => {
         visible={successModalConfig.visible}
         title={successModalConfig.title}
         message={successModalConfig.message}
-        buttonText="Sign in Now"
+        buttonText={successModalConfig.buttonText || "Sign in Now"}
         onClose={() => setSuccessModalConfig({ visible: false, title: '' })}
       />
     </View>

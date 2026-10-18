@@ -21,7 +21,7 @@ import { Skeleton as SkeletonLoader } from '../../components/common/SkeletonLoad
 import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { useToast } from '../../context/ToastContext';
 import { savedJobsStore } from '../../utils/savedJobsStore';
-import { COLORS } from '../../constants/theme';
+import { COLORS, RADIUS } from '../../constants/theme';
 
 interface Props {
   navigation: any;
@@ -125,18 +125,18 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
           {[1, 2, 3].map((key) => (
             <View key={key} style={styles.cardSkeleton}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                <SkeletonLoader width="70%" height={18} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width={22} height={22} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width="70%" height={18} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={22} height={22} style={{ borderRadius: RADIUS.xs }} />
               </View>
-              <SkeletonLoader width="45%" height={14} style={{ borderRadius: 0, marginBottom: 14 }} />
+              <SkeletonLoader width="45%" height={14} style={{ borderRadius: RADIUS.xs, marginBottom: 14 }} />
               <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
-                <SkeletonLoader width={80} height={12} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width={90} height={12} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width={70} height={12} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={80} height={12} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={90} height={12} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={70} height={12} style={{ borderRadius: RADIUS.xs }} />
               </View>
               <View style={{ paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9', flexDirection: 'row', justifyContent: 'space-between' }}>
-                <SkeletonLoader width={120} height={14} style={{ borderRadius: 0 }} />
-                <SkeletonLoader width={60} height={14} style={{ borderRadius: 0 }} />
+                <SkeletonLoader width={120} height={14} style={{ borderRadius: RADIUS.xs }} />
+                <SkeletonLoader width={60} height={14} style={{ borderRadius: RADIUS.xs }} />
               </View>
             </View>
           ))}
@@ -194,17 +194,6 @@ export const CandidateSavedJobsScreen: React.FC<Props> = ({ navigation }) => {
                 isSaved={true}
                 onPress={() => navigation.navigate('CandidateJobDetail', { jobId: job.id, job: job })}
                 onToggleSave={handleToggleSave}
-                onCompanyPress={(compName) =>
-                  navigation.navigate('CompanyProfile', {
-                    companyId: (job as any).company_id || (job as any).companyId || compName || job.company,
-                    name: compName || job.company,
-                    company: {
-                      name: compName || job.company,
-                      logo: job.companyLogo || (job as any).company_logo,
-                      location: job.location,
-                    },
-                  })
-                }
               />
             ))
           )}
@@ -255,7 +244,7 @@ const styles = StyleSheet.create({
   },
   cardSkeleton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
@@ -272,7 +261,7 @@ const styles = StyleSheet.create({
   emptyIconBox: {
     width: 68,
     height: 68,
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -301,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     marginTop: 10,
   },
   browseJobsCtaText: {
@@ -315,7 +304,7 @@ const styles = StyleSheet.create({
     borderColor: '#BFDBFE',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 0,
+    borderRadius: RADIUS.card,
     marginTop: 8,
   },
   resetSearchBtnText: {

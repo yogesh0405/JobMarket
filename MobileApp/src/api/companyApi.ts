@@ -15,6 +15,8 @@ export interface ToggleFollowResponse {
 export interface FollowedCompany {
   id: string;
   name: string;
+  employer_id?: string;
+  employerId?: string;
   logo?: string;
   industry?: string;
   city?: string;

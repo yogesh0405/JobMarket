@@ -112,6 +112,7 @@ export const Layout: React.FC = () => {
                                  isJobDetailRoute || 
                                  isCompanyProfileRoute || 
                                  isGlobalSearchRoute ||
+                                 isPostJobRoute ||
                                  location.pathname.startsWith('/resume');
 
   // Desktop view: Header must NEVER hide in any section!

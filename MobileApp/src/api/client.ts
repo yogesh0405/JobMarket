@@ -287,7 +287,15 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
       json = JSON.parse(text);
     } catch (e) {
       if (!response.ok) {
-        throw new Error('Network error. Please check your internet connection.');
+        const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+        const fallbackMsg =
+          cleanText && cleanText.length < 150
+            ? cleanText
+            : `Server returned error (${response.status}). Please try again.`;
+        const error: any = new Error(fallbackMsg);
+        error.status = response.status;
+        error.statusCode = response.status;
+        throw error;
       }
       throw new Error('Server returned non-JSON response.');
     }

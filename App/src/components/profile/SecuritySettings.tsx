@@ -12,9 +12,11 @@ import {
   Eye, 
   EyeOff,
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DeleteAccountModal } from './DeleteAccountModal';
 
 interface SessionItem {
   id: string;
@@ -115,6 +117,10 @@ export const SecuritySettings: React.FC = () => {
     message: '',
     isSuccess: true
   });
+
+  // Delete Account State
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // Fetch real authoritative 2FA status from server on mount
   useEffect(() => {
@@ -429,6 +435,30 @@ export const SecuritySettings: React.FC = () => {
     }
   };
 
+  // 6. Delete Account Handlers (2-Step: Confirm -> Send Real-time OTP -> Verify)
+  const handleOpenDeleteConfirm = () => {
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmAndSendOtp = () => {
+    setShowDeleteConfirmModal(false);
+    setShowDeleteAccountModal(true);
+  };
+
+  const handleDeleteSuccess = async () => {
+    setShowDeleteAccountModal(false);
+    showToast('Your account has been deleted successfully.', 'success');
+    try {
+      sessionStorage.setItem('ACCOUNT_DELETED_FLAG', 'true');
+      sessionStorage.setItem('ACCOUNT_DELETED_MSG', 'Your account has been deleted successfully.');
+    } catch (_) {}
+    await logout();
+    navigate('/login?deleted=true', {
+      replace: true,
+      state: { message: 'Your account has been deleted successfully.' }
+    });
+  };
+
   return (
     <div className="security-page-container">
       <style>{`
@@ -639,6 +669,165 @@ export const SecuritySettings: React.FC = () => {
           background-color: #FEE2E2;
         }
 
+        /* Desktop Danger Zone Card & Modals */
+        .sec-danger-card {
+          border: 1px solid #FECACA;
+        }
+
+        .sec-danger-title-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .sec-danger-title {
+          color: #DC2626 !important;
+          margin-bottom: 0 !important;
+        }
+
+        .sec-danger-notice-text {
+          font-size: 12px;
+          color: #64748B;
+          line-height: 17px;
+          margin: 0;
+          font-weight: 400;
+        }
+
+        .sec-delete-account-btn {
+          height: 38px;
+          background-color: #FFFFFF;
+          border: 1.5px solid #DC2626;
+          border-radius: 6px;
+          color: #DC2626;
+          font-size: 12.5px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          padding: 0 16px;
+          width: fit-content;
+          transition: all 0.2s ease;
+        }
+
+        .sec-delete-account-btn:hover {
+          background-color: #DC2626;
+          color: #FFFFFF;
+        }
+
+        .del-confirm-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(15, 23, 42, 0.65);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 99999;
+          padding: 16px;
+          backdrop-filter: blur(2px);
+          animation: delFadeIn 0.15s ease-out;
+        }
+
+        .del-confirm-card {
+          background-color: #FFFFFF;
+          border-radius: 12px;
+          border: 1px solid #E2E8F0;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          max-width: 400px;
+          width: 100%;
+          padding: 24px;
+          box-sizing: border-box;
+          text-align: center;
+          animation: delScaleUp 0.15s ease-out;
+        }
+
+        .del-confirm-icon-circle {
+          width: 56px;
+          height: 56px;
+          border-radius: 28px;
+          background-color: #FEF2F2;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+
+        .del-confirm-title {
+          font-size: 16px;
+          font-weight: 800;
+          color: #0F172A;
+          margin: 0 0 8px 0;
+          letter-spacing: -0.2px;
+        }
+
+        .del-confirm-message {
+          font-size: 12.5px;
+          color: #475569;
+          line-height: 19px;
+          margin: 0 0 14px 0;
+          font-weight: 500;
+        }
+
+        .del-confirm-highlight-box {
+          background-color: #FEF2F2;
+          border: 1px solid #FECACA;
+          border-radius: 6px;
+          padding: 8px 12px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #991B1B;
+          margin-bottom: 20px;
+        }
+
+        .del-confirm-btn-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+        }
+
+        .del-confirm-cancel-btn {
+          flex: 1;
+          height: 38px;
+          background-color: #FFFFFF;
+          border: 1.5px solid #CBD5E1;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #0F172A;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+        }
+
+        .del-confirm-cancel-btn:hover {
+          background-color: #F8FAFC;
+        }
+
+        .del-confirm-submit-btn {
+          flex: 1.2;
+          height: 38px;
+          background-color: #DC2626;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #FFFFFF;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: background-color 0.15s ease;
+        }
+
+        .del-confirm-submit-btn:hover {
+          background-color: #B91C1C;
+        }
+
         /* Mobile View (max-width: 768px) - Full-Screen Native Polish */
         @media (max-width: 768px) {
           .security-page-container {
@@ -736,6 +925,94 @@ export const SecuritySettings: React.FC = () => {
             font-size: 11.5px !important;
             padding: 4px 10px !important;
             border-radius: 6px !important;
+          }
+
+          /* Mobile Delete Account Card & Modals (1:1 with React Native MobileApp) */
+          .sec-danger-card {
+            border: none !important;
+            border-bottom: 8px solid #F8FAFC !important;
+            padding: 18px 16px !important;
+          }
+
+          .sec-danger-title {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+          }
+
+          .sec-danger-notice-text {
+            font-size: 12px !important;
+            color: #64748B !important;
+            line-height: 17px !important;
+            margin-bottom: 14px !important;
+          }
+
+          .sec-delete-account-btn {
+            width: 100% !important;
+            min-height: 44px !important;
+            background-color: #FFFFFF !important;
+            border: 1.2px solid #FCA5A5 !important;
+            border-radius: 8px !important;
+            font-size: 12.5px !important;
+            font-weight: 700 !important;
+            color: #DC2626 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+          }
+
+          .del-confirm-overlay {
+            padding: 20px !important;
+          }
+
+          .del-confirm-card {
+            max-width: 360px !important;
+            border-radius: 16px !important;
+            border: 1px solid #E2E8F0 !important;
+            padding: 26px 20px 24px !important;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25) !important;
+          }
+
+          .del-confirm-icon-circle {
+            width: 56px !important;
+            height: 56px !important;
+            border-radius: 28px !important;
+            margin-bottom: 16px !important;
+          }
+
+          .del-confirm-title {
+            font-size: 18px !important;
+            letter-spacing: -0.3px !important;
+            margin-bottom: 8px !important;
+          }
+
+          .del-confirm-message {
+            font-size: 13.5px !important;
+            line-height: 20px !important;
+            margin-bottom: 18px !important;
+          }
+
+          .del-confirm-highlight-box {
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 11.5px !important;
+            margin-bottom: 20px !important;
+          }
+
+          .del-confirm-btn-row {
+            gap: 12px !important;
+          }
+
+          .del-confirm-cancel-btn {
+            height: 46px !important;
+            font-size: 14px !important;
+            border-radius: 8px !important;
+          }
+
+          .del-confirm-submit-btn {
+            height: 46px !important;
+            font-size: 14px !important;
+            border-radius: 8px !important;
           }
         }
       `}</style>
@@ -1157,6 +1434,34 @@ export const SecuritySettings: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* CARD 4: DELETE ACCOUNT (Google Play & Privacy Compliant) */}
+        <div className="sec-card-box sec-danger-card">
+          <div className="sec-card-header-row">
+            <div>
+              <div className="sec-danger-title-row">
+                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.4} />
+                <h2 className="sec-card-title sec-danger-title">Delete Account</h2>
+              </div>
+              <p className="sec-card-subtitle">
+                Permanently erase your account, login credentials, and all personal data.
+              </p>
+            </div>
+          </div>
+
+          <p className="sec-danger-notice-text">
+            Permanent Action: Deleting your account will immediately erase your profile, credentials, uploaded resumes, and application history. This action cannot be undone.
+          </p>
+
+          <button
+            type="button"
+            className="sec-delete-account-btn"
+            onClick={handleOpenDeleteConfirm}
+          >
+            <Trash2 size={15} color="#DC2626" />
+            <span>Permanently Delete Account</span>
+          </button>
+        </div>
       </div>
 
       {/* THEMED TWO-FACTOR (2FA) CONFIRMATION MODAL */}
@@ -1384,6 +1689,59 @@ export const SecuritySettings: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* STEP 1: THEMED ACCOUNT DELETION CONFIRMATION MESSAGE MODAL */}
+      {showDeleteConfirmModal && (
+        <div className="del-confirm-overlay" onClick={() => setShowDeleteConfirmModal(false)}>
+          <div className="del-confirm-card" onClick={(e) => e.stopPropagation()}>
+            {/* Center Circular Danger Icon Badge */}
+            <div className="del-confirm-icon-circle">
+              <Trash2 size={28} color="#DC2626" strokeWidth={2.4} />
+            </div>
+
+            {/* Title */}
+            <h3 className="del-confirm-title">Delete Your Account?</h3>
+
+            {/* Message */}
+            <p className="del-confirm-message">
+              This will permanently delete your account, login credentials, uploaded resumes, and application history. This action cannot be undone.
+            </p>
+
+            {/* Highlight Box */}
+            <div className="del-confirm-highlight-box">
+              ⚠️ Permanent Action • All personal data will be erased
+            </div>
+
+            {/* Action Buttons Row */}
+            <div className="del-confirm-btn-row">
+              <button
+                type="button"
+                className="del-confirm-cancel-btn"
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >
+                Keep Account
+              </button>
+
+              <button
+                type="button"
+                className="del-confirm-submit-btn"
+                onClick={handleConfirmAndSendOtp}
+              >
+                Confirm & Send OTP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 2: THEMED ACCOUNT DELETION EMAIL OTP VERIFICATION MODAL (Parity with MobileApp DeleteAccountModal.tsx) */}
+      <DeleteAccountModal
+        visible={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
+        userEmail={currentUser?.email}
+        hasPassword={userHasPassword}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   );
 };

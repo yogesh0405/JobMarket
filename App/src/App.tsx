@@ -210,9 +210,8 @@ export const App: React.FC = () => {
           <Route path="/job/:id" element={<JobDetailPage />} />
           <Route path="/jobs/:id" element={<JobDetailPage />} />
           <Route path="/job/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
-          <Route path="/jobs/:id/apply" element={<CandidateOrGuestOnly><JobApplyPage /></CandidateOrGuestOnly>} />
-          <Route path="/companies" element={<CandidateOrGuestOnly><CompaniesDirectoryPage /></CandidateOrGuestOnly>} />
-          <Route path="/company/:companyId" element={<CandidateOrGuestOnly><CompanyProfilePage /></CandidateOrGuestOnly>} />
+          <Route path="/companies" element={<CompaniesDirectoryPage />} />
+          <Route path="/company/:companyId" element={<CompanyProfilePage />} />
           <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
 
           {/* Employer Only Routes */}

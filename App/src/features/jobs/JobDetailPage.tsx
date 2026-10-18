@@ -4,9 +4,10 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useJobs } from '../../hooks/useJobs';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { formatSalary, timeAgo, formatNumber, formatDate, capitalize, shareContent } from '../../utils/helpers';
+import { timeAgo, formatNumber, formatDate, shareContent } from '../../utils/helpers';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
+import { apiFetch } from '../../utils/api';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { JobApplyModal } from '../../components/jobs/JobApplyModal';
@@ -23,7 +24,6 @@ import {
   Building2,
   Globe,
   MapPin,
-  Briefcase,
   Award,
   Send,
   ExternalLink,
@@ -31,11 +31,9 @@ import {
   Flag,
   ShieldAlert,
   ShieldCheck,
-  Users,
   Check,
   AlertCircle,
-  ChevronRight,
-  Info
+  ChevronRight
 } from 'lucide-react';
 import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
@@ -78,6 +76,7 @@ export const JobDetailPage: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [isFetchingJob, setIsFetchingJob] = useState(!job);
   const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
+  const [companyDetails, setCompanyDetails] = useState<any>(null);
 
   const [isReported, setIsReported] = useState<boolean>(() => {
     return id ? reportedJobsStore.isReported(id) : false;
@@ -106,6 +105,24 @@ export const JobDetailPage: React.FC = () => {
       isMounted = false;
     };
   }, [id]);
+
+  const companyTargetId = (job as any)?.companyId || (job as any)?.employer_id || (job as any)?.employerId || job?.company;
+
+  useEffect(() => {
+    if (!companyTargetId) return;
+    let isMounted = true;
+    apiFetch(`/api/v1/companies/${encodeURIComponent(companyTargetId)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (isMounted && json && (json.data || json.success)) {
+          setCompanyDetails(json.data || json);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [companyTargetId]);
 
   useEffect(() => {
     if (currentUser && currentUser.role === 'candidate' && fetchCandidateAppliedJobs) {
@@ -376,14 +393,69 @@ export const JobDetailPage: React.FC = () => {
   const respList = ensureArray(job.responsibilities);
   const reqList = ensureArray(job.requirements);
 
-  const companyTargetId = (job as any).companyId || (job as any).employer_id || (job as any).employerId || job.company;
   const companyUrl = `/company/${encodeURIComponent(companyTargetId)}`;
+  // 1. Real registered Company profile logo (strictly from registered company entity or employer user profile)
+  const realCompanyLogo =
+    companyDetails?.logo ||
+    companyDetails?.profile_picture_url ||
+    (job as any)?.realCompanyLogo ||
+    (job as any)?.companyProfileLogo ||
+    (job as any)?.real_company_logo ||
+    (job as any)?.company_profile_logo ||
+    null;
 
-  const minSalary = job.salary_min || (job as any).salaryMin;
-  const maxSalary = job.salary_max || (job as any).salaryMax;
-  const salaryDisplay = (minSalary && maxSalary)
-    ? `₹${formatNumber(minSalary)} - ₹${formatNumber(maxSalary)}`
-    : (minSalary ? `₹${formatNumber(minSalary)}+` : 'Best in Industry');
+  // 2. Job-specific logo uploaded by employer for THIS specific job opening
+  const uploadedJobLogo =
+    (job as any)?.uploadedJobLogo ||
+    (job as any)?.jobLogo ||
+    (job as any)?.job_uploaded_logo ||
+    (job as any)?.job_logo ||
+    job?.companyLogo ||
+    (job as any)?.company_logo ||
+    (job as any)?.logoUrl ||
+    (job as any)?.logo_url ||
+    (job as any)?.logo ||
+    null;
+
+  // Rule:
+  // - Job logo strictly what employer uploaded for this job, and if not uploaded then use company logo
+  // - Company logo strictly the real company logo ONLY, NO job logo
+  // - In job details show real company logo not job logo if it is different from company logo
+  const jobDisplayLogo = uploadedJobLogo || realCompanyLogo || null;
+  const companyDisplayLogo = realCompanyLogo || null;
+
+  const companyState = {
+    companyData: {
+      id: companyTargetId,
+      employer_id: (job as any).employer_id || (job as any).employerId,
+      name: companyDetails?.name || job.company,
+      logo: companyDisplayLogo,
+      industry: companyDetails?.industry || (job as any).companyIndustry || job.industry || 'Industrial Manufacturing',
+      address: companyDetails?.address || companyDetails?.city || (job as any).companyAddress || job.location || '',
+      city: companyDetails?.city || (job as any).companyCity || job.location || '',
+      midc_zone: companyDetails?.midc_zone || (job as any).companyMidcZone || job.midc_zone || (job as any).midcZone || '',
+      description: companyDetails?.description || job.description || `${job.company} profile`,
+      verified: companyDetails?.verified ?? true
+    }
+  };
+
+  const minSalary = Number(job.salary_min || (job as any).salaryMin || 0);
+  const maxSalary = Number(job.salary_max || (job as any).salaryMax || 0);
+  const isSalaryDisclosed =
+    (job as any).disclose_salary !== false &&
+    (job as any).discloseSalary !== false &&
+    (minSalary > 0 || maxSalary > 0);
+
+  let salaryDisplay = 'Salary Not Disclosed';
+  if (isSalaryDisclosed) {
+    if (minSalary > 0 && maxSalary > 0) {
+      salaryDisplay = `₹${formatNumber(minSalary)} - ₹${formatNumber(maxSalary)}`;
+    } else if (minSalary > 0) {
+      salaryDisplay = `₹${formatNumber(minSalary)}+`;
+    } else if (maxSalary > 0) {
+      salaryDisplay = `Up to ₹${formatNumber(maxSalary)}`;
+    }
+  }
 
   const postedTimeAgo = timeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || new Date());
 
@@ -391,53 +463,13 @@ export const JobDetailPage: React.FC = () => {
     <div className="jd-page-wrapper">
       <div className="jd-container">
         
-        {/* 1. Top Utility Navigation Bar */}
-        <div className="jd-top-bar">
-          <button onClick={handleBackToJobs} className="jd-back-btn" title="Back to jobs directory">
-            <ArrowLeft size={16} />
-            <span>Back to Jobs</span>
-          </button>
-
-          <div className="jd-top-actions">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="jd-btn-action-icon"
-              title="Share job opening"
-            >
-              <Share2 size={15} />
-              <span>Share</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToggleSave}
-              className={`jd-btn-action-icon ${saved ? 'saved' : ''}`}
-              title={saved ? 'Remove from bookmarks' : 'Save this job'}
-            >
-              <Bookmark size={15} fill={saved ? '#1D4ED8' : 'none'} />
-              <span>{saved ? 'Saved' : 'Save'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenReport}
-              className="jd-btn-action-icon report"
-              title="Report fake or suspicious listing"
-            >
-              <Flag size={14} />
-              <span>Report</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 2. Hero Header Card */}
+        {/* 1. Hero Header Card */}
         <div className="jd-hero-card">
           <div className="jd-hero-content">
-            {/* Company Logo */}
-            <Link to={companyUrl} className="jd-company-logo-box" title={`View ${job.company} Profile`}>
+            {/* Job / Company Logo */}
+            <Link to={companyUrl} state={companyState} className="jd-company-logo-box" title={`View ${job.company} Profile`}>
               <CompanyDefaultLogo
-                logoUrl={job.companyLogo || (job as any).logo}
+                logoUrl={jobDisplayLogo}
                 companyName={job.company}
                 size={56}
                 borderRadius="8px"
@@ -447,7 +479,7 @@ export const JobDetailPage: React.FC = () => {
             {/* Info Stack */}
             <div className="jd-hero-info">
               <div className="jd-company-badge-row">
-                <Link to={companyUrl} className="jd-company-link">
+                <Link to={companyUrl} state={companyState} className="jd-company-link">
                   <span>{job.company || 'Industrial Partner'}</span>
                   <ExternalLink size={12} />
                 </Link>
@@ -459,55 +491,88 @@ export const JobDetailPage: React.FC = () => {
               {/* Badges Strip */}
               <div className="jd-meta-pills-row">
                 {(job.industry || job.trade) && (
-                  <span className="jd-pill jd-pill-blue">
-                    <Building2 size={13} color="#1D4ED8" />
-                    <span>{job.industry || job.trade}</span>
+                  <span className="jd-pill">
+                    {job.industry || job.trade}
                   </span>
                 )}
 
                 {job.location && (
-                  <span className="jd-pill jd-pill-slate">
-                    <MapPin size={13} color="#64748B" />
-                    <span>{job.location}</span>
+                  <span className="jd-pill">
+                    {job.location}
                   </span>
                 )}
 
                 {(job.work_mode || job.workMode || job.job_type || job.jobType) && (
-                  <span className="jd-pill jd-pill-slate">
-                    <Briefcase size={13} color="#64748B" />
-                    <span>{job.work_mode || job.workMode || job.job_type || job.jobType}</span>
+                  <span className="jd-pill">
+                    {job.work_mode || job.workMode || job.job_type || job.jobType}
                   </span>
                 )}
 
                 {(job as any).shift_details && (
-                  <span className="jd-pill jd-pill-slate">
-                    <Clock size={13} color="#64748B" />
-                    <span>{(job as any).shift_details}</span>
+                  <span className="jd-pill">
+                    {(job as any).shift_details}
                   </span>
                 )}
 
                 {Boolean(job.openings || (job as any).vacancies) && (
-                  <span className="jd-pill jd-pill-amber">
-                    <Users size={13} color="#B45309" />
-                    <span>{job.openings || (job as any).vacancies} Openings</span>
+                  <span className="jd-pill">
+                    {job.openings || (job as any).vacancies} Openings
                   </span>
                 )}
 
                 {isWalkIn && (
-                  <span className="jd-pill jd-pill-sky">
-                    <Ticket size={13} color="#0284C7" strokeWidth={2.4} />
-                    <span>Walk-in Drive</span>
+                  <span className="jd-pill">
+                    Walk-in Drive
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Action Buttons inside Card */}
+            <div className="jd-card-actions">
+              <button
+                type="button"
+                onClick={handleShare}
+                className="jd-btn-action-icon"
+                title="Share job opening"
+              >
+                <Share2 size={14} />
+                <span>Share</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleToggleSave}
+                className={`jd-btn-action-icon ${saved ? 'saved' : ''}`}
+                title={saved ? 'Remove from bookmarks' : 'Save this job'}
+              >
+                <Bookmark size={14} fill={saved ? '#1D4ED8' : 'none'} />
+                <span>{saved ? 'Saved' : 'Save'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenReport}
+                className="jd-btn-action-icon report"
+                title="Report fake or suspicious listing"
+              >
+                <Flag size={14} />
+                <span>Report</span>
+              </button>
             </div>
           </div>
 
           {/* Hero Bottom Bar */}
           <div className="jd-hero-bottom-bar">
             <div className="jd-salary-box">
-              <span className="jd-salary-amount">{salaryDisplay}</span>
-              <span className="jd-salary-sub">/ month (take-home salary)</span>
+              {isSalaryDisclosed ? (
+                <>
+                  <span className="jd-salary-amount">{salaryDisplay}</span>
+                  <span className="jd-salary-sub">/ month (take-home salary)</span>
+                </>
+              ) : (
+                <span className="jd-salary-amount jd-salary-undisclosed">Salary Not Disclosed</span>
+              )}
             </div>
 
             <div className="jd-posted-meta">
@@ -623,7 +688,12 @@ export const JobDetailPage: React.FC = () => {
 
                 <div className="jd-spec-tile">
                   <span className="jd-spec-label">Monthly Compensation</span>
-                  <span className="jd-spec-value" style={{ color: '#16A34A' }}>{salaryDisplay}</span>
+                  <span
+                    className="jd-spec-value"
+                    style={{ color: isSalaryDisclosed ? '#16A34A' : '#64748B' }}
+                  >
+                    {isSalaryDisclosed ? `${salaryDisplay} / month` : 'Salary Not Disclosed'}
+                  </span>
                 </div>
 
                 <div className="jd-spec-tile">
@@ -754,6 +824,7 @@ export const JobDetailPage: React.FC = () => {
                 locationName={job.location}
                 latitude={(job as any).latitude ? Number((job as any).latitude) : undefined}
                 longitude={(job as any).longitude ? Number((job as any).longitude) : undefined}
+                readOnly={true}
               />
             </div>
 
@@ -875,21 +946,21 @@ export const JobDetailPage: React.FC = () => {
             {/* Company Snapshot Card */}
             <div className="jd-company-card">
               <div className="jd-company-card-top">
-                <Link to={companyUrl}>
+                <Link to={companyUrl} state={companyState}>
                   <CompanyDefaultLogo
-                    logoUrl={job.companyLogo || (job as any).logo}
-                    companyName={job.company}
+                    logoUrl={companyDisplayLogo}
+                    companyName={companyDetails?.name || job.company}
                     size={46}
                     borderRadius="6px"
                   />
                 </Link>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <h3 className="jd-company-card-name">{job.company}</h3>
+                    <h3 className="jd-company-card-name">{companyDetails?.name || job.company}</h3>
                     <MetaVerifiedBadge size={14} color="#0095F6" />
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
-                    {job.industry || 'Industrial Manufacturing'}
+                    {companyDetails?.industry || (job as any).companyIndustry || job.industry || 'Industrial Manufacturing'}
                   </div>
                 </div>
               </div>
@@ -897,19 +968,26 @@ export const JobDetailPage: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#475569', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <MapPin size={13} color="#64748B" />
-                  <span>{job.location || 'Chhatrapati Sambhajinagar'}</span>
+                  <span>{companyDetails?.address || companyDetails?.city || (job as any).companyAddress || job.location || 'Chhatrapati Sambhajinagar'}</span>
                 </div>
-                {(job as any).website && (
+                {(companyDetails?.website || (job as any).companyWebsite || (job as any).website) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Globe size={13} color="#2563EB" />
-                    <a href={(job as any).website.startsWith('http') ? (job as any).website : `https://${(job as any).website}`} target="_blank" rel="noreferrer" style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}>
+                    <a
+                      href={((companyDetails?.website || (job as any).companyWebsite || (job as any).website) as string).startsWith('http')
+                        ? (companyDetails?.website || (job as any).companyWebsite || (job as any).website)
+                        : `https://${(companyDetails?.website || (job as any).companyWebsite || (job as any).website)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}
+                    >
                       Company Website
                     </a>
                   </div>
                 )}
               </div>
 
-              <Link to={companyUrl} className="jd-company-card-btn">
+              <Link to={companyUrl} state={companyState} className="jd-company-card-btn">
                 <span>View Full Company Profile</span>
                 <ChevronRight size={14} />
               </Link>

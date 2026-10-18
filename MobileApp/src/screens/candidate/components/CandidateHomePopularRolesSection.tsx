@@ -71,7 +71,7 @@ export const CandidateHomePopularRolesSection: React.FC<CandidateHomePopularRole
       </ScrollView>
 
       {loading ? (
-        <SkeletonLoader width="100%" height={160} style={{ borderRadius: 10, marginTop: 12 }} />
+        <SkeletonLoader width="100%" height={160} style={{ borderRadius: 12, marginTop: 12 }} />
       ) : roleFilteredJobs.length === 0 ? (
         <View style={styles.emptyRoleBox}>
           <Text style={styles.emptyRoleText}>No vacancies under "{activeRoleTab}" currently.</Text>
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   emptyRoleBox: {
     padding: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     alignItems: 'center',
@@ -343,14 +343,14 @@ const styles = StyleSheet.create({
   webPopularJobCard: {
     width: 270,
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     padding: 14,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
     elevation: 1,
   },
   webCardTitleRow: {

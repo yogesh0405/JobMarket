@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   imageBadgeBox: {
     width: '92%',
     height: 94,
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#93C5FD',
     backgroundColor: '#F1F5F9',
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 10,

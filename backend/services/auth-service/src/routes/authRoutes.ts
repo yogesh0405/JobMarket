@@ -32,6 +32,9 @@ router.post('/2fa/verify-login', authLimiter, AuthController.verify2FALogin);
 router.post('/2fa/toggle', AuthController.toggle2FA);
 
 router.post('/change-password', AuthController.changePassword);
+router.post('/delete-account/request-otp', authLimiter, AuthController.requestDeleteAccountOTP);
+router.delete('/delete-account', AuthController.deleteAccount);
+router.post('/delete-account', AuthController.deleteAccount);
 router.get('/sessions', AuthController.getSessions);
 router.delete('/sessions/:sessionId', AuthController.revokeSession);
 

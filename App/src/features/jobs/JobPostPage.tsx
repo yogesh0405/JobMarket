@@ -12,7 +12,6 @@ import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo'
 import { extractCoordinatesFromMapInput, resolveShortMapUrl, geocodeQueryOnClient } from '../../utils/mapUrlParser';
 import { JobLocationMapPreview } from '../../components/map/JobLocationMapPreview';
 import { 
-  ArrowLeft,
   Building2, 
   Briefcase, 
   MapPin, 
@@ -39,7 +38,8 @@ import {
   UserCheck,
   Zap,
   Lightbulb,
-  AlertTriangle
+  AlertTriangle,
+  ListChecks
 } from 'lucide-react';
 import { ClockTimePickerModal } from '../../components/common/ClockTimePickerModal';
 import { 
@@ -69,6 +69,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   // Enterprise Governance & Form States
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [activeDescriptionTab, setActiveDescriptionTab] = useState<'description' | 'structured'>('description');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successModalConfig, setSuccessModalConfig] = useState<{
@@ -90,6 +91,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
     { id: 2, title: 'Location' },
     { id: 3, title: 'Work & Pay' },
     { id: 4, title: 'Role & Skills' },
+    { id: 5, title: 'Description' },
   ];
 
   const handleNextStep = () => {
@@ -154,6 +156,55 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (currentStep === 3) {
       setCurrentStep(4);
+      const el = document.querySelector('.post-job-scroll-container');
+      if (el) el.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (currentStep === 4) {
+      if (hiringMethod === 'WALK_IN') {
+        if (!walkInDate) {
+          setErrorMsg('Please select a Walk-in Drive Date.');
+          showToast('Please select a Walk-in Drive Date.', 'error');
+          return;
+        }
+        if (!walkInStartTime || !walkInEndTime) {
+          setErrorMsg('Please specify Walk-in Drive Start Time and End Time.');
+          showToast('Please specify Walk-in Drive Start Time and End Time.', 'error');
+          return;
+        }
+        if (!interviewAddress.trim()) {
+          setErrorMsg('Please enter the Interview Venue Address for Walk-in Drive.');
+          showToast('Please enter the Interview Venue Address for Walk-in Drive.', 'error');
+          return;
+        }
+        if (!walkInContactPerson.trim()) {
+          setErrorMsg('Please enter the Contact Person Name for Walk-in Drive.');
+          showToast('Please enter the Contact Person Name for Walk-in Drive.', 'error');
+          return;
+        }
+        if (!walkInContactNumber.trim()) {
+          setErrorMsg('Please enter the Contact Mobile Number for Walk-in Drive.');
+          showToast('Please enter the Contact Mobile Number for Walk-in Drive.', 'error');
+          return;
+        }
+      }
+      if (!applicationDeadline) {
+        setErrorMsg('Application Deadline date is mandatory. Please select a deadline.');
+        showToast('Application Deadline date is mandatory. Please select a deadline.', 'error');
+        return;
+      }
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (applicationDeadline < todayStr) {
+        setErrorMsg('Application Deadline cannot be a past date. Please select today or a future date.');
+        showToast('Application Deadline cannot be a past date. Please select today or a future date.', 'error');
+        return;
+      }
+      const parsedSkills = skills.split(',').map(s => s.trim()).filter(Boolean);
+      if (parsedSkills.length === 0) {
+        setErrorMsg('Key Skills are mandatory. Please enter at least 1 skill.');
+        showToast('Key Skills are mandatory. Please enter at least 1 skill.', 'error');
+        return;
+      }
+      setCurrentStep(5);
       const el = document.querySelector('.post-job-scroll-container');
       if (el) el.scrollTop = 0;
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1009,42 +1060,6 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
 
   const content = (
     <>
-      <div className="post-job-header" style={isEmbedded ? { padding: 0, marginBottom: 'var(--space-6)' } : undefined}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              if (currentStep > 1) {
-                handlePrevStep();
-              } else {
-                setShowExitConfirmModal(true);
-              }
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#0F172A',
-              borderRadius: '6px',
-              flexShrink: 0
-            }}
-            title={currentStep > 1 ? 'Go to previous step' : 'Go back to Manage Jobs'}
-            aria-label={currentStep > 1 ? 'Go to previous step' : 'Go back to Manage Jobs'}
-          >
-            <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: 'var(--fs-2xl)' }}>{isEdit ? 'Edit Job Posting' : 'Post a New Industrial & Enterprise Job'}</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', marginTop: '2px' }}>
-              Select Trade Type to populate relevant Job Roles and dynamic skill suggestions.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Admin Rejection / Correction Required Alert Banner */}
       {isEdit && existingJob && (existingJob.dbStatus === 'REJECTED' || existingJob.status === 'rejected' || existingJob.rejectReason) && (
@@ -1532,12 +1547,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                       longitude={longitude}
                       locationName={location || title || 'Job Location'}
                       height="280px"
-                      readOnly={false}
-                      onLocationSelect={(lat, lng) => {
-                        setLatitude(lat);
-                        setLongitude(lng);
-                        setMapUrlStatusMsg(`SUCCESS:Location pinned on map (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-                      }}
+                      readOnly={true}
                     />
                   )}
                 </div>
@@ -2409,101 +2419,14 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           </div>
         </div>
 
-        {/* Description & Dynamic Skills */}
+        {/* Required Key Skills & Competencies */}
         <div className="form-section">
           <div className="form-section-header">
-            <FileText size={20} style={{ color: '#344BFD' }} />
-            Job Operations, Description & Dynamic Skills
+            <Wrench size={20} style={{ color: '#1B4FDF' }} />
+            Required Key Skills & Competencies
           </div>
           <div className="form-section-body">
-            {/* 7. Mandatory Job Description */}
-            <div className="form-group">
-              <label className="form-label">Job Description <span className="required">*</span></label>
-              <textarea
-                className="form-textarea"
-                placeholder="Describe the job duties, shift operations, plant environment, and expectations..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                style={{ minHeight: 140 }}
-              />
-            </div>
-
-            {/* 9. Optional Responsibilities (Checkbox Governed - Unchecked by Default) */}
-            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
-              <div className="pref-setting-header">
-                <div>
-                  <label htmlFor="showResponsibilitiesToggle" className="pref-setting-title">
-                    <CheckCircle2 size={16} style={{ color: showResponsibilities ? '#344BFD' : '#64748B', flexShrink: 0 }} />
-                    <span>Add Key Operations / Responsibilities</span>
-                  </label>
-                  <span className="pref-setting-desc">
-                    Check if you want to specify detailed line-by-line key responsibilities.
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="showResponsibilitiesToggle"
-                  className="pref-setting-checkbox"
-                  checked={showResponsibilities}
-                  onChange={(e) => setShowResponsibilities(e.target.checked)}
-                />
-              </div>
-
-              {showResponsibilities && (
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontWeight: '700' }}>
-                    Key Operations / Responsibilities (one per line)
-                  </label>
-                  <textarea
-                    className="form-textarea"
-                    placeholder="Enter each key responsibility on a new line..."
-                    value={responsibilities}
-                    onChange={(e) => setResponsibilities(e.target.value)}
-                    style={{ minHeight: '100px' }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 10. Optional Requirements (Checkbox Governed - Unchecked by Default) */}
-            <div className="pref-setting-card" style={{ marginBottom: '16px' }}>
-              <div className="pref-setting-header">
-                <div>
-                  <label htmlFor="showRequirementsToggle" className="pref-setting-title">
-                    <CheckCircle2 size={16} style={{ color: showRequirements ? '#344BFD' : '#64748B', flexShrink: 0 }} />
-                    <span>Add Eligible Criteria / Requirements</span>
-                  </label>
-                  <span className="pref-setting-desc">
-                    Check if you want to specify detailed candidate eligibility criteria or requirements.
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  id="showRequirementsToggle"
-                  className="pref-setting-checkbox"
-                  checked={showRequirements}
-                  onChange={(e) => setShowRequirements(e.target.checked)}
-                />
-              </div>
-
-              {showRequirements && (
-                <div style={{ marginTop: '12px' }}>
-                  <label className="form-label" style={{ fontWeight: '700' }}>
-                    Eligible Criteria / Requirements (one per line)
-                  </label>
-                  <textarea
-                    className="form-textarea"
-                    placeholder="Enter each requirement on a new line..."
-                    value={requirements}
-                    onChange={(e) => setRequirements(e.target.value)}
-                    style={{ minHeight: '100px' }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 8. Mandatory Skills & Dynamic Role Suggestions */}
+            {/* Mandatory Skills & Dynamic Role Suggestions */}
             <div className="form-group">
               <label className="form-label">Skills Needed (comma separated) <span className="required">*</span></label>
               <input
@@ -2525,11 +2448,11 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                     padding: '14px 16px', 
                     borderRadius: '8px', 
                     border: '1px solid #dbeafe',
-                    boxShadow: '0 2px 8px rgba(52, 75, 253, 0.04)'
+                    boxShadow: '0 2px 8px rgba(27, 79, 223, 0.04)'
                   }}
                 >
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', lineHeight: '1.4' }}>
-                    <Lightbulb size={16} style={{ color: '#344BFD', flexShrink: 0, marginTop: '2px' }} /> 
+                    <Lightbulb size={16} style={{ color: '#1B4FDF', flexShrink: 0, marginTop: '2px' }} /> 
                     <span>
                       Click role-suggested skills for <strong style={{ color: '#1e293b', fontWeight: '700' }}>{activeRoleName || activeIndustryName || 'this position'}</strong>:
                     </span>
@@ -2559,10 +2482,10 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                             fontSize: '12px',
                             fontWeight: '600',
                             cursor: 'pointer',
-                            border: isSelected ? '1.5px solid #344BFD' : '1px solid #cbd5e1',
-                            background: isSelected ? 'linear-gradient(135deg, #344BFD 0%, #2563eb 100%)' : '#ffffff',
+                            border: isSelected ? '1.5px solid #1B4FDF' : '1px solid #cbd5e1',
+                            background: isSelected ? '#1B4FDF' : '#ffffff',
                             color: isSelected ? '#ffffff' : '#334155',
-                            boxShadow: isSelected ? '0 3px 10px rgba(52, 75, 253, 0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                            boxShadow: isSelected ? '0 3px 10px rgba(27, 79, 223, 0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -2586,6 +2509,254 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
           </div>
         </div>
         </>
+        )}
+
+        {/* STEP 5: JOB DESCRIPTION CANVAS */}
+        {currentStep === 5 && (
+          <div className="post-job-step5-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Header Card */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              padding: '16px 20px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '8px',
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #DBEAFE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <FileText size={20} style={{ color: '#1B4FDF' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0, letterSpacing: '-0.2px' }}>
+                  Job Description
+                </h3>
+                <p style={{ fontSize: '12.5px', color: '#64748B', margin: '2px 0 0 0', fontWeight: '500' }}>
+                  {(title === 'Other' ? customTitle.trim() : title.trim()) || 'Candidate Role'} • {(industry === 'Other' ? customIndustry.trim() : industry.trim()) || 'Manufacturing'}
+                </p>
+              </div>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div style={{
+              display: 'flex',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              padding: '4px',
+              gap: '4px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setActiveDescriptionTab('description')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: activeDescriptionTab === 'description' ? '#1B4FDF' : 'transparent',
+                  color: activeDescriptionTab === 'description' ? '#FFFFFF' : '#64748B',
+                  fontWeight: activeDescriptionTab === 'description' ? '700' : '600',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <FileText size={15} />
+                <span>Description</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDescriptionTab('structured')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: activeDescriptionTab === 'structured' ? '#1B4FDF' : 'transparent',
+                  color: activeDescriptionTab === 'structured' ? '#FFFFFF' : '#64748B',
+                  fontWeight: activeDescriptionTab === 'structured' ? '700' : '600',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <ListChecks size={15} />
+                <span>Key Responsibilities & Requirements {(showResponsibilities || showRequirements) && '• (Active)'}</span>
+              </button>
+            </div>
+
+            {/* Tab 1: Clean Description Canvas */}
+            {activeDescriptionTab === 'description' ? (
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '8px',
+                padding: '18px 20px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: '#0F172A' }}>
+                  Full Job Description <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <textarea
+                  className="form-textarea"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Provide a comprehensive job description detailing day-to-day operations, workshop responsibilities, line management, reporting hierarchy, and candidate expectations..."
+                  rows={14}
+                  style={{
+                    width: '100%',
+                    minHeight: '320px',
+                    lineHeight: '1.6',
+                    fontSize: '14px',
+                    color: '#0F172A',
+                    fontFamily: 'inherit',
+                    padding: '14px',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                  required
+                />
+              </div>
+            ) : (
+              /* Tab 2: Structured Tasks & Requirements */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Key Responsibilities Block */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '18px 20px',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showResponsibilities ? '14px' : '0' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
+                        Key Operations & Responsibilities
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                        Add line-by-line shift operations and workshop duties.
+                      </div>
+                    </div>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={showResponsibilities}
+                        onChange={(e) => setShowResponsibilities(e.target.checked)}
+                        style={{ width: '18px', height: '18px', accentColor: '#1B4FDF', cursor: 'pointer' }}
+                      />
+                    </label>
+                  </div>
+
+                  {showResponsibilities && (
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                        Responsibilities (one per line)
+                      </label>
+                      <textarea
+                        className="form-textarea"
+                        placeholder="Setup and operate production machinery&#10;Perform regular dimensional quality checks&#10;Maintain daily shift production logs"
+                        value={responsibilities}
+                        onChange={(e) => setResponsibilities(e.target.value)}
+                        rows={6}
+                        style={{
+                          width: '100%',
+                          minHeight: '130px',
+                          lineHeight: '1.5',
+                          fontSize: '13.5px',
+                          color: '#0F172A',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Candidate Requirements Block */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '18px 20px',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showRequirements ? '14px' : '0' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
+                        Candidate Requirements & Eligibility
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                        Add specific qualification, certificate, or physical criteria.
+                      </div>
+                    </div>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={showRequirements}
+                        onChange={(e) => setShowRequirements(e.target.checked)}
+                        style={{ width: '18px', height: '18px', accentColor: '#1B4FDF', cursor: 'pointer' }}
+                      />
+                    </label>
+                  </div>
+
+                  {showRequirements && (
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                        Eligible Criteria / Requirements (one per line)
+                      </label>
+                      <textarea
+                        className="form-textarea"
+                        placeholder="ITI / Diploma in Mechanical or relevant trade&#10;1+ year experience in machine operations&#10;Familiarity with workshop measuring tools"
+                        value={requirements}
+                        onChange={(e) => setRequirements(e.target.value)}
+                        rows={6}
+                        style={{
+                          width: '100%',
+                          minHeight: '130px',
+                          lineHeight: '1.5',
+                          fontSize: '13.5px',
+                          color: '#0F172A',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: '1px solid #CBD5E1',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
     </>
@@ -2684,7 +2855,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
               </button>
             )}
 
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <button
                 type="button"
                 onClick={handleNextStep}
@@ -2693,7 +2864,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   height: '44px',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: '#344BFD',
+                  backgroundColor: '#1B4FDF',
                   color: '#FFFFFF',
                   fontSize: '14px',
                   fontWeight: '800',
@@ -2701,7 +2872,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(52, 75, 253, 0.25)',
+                  boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)',
                   transition: 'all 0.2s ease'
                 }}
               >
@@ -2716,7 +2887,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   height: '44px',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: '#344BFD',
+                  backgroundColor: '#1B4FDF',
                   color: '#FFFFFF',
                   fontSize: '14px',
                   fontWeight: '800',
@@ -2726,7 +2897,7 @@ export const JobPostPage: React.FC<JobPostPageProps> = ({ isEmbedded = false, on
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 2px 8px rgba(52, 75, 253, 0.25)',
+                  boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)',
                   transition: 'all 0.2s ease'
                 }}
               >

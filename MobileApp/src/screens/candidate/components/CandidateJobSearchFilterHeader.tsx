@@ -46,6 +46,7 @@ interface CandidateJobSearchFilterHeaderProps {
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
   categories?: string[];
+  followedCompaniesCount?: number;
   navigation: any;
 }
 
@@ -65,6 +66,7 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
   selectedCategory,
   setSelectedCategory,
   categories,
+  followedCompaniesCount,
   navigation,
 }) => {
   const searchInputRef = useRef<TextInput>(null);
@@ -298,18 +300,26 @@ export const CandidateJobSearchFilterHeader: React.FC<CandidateJobSearchFilterHe
       {/* Horizontal Category Filter Pills */}
       <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContainer}>
-          {(categories && categories.length > 0 ? categories : CATEGORIES).map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              activeOpacity={0.85}
-              style={[styles.categoryPill, selectedCategory === cat && styles.categoryPillActive]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text style={[styles.categoryPillText, selectedCategory === cat && styles.categoryPillTextActive]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(categories && categories.length > 0 ? categories : CATEGORIES).map((cat) => {
+            const isCatActive = selectedCategory === cat;
+            const displayLabel =
+              cat === 'Following' && followedCompaniesCount !== undefined && followedCompaniesCount > 0
+                ? `Following (${followedCompaniesCount})`
+                : cat;
+
+            return (
+              <TouchableOpacity
+                key={cat}
+                activeOpacity={0.85}
+                style={[styles.categoryPill, isCatActive && styles.categoryPillActive]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[styles.categoryPillText, isCatActive && styles.categoryPillTextActive]}>
+                  {displayLabel}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
     </>

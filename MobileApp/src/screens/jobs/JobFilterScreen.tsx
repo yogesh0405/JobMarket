@@ -33,7 +33,8 @@ import { FilterOptions } from '../../components/common/JobFilterSideDrawer';
 import { Job } from '../../types';
 import { candidateApi } from '../../api/candidateApi';
 import { jobsApi } from '../../api/jobsApi';
-import { evaluateJobMatchesFilter } from '../candidate/utils/jobFilterEngine';
+import { companyApi } from '../../api/companyApi';
+import { evaluateJobMatchesFilter, normalizeCompanyName } from '../candidate/utils/jobFilterEngine';
 
 export type JobFilterTabKey =
   | 'INDUSTRY'
@@ -339,6 +340,28 @@ export const JobFilterScreen: React.FC = () => {
 
   const [activeFilterTab, setActiveFilterTab] = useState<JobFilterTabKey>(initialTab);
   const [tabSearchQuery, setTabSearchQuery] = useState<string>('');
+  const [followedCompanyIds, setFollowedCompanyIds] = useState<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    companyApi.getFollowedCompanies().then((res) => {
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list)) {
+        const s = new Set<string>();
+        list.forEach((c) => {
+          if (c.id) s.add(String(c.id).toLowerCase().trim());
+          if ((c as any).employer_id) s.add(String((c as any).employer_id).toLowerCase().trim());
+          if ((c as any).employerId) s.add(String((c as any).employerId).toLowerCase().trim());
+          if (c.name) {
+            const raw = c.name.toLowerCase().trim();
+            s.add(raw);
+            const norm = normalizeCompanyName(c.name);
+            if (norm) s.add(norm);
+          }
+        });
+        setFollowedCompanyIds(s);
+      }
+    }).catch(() => {});
+  }, []);
 
   const [draftIndustries, setDraftIndustries] = useState<string[]>(
     currentFilters.industries && currentFilters.industries.length > 0
@@ -382,6 +405,7 @@ export const JobFilterScreen: React.FC = () => {
   const [draftCanteen, setDraftCanteen] = useState<boolean>(Boolean(currentFilters.canteen));
   const [draftAccommodation, setDraftAccommodation] = useState<boolean>(Boolean(currentFilters.accommodation));
   const [draftOvertime, setDraftOvertime] = useState<boolean>(Boolean(currentFilters.overtime));
+  const [draftOnlyFollowing, setDraftOnlyFollowing] = useState<boolean>(Boolean(currentFilters.onlyFollowing));
 
   // Reset tab search query when tab switches
   React.useEffect(() => {
@@ -561,6 +585,7 @@ export const JobFilterScreen: React.FC = () => {
     setDraftCanteen(false);
     setDraftAccommodation(false);
     setDraftOvertime(false);
+    setDraftOnlyFollowing(false);
     setTabSearchQuery('');
   };
 
@@ -577,6 +602,7 @@ export const JobFilterScreen: React.FC = () => {
     if (draftCanteen) count++;
     if (draftAccommodation) count++;
     if (draftOvertime) count++;
+    if (draftOnlyFollowing) count++;
     return count;
   }, [
     draftIndustries,
@@ -590,6 +616,7 @@ export const JobFilterScreen: React.FC = () => {
     draftCanteen,
     draftAccommodation,
     draftOvertime,
+    draftOnlyFollowing,
   ]);
 
   const perksCount = (draftBus ? 1 : 0) + (draftCanteen ? 1 : 0) + (draftAccommodation ? 1 : 0) + (draftOvertime ? 1 : 0);
@@ -613,6 +640,7 @@ export const JobFilterScreen: React.FC = () => {
       canteen: draftCanteen,
       accommodation: draftAccommodation,
       overtime: draftOvertime,
+      onlyFollowing: draftOnlyFollowing,
     };
   }, [
     draftIndustries,
@@ -626,6 +654,7 @@ export const JobFilterScreen: React.FC = () => {
     draftCanteen,
     draftAccommodation,
     draftOvertime,
+    draftOnlyFollowing,
     currentFilters.salaryMin,
   ]);
 
@@ -637,9 +666,9 @@ export const JobFilterScreen: React.FC = () => {
     }
 
     return listToFilter.filter((job) =>
-      evaluateJobMatchesFilter(job, currentDraftFilterOptions)
+      evaluateJobMatchesFilter(job, currentDraftFilterOptions, '', 'All Jobs', followedCompanyIds)
     ).length;
-  }, [loadedJobs, initialJobsList, currentDraftFilterOptions, route.params?.totalMatchingJobsCount]);
+  }, [loadedJobs, initialJobsList, currentDraftFilterOptions, followedCompanyIds, route.params?.totalMatchingJobsCount]);
 
   const handleApplyFilters = () => {
     const applied: FilterOptions = currentDraftFilterOptions;
@@ -1056,6 +1085,23 @@ export const JobFilterScreen: React.FC = () => {
                 onValueChange={setDraftOvertime}
                 trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
                 thumbColor={draftOvertime ? COLORS.primary : '#FFFFFF'}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.switchCardRow, draftOnlyFollowing && styles.switchCardRowActive]}
+              onPress={() => setDraftOnlyFollowing(!draftOnlyFollowing)}
+              activeOpacity={0.8}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.switchTitle, draftOnlyFollowing && styles.switchTitleActive]}>Followed Companies Only</Text>
+                <Text style={styles.switchSub}>Only show vacancies from companies you follow</Text>
+              </View>
+              <Switch
+                value={draftOnlyFollowing}
+                onValueChange={setDraftOnlyFollowing}
+                trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                thumbColor={draftOnlyFollowing ? COLORS.primary : '#FFFFFF'}
               />
             </TouchableOpacity>
           </ScrollView>

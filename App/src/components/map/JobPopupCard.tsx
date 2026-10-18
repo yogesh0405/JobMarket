@@ -24,7 +24,7 @@ export const JobPopupCard: React.FC<JobPopupCardProps> = ({ job, onSaveJob, isSa
     <div className="map-popup-card">
       <div className="map-popup-header">
         <CompanyDefaultLogo
-          logoUrl={job.companyLogo || (job as any).company_logo}
+          logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
           companyName={job.company}
           size={36}
           borderRadius="8px"

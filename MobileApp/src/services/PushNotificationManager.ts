@@ -70,6 +70,26 @@ export class PushNotificationManager {
   }
 
   /**
+   * Get global navigation reference
+   */
+  static getNavigationRef() {
+    return this.navigationRef;
+  }
+
+  /**
+   * Safe public navigation dispatcher using root navigationRef
+   */
+  static navigate(screen: string, params?: any) {
+    if (this.navigationRef?.isReady?.()) {
+      if (params) {
+        this.navigationRef.navigate(screen, params);
+      } else {
+        this.navigationRef.navigate(screen);
+      }
+    }
+  }
+
+  /**
    * Initialize Android channel & notification event listeners
    */
   static async init(navigationRef?: any) {

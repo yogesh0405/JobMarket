@@ -537,7 +537,7 @@ export const MobileSearchOverlay: React.FC<MobileSearchOverlayProps> = ({
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', width: '100%' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
                             <div style={{ width: '34px', height: '34px', flexShrink: 0 }}>
-                              <CompanyDefaultLogo logoUrl={job.companyLogo} companyName={job.company} size={34} borderRadius="0px" />
+                              <CompanyDefaultLogo logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo} companyName={job.company} size={34} borderRadius="0px" />
                             </div>
                             <div style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {job.title}

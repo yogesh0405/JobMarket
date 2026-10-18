@@ -2,6 +2,7 @@ import { COLORS } from '../../../constants/theme';
 
 export const CATEGORIES = [
   'All Jobs',
+  'Following',
   'HR Jobs',
   'Marketing Jobs',
   'ITI & Trade Jobs',

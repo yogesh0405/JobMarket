@@ -35,6 +35,7 @@ import { CandidateHomeSearchCard } from './components/CandidateHomeSearchCard';
 import { CandidateHomeGridsSection } from './components/CandidateHomeGridsSection';
 import { CandidateHomePromoSlider } from './components/CandidateHomePromoSlider';
 import { CandidateHomePopularRolesSection } from './components/CandidateHomePopularRolesSection';
+import { CandidateHomeBestFitSection } from './components/CandidateHomeBestFitSection';
 import {
   getRealJobCountForKeyword,
   getCleanSearchTerm,
@@ -108,26 +109,17 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
   // Role Tab State
   const [roleTabsList, setRoleTabsList] = useState<RoleTabItem[]>(DEFAULT_ROLE_TABS_DATA);
   const [activeRoleTab, setActiveRoleTab] = useState('All Opportunities');
-  const [totalCompaniesCount, setTotalCompaniesCount] = useState<number>(0);
   const homeRefreshOffsetRef = useRef(0);
 
   const loadHomeData = useCallback(async (showSkeleton = false) => {
     if (showSkeleton) setLoading(true);
     try {
-      const [jobsRes, savedRes, settingsRes, adsRes, compRes] = await Promise.all([
+      const [jobsRes, savedRes, settingsRes, adsRes] = await Promise.all([
         candidateApi.getAllJobs(),
         candidateApi.getSavedJobs().catch(() => ({ success: false, data: [] })),
         candidateApi.getSettings().catch(() => ({ success: false, data: null })),
         apiFetch('/api/v1/home/advertisements').catch(() => ({ success: false, data: [] })),
-        apiFetch('/api/v1/companies').catch(() => ({ success: false, data: [] })),
       ]);
-
-      if (compRes) {
-        const compList = Array.isArray(compRes) ? compRes : (compRes.data || []);
-        if (Array.isArray(compList) && compList.length > 0) {
-          setTotalCompaniesCount(compList.length);
-        }
-      }
 
       if (jobsRes.success && jobsRes.data) {
         const rawJobs = jobsRes.data || [];
@@ -326,43 +318,17 @@ export const CandidateHomeScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
 
-        {/* Live Stats 2x2 Grid */}
-        <View style={styles.statsGrid2x2}>
-          <View style={styles.statsRow}>
-            <View style={styles.statSquareCard}>
-              <Text style={[styles.statValueText, { color: COLORS.primary }]}>
-                {jobs.length > 0 ? `${jobs.length}` : '0'}
-              </Text>
-              <Text style={styles.statLabelText}>Active Listings</Text>
-            </View>
-
-            <View style={styles.statSquareCard}>
-              <Text style={[styles.statValueText, { color: '#059669' }]}>
-                {totalCompaniesCount > 0 ? `${totalCompaniesCount}` : (jobs.length > 0 ? `${jobs.length}` : '0')}
-              </Text>
-              <Text style={styles.statLabelText}>Factories Hiring</Text>
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statSquareCard}>
-              <Text style={[styles.statValueText, { color: '#7C3AED' }]}>
-                {jobs.length > 0 ? `${jobs.length}` : '0'}
-              </Text>
-              <Text style={styles.statLabelText}>Verified Workers</Text>
-            </View>
-
-            <View style={styles.statSquareCard}>
-              <Text style={[styles.statValueText, { color: '#EA580C' }]}>
-                {jobs.length > 0 ? `${jobs.length}` : '0'}
-              </Text>
-              <Text style={styles.statLabelText}>Placements</Text>
-            </View>
-          </View>
-        </View>
+        {/* Best Fit For You Section */}
+        <CandidateHomeBestFitSection
+          jobs={jobs}
+          loading={loading}
+          savedJobIds={savedJobIds}
+          handleToggleSave={handleToggleSave}
+          navigation={navigation}
+        />
 
         {/* Category & Industry Grids Section */}
-        <View style={{ marginTop: 12, marginBottom: 12 }}>
+        <View style={{ marginBottom: 12 }}>
           <CandidateHomeGridsSection
             getRealJobCount={getRealJobCount}
             onQuickTradeSearch={handleQuickTradeSearch}
@@ -449,7 +415,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     paddingVertical: 8,
@@ -467,7 +433,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#EFF6FF',
     padding: 10,
-    borderRadius: RADIUS.card,
+    borderRadius: 12,
     marginBottom: 6,
   },
   suggestionHeaderText: {
@@ -511,38 +477,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#94A3B8',
     marginVertical: 6,
-  },
-  statsGrid2x2: {
-    gap: 8,
-    marginVertical: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statSquareCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.card,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  statValueText: {
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  statLabelText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 2,
   },
 });

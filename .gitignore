@@ -25,6 +25,9 @@ SuperAdmin/frontend/.env.*
 !SuperAdmin/frontend/.env.example
 *serviceAccountKey*.json
 *firebase-adminsdk*.json
+*.jks
+my-upload-key.keystore
+*.keystore.backup
 
 # ── DEPENDENCIES ──
 node_modules/

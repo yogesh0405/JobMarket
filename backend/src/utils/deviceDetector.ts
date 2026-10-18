@@ -95,7 +95,7 @@ export function detectDeviceFromHeaders(
 
   // 3. Browser / App detection
   if (isMobileApp) {
-    browser = os === 'iOS' || os === 'iPadOS' ? 'JobMarket iOS App' : 'JobMarket Android App';
+    browser = os === 'iOS' || os === 'iPadOS' ? 'iOS' : 'Android';
     deviceType = os === 'iPadOS' ? 'Tablet' : 'Mobile';
   } else if (/edg\//i.test(ua)) {
     browser = 'Microsoft Edge';
@@ -108,15 +108,15 @@ export function detectDeviceFromHeaders(
   } else if (/safari/i.test(ua) && !/chrome|crios|android/i.test(ua)) {
     browser = 'Apple Safari';
   } else {
-    browser = deviceType === 'Desktop' ? 'Google Chrome' : 'JobMarket Android App';
+    browser = deviceType === 'Desktop' ? 'Google Chrome' : 'Android';
   }
 
   // 4. Construct human-readable device name
   let deviceName = '';
   if (explicitDeviceName && explicitDeviceName !== 'Web' && explicitDeviceName !== 'Unknown Device' && explicitDeviceName.length > 2) {
-    deviceName = explicitDeviceName.includes('(') ? explicitDeviceName : `${explicitDeviceName} (${browser})`;
+    deviceName = explicitDeviceName.replace(/\s*\(JobMarket[^)]*\)/gi, '').trim();
   } else if (isMobileApp) {
-    deviceName = os === 'iOS' ? 'iPhone (JobMarket App)' : 'Android Phone (JobMarket App)';
+    deviceName = os === 'iOS' ? 'Apple iPhone' : 'Android Device';
   } else {
     deviceName = `${browser} on ${os}`;
   }

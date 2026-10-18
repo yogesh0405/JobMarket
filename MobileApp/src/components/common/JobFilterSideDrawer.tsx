@@ -52,6 +52,7 @@ export interface FilterOptions {
   canteen: boolean;
   accommodation: boolean;
   overtime: boolean;
+  onlyFollowing?: boolean;
 }
 
 interface JobFilterSideDrawerProps {

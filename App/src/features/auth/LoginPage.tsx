@@ -44,6 +44,7 @@ export const LoginPage: React.FC = () => {
   const [mfaEmail, setMfaEmail] = useState('');
   const [twoFactorOtp, setTwoFactorOtp] = useState('');
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const triggerGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -95,6 +96,25 @@ export const LoginPage: React.FC = () => {
       }
     }
   }, [loginWithGoogle, role, navigate, showToast]);
+
+  useEffect(() => {
+    const isDeleted = searchParams.get('deleted') === 'true';
+    const stateMsg = (location.state as any)?.message;
+    const sessionMsg = typeof window !== 'undefined' ? sessionStorage.getItem('ACCOUNT_DELETED_MSG') : null;
+    if (isDeleted || stateMsg || sessionMsg) {
+      const msg = stateMsg || sessionMsg || 'Your account has been deleted successfully.';
+      setSuccessBanner(msg);
+      showToast(msg, 'success');
+      try {
+        sessionStorage.removeItem('ACCOUNT_DELETED_FLAG');
+        sessionStorage.removeItem('ACCOUNT_DELETED_MSG');
+      } catch (_) {}
+      if (isDeleted) {
+        searchParams.delete('deleted');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, setSearchParams, location.state, showToast]);
 
   useEffect(() => {
     if (currentUser) {
@@ -269,6 +289,26 @@ export const LoginPage: React.FC = () => {
                   Sign up
                 </Link>
               </div>
+
+              {successBanner && (
+                <div style={{
+                  backgroundColor: '#F0FDF4',
+                  border: '1px solid #86EFAC',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  color: '#15803D',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  lineHeight: '18px'
+                }}>
+                  <Check size={18} color="#16A34A" style={{ flexShrink: 0 }} />
+                  <span>{successBanner}</span>
+                </div>
+              )}
 
               {/* Role Switcher Pill */}
               <div className="auth-role-tabs">

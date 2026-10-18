@@ -9,6 +9,7 @@ import {
   BackHandler,
   Keyboard,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { Check } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -530,6 +531,7 @@ export const CandidateEditProfileScreen: React.FC<{ navigation: any; route?: any
       }
 
       await updateUserProfile(updateData);
+      DeviceEventEmitter.emit('USER_PROFILE_UPDATED', updateData);
 
       showToast('Candidate profile updated successfully in database!', 'success');
       navigation.goBack();

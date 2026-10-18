@@ -11,6 +11,7 @@ import { Verify2FALoginService } from '../../../../src/modules/auth/services/Ver
 import { UserRepository } from '../../../../src/modules/auth/repositories/UserRepository';
 import { SessionRepository } from '../../../../src/modules/auth/repositories/SessionRepository';
 import { pool } from '../../../../shared/database/pool';
+import { redisClient } from '../../../../shared/config/redis';
 import { OtpStore, CacheService } from '../../../../shared/utils/redisCache';
 import { S3Util } from '../../../../shared/utils/s3';
 import { generateTokens } from '../../../../shared/utils/jwt';
@@ -645,4 +646,165 @@ export class AuthController {
       next(err);
     }
   }
+
+  // 13. Request Account Deletion OTP
+  static async requestDeleteAccountOTP(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      let userId = (req.headers['x-user-id'] as string) || req.user?.userId || req.user?.id;
+      if (!userId) {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+        if (token) {
+          try {
+            const { verifyAccessToken } = await import('../../../../shared/utils/jwt');
+            const decoded = verifyAccessToken(token);
+            if (decoded && (decoded.userId || decoded.id)) {
+              userId = decoded.userId || decoded.id;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Active login session required.' });
+      }
+
+      const user = await UserRepository.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User account not found' });
+      }
+
+      // Generate 6-digit OTP
+      const otpCode = crypto.randomInt(100000, 1000000).toString();
+      const redisKey = `delete_account:OTP:${user.id}`;
+
+      // Store in OtpStore with 10-minute expiry (600s)
+      await OtpStore.setEx(redisKey, 600, JSON.stringify({ otp: otpCode, attempts: 0 }));
+
+      // Mask email for privacy display (e.g. j***n@example.com)
+      const emailParts = user.email.split('@');
+      const prefix = emailParts[0];
+      const maskedPrefix = prefix.length <= 2 
+        ? `${prefix[0]}*` 
+        : `${prefix[0]}***${prefix.slice(-1)}`;
+      const maskedEmail = `${maskedPrefix}@${emailParts[1]}`;
+
+      // Dispatch Email
+      await EmailService.sendAccountDeletionOTP(user.email, otpCode, user.name || 'User');
+
+      res.status(200).json({
+        success: true,
+        message: `A 6-digit verification code has been sent to your registered email address.`,
+        email: maskedEmail
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 14. Permanently Delete Account with OTP Verification
+  static async deleteAccount(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      let userId = (req.headers['x-user-id'] as string) || req.user?.userId || req.user?.id;
+      if (!userId) {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+        if (token) {
+          try {
+            const { verifyAccessToken } = await import('../../../../shared/utils/jwt');
+            const decoded = verifyAccessToken(token);
+            if (decoded && (decoded.userId || decoded.id)) {
+              userId = decoded.userId || decoded.id;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized: Active login session required.' });
+      }
+
+      const { otpCode, password } = req.body || {};
+
+      if (!otpCode || typeof otpCode !== 'string' || !otpCode.trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email verification OTP is required to delete your account.'
+        });
+      }
+
+      const user = await UserRepository.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User account not found' });
+      }
+
+      // Check OTP in OtpStore
+      const redisKey = `delete_account:OTP:${user.id}`;
+      const payloadStr = await OtpStore.get(redisKey);
+      if (!payloadStr) {
+        return res.status(400).json({
+          success: false,
+          error: 'Verification code has expired or was not requested. Please request a new code.'
+        });
+      }
+
+      const payload = JSON.parse(String(payloadStr));
+      if (payload.attempts >= 5) {
+        await OtpStore.del(redisKey);
+        return res.status(400).json({
+          success: false,
+          error: 'Maximum verification attempts exceeded. Please request a new verification code.'
+        });
+      }
+
+      if (payload.otp !== otpCode.trim()) {
+        payload.attempts = (payload.attempts || 0) + 1;
+        await OtpStore.setEx(redisKey, 600, JSON.stringify(payload));
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid verification code. Please check your email and try again.'
+        });
+      }
+
+      // Verify mandatory password if user has a password set
+      const userHasPassword = Boolean(
+        user.has_password !== false &&
+        (user as any).hasPassword !== false &&
+        user.password_hash &&
+        !String(user.password_hash).startsWith('google_')
+      );
+
+      if (userHasPassword) {
+        if (!password || typeof password !== 'string' || !password.trim()) {
+          return res.status(400).json({
+            success: false,
+            error: 'Account password is required to delete your account.'
+          });
+        }
+        const isMatch = await bcrypt.compare(password.trim(), user.password_hash);
+        if (!isMatch) {
+          return res.status(400).json({ success: false, error: 'Incorrect password. Please verify and try again.' });
+        }
+      }
+
+      // Delete user sessions from DB
+      await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId]).catch(() => {});
+
+      // Invalidate Redis profile cache & delete refresh tokens
+      await CacheService.invalidate(`user:profile:${userId}`).catch(() => {});
+      await redisClient.del(`refresh_token:${userId}`).catch(() => {});
+      await OtpStore.del(redisKey).catch(() => {});
+
+      // Delete user from DB (Foreign keys CASCADE / SET NULL to handle profiles, applications, etc.)
+      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Account and associated personal data have been permanently deleted.'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+

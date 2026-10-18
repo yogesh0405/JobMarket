@@ -101,9 +101,14 @@ export class CompanyRepository {
             MIN(j.location) as city,
             MIN(j.midc_zone) as midc_zone,
             MIN(j.industry) as industry,
-            MIN(j.company_logo) as logo,
+            COALESCE(MIN(NULLIF(c.logo, '')), MIN(NULLIF(u.profile_picture_url, '')), MIN(NULLIF(j.company_logo, ''))) as logo,
             (ARRAY_REMOVE(ARRAY_AGG(j.employer_id), NULL))[1] as employer_id
           FROM jobs j
+          LEFT JOIN users u ON j.employer_id = u.id
+          LEFT JOIN companies c ON (
+            (j.employer_id IS NOT NULL AND c.employer_id = j.employer_id)
+            OR LOWER(TRIM(c.name)) = LOWER(TRIM(j.company))
+          )
           WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved'
           GROUP BY j.company;
         `;
@@ -194,6 +199,7 @@ export class CompanyRepository {
               if (!existing.email) existing.email = row.email;
               if (!existing.phone) existing.phone = row.phone;
               if (row.employer_id) existing.employer_id = row.employer_id;
+              if (row.company_logo) existing.logo = row.company_logo;
             }
           });
         } catch (uErr) {
@@ -331,6 +337,50 @@ export class CompanyRepository {
         (company as any).open_jobs_count = companyJobs.length;
         company.completion_percentage = this.calculateProfileCompletion(company);
         const followData = await this.getFollowStatus(u.id || identifier);
+        (company as any).followers_count = followData.followersCount;
+        (company as any).followersCount = followData.followersCount;
+        return company;
+      }
+
+      // 3. Fallback: check if jobs table has postings under this employer_id or company name
+      const jobCheckQuery = `
+        SELECT 
+          j.employer_id, j.company, j.company_logo, j.company_color, j.industry, j.location, j.midc_zone, j.description,
+          COALESCE(NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, '')) as real_company_logo
+        FROM jobs j
+        LEFT JOIN users u ON j.employer_id = u.id
+        LEFT JOIN companies c ON (
+          (j.employer_id IS NOT NULL AND c.employer_id = j.employer_id)
+          OR LOWER(TRIM(c.name)) = LOWER(TRIM(j.company))
+        )
+        WHERE (j.employer_id = $1 OR j.company ILIKE $2)
+        ORDER BY j.posted_at DESC 
+        LIMIT 1;
+      `;
+      const jobCheckRes = await pool.query(jobCheckQuery, [isUuid ? identifier : '00000000-0000-0000-0000-000000000000', decodedName]);
+      if (jobCheckRes.rows.length > 0) {
+        const j = jobCheckRes.rows[0];
+        const compName = j.company || decodedName;
+        const empId = j.employer_id || (isUuid ? identifier : undefined);
+        const company: Company = {
+          id: empId || identifier,
+          employer_id: empId,
+          name: compName,
+          logo: j.real_company_logo || null,
+          color: j.company_color || '#2563EB',
+          industry: j.industry || 'Industrial Manufacturing',
+          company_type: 'Private Limited',
+          description: j.description || `${compName} is an active employer hiring on JobMarket.`,
+          address: j.location || '',
+          city: j.location || '',
+          state: 'Maharashtra',
+          midc_zone: j.midc_zone || '',
+          verified: true
+        };
+        const companyJobs = await this.getCompanyJobs(compName, empId);
+        (company as any).open_jobs_count = companyJobs.length;
+        company.completion_percentage = this.calculateProfileCompletion(company);
+        const followData = await this.getFollowStatus(empId || identifier);
         (company as any).followers_count = followData.followersCount;
         (company as any).followersCount = followData.followersCount;
         return company;
@@ -855,25 +905,32 @@ export class CompanyRepository {
     const query = `
       SELECT 
         cf.created_at as followed_at,
-        c.id,
-        COALESCE(c.name, cf.company_id) as name,
-        c.logo,
+        COALESCE(c.id::text, u.id::text, cf.company_id) as id,
+        COALESCE(c.name, u.company_name, u.name, cf.company_id) as name,
+        COALESCE(c.employer_id::text, u.id::text) as employer_id,
+        COALESCE(c.logo, u.profile_picture_url) as logo,
         c.industry,
-        c.city,
-        c.midc_zone,
-        c.verified,
-        COUNT(j.id) FILTER (WHERE j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') as open_jobs_count
+        COALESCE(c.city, u.location) as city,
+        COALESCE(c.midc_zone, u.midc_zone) as midc_zone,
+        COALESCE(c.verified, u.aadhaar_verified, false) as verified,
+        COUNT(DISTINCT CASE WHEN (j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved') THEN j.id END) as open_jobs_count
       FROM company_followers cf
       LEFT JOIN companies c ON (
         cf.company_id = c.id::text 
+        OR (c.employer_id IS NOT NULL AND cf.company_id = c.employer_id::text)
         OR LOWER(TRIM(cf.company_id)) = LOWER(TRIM(c.name))
+      )
+      LEFT JOIN users u ON (
+        cf.company_id = u.id::text 
+        OR (c.employer_id IS NOT NULL AND u.id = c.employer_id)
       )
       LEFT JOIN jobs j ON (
         (c.employer_id IS NOT NULL AND j.employer_id = c.employer_id)
-        OR (LOWER(TRIM(j.company)) = LOWER(TRIM(c.name)))
+        OR (u.id IS NOT NULL AND j.employer_id = u.id)
+        OR (LOWER(TRIM(j.company)) = LOWER(TRIM(COALESCE(c.name, u.company_name, cf.company_id))))
       )
       WHERE cf.user_id = $1
-      GROUP BY cf.created_at, c.id, c.name, cf.company_id, c.logo, c.industry, c.city, c.midc_zone, c.verified
+      GROUP BY cf.created_at, c.id, u.id, c.name, u.company_name, u.name, cf.company_id, c.employer_id, c.logo, u.profile_picture_url, c.industry, c.city, u.location, c.midc_zone, u.midc_zone, c.verified, u.aadhaar_verified
       ORDER BY cf.created_at DESC;
     `;
     const { rows } = await pool.query(query, [userId]);

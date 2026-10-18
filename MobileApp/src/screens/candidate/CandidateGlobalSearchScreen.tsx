@@ -587,7 +587,7 @@ export const CandidateGlobalSearchScreen: React.FC<Props> = ({ navigation, route
                   <Text style={styles.sectionHeaderTitle}>MATCHING JOBS</Text>
                 </View>
                 {autocompleteSuggestions.jobs.map((job, idx) => {
-                  const jobLogo = job.companyLogo || job.company_logo || (job as any)?.logo || (job as any)?.logoUrl || (job as any)?.profile_picture_url;
+                  const jobLogo = job.companyLogo || job.company_logo || (job as any)?.logoUrl || (job as any)?.logo_url || (job as any)?.logo || (job as any)?.profile_picture_url;
                   return (
                     <TouchableOpacity
                       key={`match-job-${job.id}-${idx}`}

@@ -13,7 +13,6 @@ import {
   GraduationCap,
   ChevronDown,
   Star,
-  Clock,
   Building2,
   Users,
   Bookmark,
@@ -32,6 +31,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { CompanyDefaultLogo } from '../../components/company/CompanyDefaultLogo';
 import { BannerSlider } from '../../components/home/BannerSlider';
+import { CandidateHomeBestFitSection } from '../../components/home/CandidateHomeBestFitSection';
 import { Job } from '../../types';
 import {
   JobFilterModal,
@@ -1122,34 +1122,6 @@ export const HomePage: React.FC = () => {
           font-weight: 700;
         }
 
-        .home-stats-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-
-        .home-stat-card {
-          background-color: #FFFFFF;
-          border: 1px solid #CBD5E1;
-          border-radius: 8px;
-          padding: 16px 14px;
-          text-align: center;
-          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-        }
-
-        .home-stat-card .stat-number {
-          font-size: 26px;
-          font-weight: 900;
-          line-height: 1.2;
-        }
-
-        .home-stat-card .stat-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #64748B;
-          margin-top: 4px;
-        }
-
         /* Category Header Styles Desktop */
         .home-category-section {
           display: flex;
@@ -1725,9 +1697,6 @@ export const HomePage: React.FC = () => {
             grid-column: span 2;
             height: 44px;
           }
-          .home-stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
           .home-jobs-grid {
             grid-template-columns: 1fr;
           }
@@ -1830,22 +1799,6 @@ export const HomePage: React.FC = () => {
           .home-midc-tag {
             font-size: 9.5px !important;
             padding: 1.5px 5px !important;
-          }
-
-          /* Stats Grid Mobile */
-          .home-stats-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 8px !important;
-          }
-          .home-stat-card {
-            padding: 8px 6px !important;
-            border-radius: 6px !important;
-          }
-          .home-stat-card .stat-number {
-            font-size: 16px !important;
-          }
-          .home-stat-card .stat-label {
-            font-size: 10px !important;
           }
 
           /* Categories Grids & Chips Mobile */
@@ -2219,7 +2172,6 @@ export const HomePage: React.FC = () => {
                   }
 
                   const locationText = job.midcZone || job.location || 'Chhatrapati Sambhajinagar';
-                  const shiftText = (job as any).shiftDetails || (job as any).shift_details || 'Day Shift (8:00 AM - 5:00 PM (9 hrs))';
 
                   return (
                     <Link
@@ -2317,36 +2269,13 @@ export const HomePage: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Shift Details Pill */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#F3E8FF',
-                        padding: '5px 9px',
-                        borderRadius: '4px',
-                        marginTop: '8px',
-                      }}>
-                        <Clock size={12} color="#7C3AED" style={{ flexShrink: 0 }} />
-                        <span style={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: '#6B21A8',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {shiftText}
-                        </span>
-                      </div>
-
                       {/* Divider */}
                       <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '12px 0' }} />
 
                       {/* Company Footer */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                          <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo} size={36} borderRadius="6px" />
+                          <CompanyDefaultLogo name={job.company} logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo} size={36} borderRadius="6px" />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="home-popular-job-company" style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {job.company}
@@ -2448,25 +2377,8 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Stats 4 Grid */}
-        <div className="home-stats-grid">
-          <div className="home-stat-card">
-            <div className="stat-number" style={{ color: '#1B4FDF' }}>{allJobs.length || '25+'}</div>
-            <div className="stat-label">Active Listings</div>
-          </div>
-          <div className="home-stat-card">
-            <div className="stat-number" style={{ color: '#059669' }}>120+</div>
-            <div className="stat-label">Factories Hiring</div>
-          </div>
-          <div className="home-stat-card">
-            <div className="stat-number" style={{ color: '#7C3AED' }}>10,000+</div>
-            <div className="stat-label">Verified Workers</div>
-          </div>
-          <div className="home-stat-card">
-            <div className="stat-number" style={{ color: '#EA580C' }}>4,500+</div>
-            <div className="stat-label">Monthly Placements</div>
-          </div>
-        </div>
+        {/* Best Fit For You Section (100% Parity with MobileApp CandidateHomeScreen) */}
+        <CandidateHomeBestFitSection jobs={allJobs} />
 
         {/* Browse by ITI Trade / Specialty */}
         <div className="home-category-section home-category-section-left">

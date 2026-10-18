@@ -36,10 +36,12 @@ import { CandidateJobCardItem } from './components/CandidateJobCardItem';
 import { CandidateJobSearchFilterHeader } from './components/CandidateJobSearchFilterHeader';
 import { savedJobsStore } from '../../utils/savedJobsStore';
 import { matchJobAgainstKeyword, getCleanSearchTerm } from './utils/jobMatchUtils';
-import { evaluateJobMatchesFilter, rankAndFilterJobs } from './utils/jobFilterEngine';
+import { evaluateJobMatchesFilter, rankAndFilterJobs, normalizeCompanyName } from './utils/jobFilterEngine';
 import { VoiceSearchModal } from '../../components/common/VoiceSearchModal';
 import { jobsApi } from '../../api/jobsApi';
 import { CATEGORIES } from './components/CandidateJobSearchUtils';
+import { useAuth } from '../../hooks/useAuth';
+import { companyApi, FollowedCompany } from '../../api/companyApi';
 
 const FALLBACK_JOBS: Job[] = [
   {
@@ -207,8 +209,11 @@ interface Props {
 
 export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route }) => {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>(FALLBACK_JOBS);
   const [savedJobIds, setSavedJobIds] = useState<string[]>(savedJobsStore.getSavedIds());
+  const [followedCompanies, setFollowedCompanies] = useState<FollowedCompany[]>([]);
+  const [loadingFollowed, setLoadingFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -216,6 +221,50 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
+
+  const fetchFollowedCompanies = useCallback(async () => {
+    try {
+      setLoadingFollowed(true);
+      const res = await companyApi.getFollowedCompanies();
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list)) {
+        setFollowedCompanies(list);
+      }
+    } catch (err) {
+      console.warn('Live followed companies fetch notice in JobSearch:', err);
+    } finally {
+      setLoadingFollowed(false);
+    }
+  }, []);
+
+  const followedCompanyIds = useMemo(() => {
+    const set = new Set<string>();
+    followedCompanies.forEach((c) => {
+      if (c.id) set.add(String(c.id).toLowerCase().trim());
+      if ((c as any).employer_id) set.add(String((c as any).employer_id).toLowerCase().trim());
+      if ((c as any).employerId) set.add(String((c as any).employerId).toLowerCase().trim());
+      if (c.name) {
+        const raw = c.name.toLowerCase().trim();
+        set.add(raw);
+        const norm = normalizeCompanyName(c.name);
+        if (norm) set.add(norm);
+      }
+    });
+    return set;
+  }, [followedCompanies]);
+
+  useEffect(() => {
+    fetchFollowedCompanies();
+  }, [user, fetchFollowedCompanies]);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('COMPANY_FOLLOW_CHANGED', () => {
+      fetchFollowedCompanies();
+    });
+    return () => {
+      sub.remove();
+    };
+  }, [fetchFollowedCompanies]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -450,7 +499,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         const names: string[] = catsRes.data
           .map((c: any) => (typeof c === 'string' ? c : c.name))
           .filter(Boolean);
-        const merged = Array.from(new Set(['All Jobs', ...names, ...CATEGORIES]));
+        const merged = Array.from(new Set(['All Jobs', 'Following', ...names, ...CATEGORIES]));
         setCategoriesList(merged);
       }
 
@@ -487,16 +536,22 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   useFocusEffect(
     useCallback(() => {
       loadJobsData(false);
+      fetchFollowedCompanies();
       if (route?.params?.appliedFilters) {
         setActiveFilters(route.params.appliedFilters);
       }
-    }, [loadJobsData, route?.params?.appliedFilters])
+      if (route?.params?.category) {
+        setSelectedCategory(route.params.category);
+      }
+    }, [loadJobsData, fetchFollowedCompanies, route?.params?.appliedFilters, route?.params?.category])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadJobsData(true);
-  }, [loadJobsData]);
+    Promise.all([loadJobsData(true), fetchFollowedCompanies()]).finally(() => {
+      setRefreshing(false);
+    });
+  }, [loadJobsData, fetchFollowedCompanies]);
 
   const handleToggleSave = useCallback((jobId: string) => {
     const foundJob = jobs.find((j) => String(j.id) === String(jobId));
@@ -510,8 +565,8 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
   }, [jobs, showToast]);
 
   const filteredJobs = useMemo(() => {
-    return rankAndFilterJobs(jobs, activeFilters, searchQuery, selectedCategory);
-  }, [jobs, searchQuery, selectedCategory, activeFilters]);
+    return rankAndFilterJobs(jobs, activeFilters, searchQuery, selectedCategory, followedCompanyIds);
+  }, [jobs, searchQuery, selectedCategory, activeFilters, followedCompanyIds]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -552,9 +607,11 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
     if (activeFilters.canteen) count++;
     if (activeFilters.accommodation) count++;
     if (activeFilters.overtime) count++;
+    if (activeFilters.onlyFollowing) count++;
+    if (selectedCategory === 'Following') count++;
 
     return count;
-  }, [activeFilters]);
+  }, [activeFilters, selectedCategory]);
 
   const resetAllFilters = useCallback(() => {
     setActiveFilters({
@@ -710,6 +767,7 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         categories={categoriesList}
+        followedCompaniesCount={followedCompanies.length}
         navigation={navigation}
       />
 
@@ -717,6 +775,17 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
       {activeFilterCount > 0 ? (
         <View style={styles.activeTagsRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}>
+            {/* Following Category Tag */}
+            {selectedCategory === 'Following' && (
+              <View style={styles.activeFilterTag}>
+                <Building2 size={11} color={COLORS.primary} />
+                <Text style={styles.activeFilterTagText}>Following</Text>
+                <TouchableOpacity onPress={() => setSelectedCategory('All Jobs')}>
+                  <X size={12} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Industries */}
             {activeFilters.industries && activeFilters.industries.length > 0
               ? activeFilters.industries.map((ind) => (
@@ -921,9 +990,9 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
             </Text>
           </View>
           <View style={{ gap: 12, paddingHorizontal: 16, marginTop: 8 }}>
-            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
-            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
-            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 0 }} />
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 12 }} />
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 12 }} />
+            <SkeletonLoader width="100%" height={140} style={{ borderRadius: 12 }} />
           </View>
         </View>
       ) : (
@@ -939,17 +1008,6 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
               isLast={index === filteredJobs.length - 1}
               isSaved={savedJobIds.includes(job.id)}
               onToggleSave={() => handleToggleSave(job.id)}
-              onCompanyPress={(compName) =>
-                navigation.navigate('CompanyProfile', {
-                  companyId: (job as any).company_id || (job as any).companyId || compName,
-                  name: compName,
-                  company: {
-                    name: compName,
-                    logo: job.companyLogo || (job as any).company_logo,
-                    location: job.location,
-                  },
-                })
-              }
               onPress={() =>
                 navigation.navigate('CandidateJobsTab', {
                   screen: 'CandidateJobDetail',
@@ -968,15 +1026,73 @@ export const CandidateJobSearchScreen: React.FC<Props> = ({ navigation, route })
           ListHeaderComponent={
             <View style={styles.resultsInfoRow}>
               <Text style={styles.resultsCountText}>
-                Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> active vacancies
+                {selectedCategory === 'Following' ? (
+                  <>Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> vacancies from followed companies</>
+                ) : (
+                  <>Showing <Text style={{ fontWeight: '800', color: COLORS.primary }}>({filteredJobs.length})</Text> active vacancies</>
+                )}
               </Text>
             </View>
           }
           ListEmptyComponent={
-            loading ? (
+            loading || loadingFollowed ? (
               <View style={{ gap: 12 }}>
-                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
-                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 8 }} />
+                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 12 }} />
+                <SkeletonLoader width="100%" height={160} style={{ borderRadius: 12 }} />
+              </View>
+            ) : selectedCategory === 'Following' ? (
+              <View style={styles.emptyStateBox}>
+                <View style={styles.emptyIconCircle}>
+                  <Building2 size={26} color={COLORS.primary} strokeWidth={2} />
+                </View>
+                {!user ? (
+                  <>
+                    <Text style={styles.emptyTitle}>Sign In to See Followed Companies</Text>
+                    <Text style={styles.emptySub}>
+                      Sign in to follow companies and see all their latest job vacancies here.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.resetFilterBtn}
+                      activeOpacity={0.85}
+                      onPress={() => navigation.navigate('EmployerLogin')}
+                    >
+                      <Text style={styles.resetFilterBtnText}>Sign In</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : followedCompanies.length === 0 ? (
+                  <>
+                    <Text style={styles.emptyTitle}>You Aren't Following Any Companies</Text>
+                    <Text style={styles.emptySub}>
+                      Follow companies in the Companies section to see all their job vacancies listed here.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.resetFilterBtn}
+                      activeOpacity={0.85}
+                      onPress={() => navigation.navigate('CandidateSavedTab')}
+                    >
+                      <Text style={styles.resetFilterBtnText}>Browse Companies</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emptyTitle}>No Openings from Followed Companies</Text>
+                    <Text style={styles.emptySub}>
+                      {searchQuery.trim()
+                        ? `None of your followed companies have active openings matching "${searchQuery.trim()}".`
+                        : `Your followed companies (${followedCompanies.length}) don't have active vacancies right now.`}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.resetFilterBtn}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('All Jobs');
+                      }}
+                    >
+                      <Text style={styles.resetFilterBtnText}>View All Jobs</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             ) : (
               <View style={styles.emptyStateBox}>
@@ -1059,6 +1175,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 28,
     alignItems: 'center',
@@ -1092,6 +1209,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderRadius: 12,
     padding: 14,
     marginBottom: 18,
   },

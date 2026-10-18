@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Building2, Search, Clock } from 'lucide-react-native';
 import { CompanyLogoAvatar } from '../../../components/common/CompanyLogoAvatar';
-import { COLORS } from '../../../constants/theme';
+import { COLORS, RADIUS } from '../../../constants/theme';
 
 interface CandidateDashboardApplicationsSectionProps {
   appliedJobs: any[];
@@ -57,10 +57,10 @@ export const CandidateDashboardApplicationsSection: React.FC<CandidateDashboardA
                 onPress={() => navigation.navigate('CandidateAppliedTab')}
               >
                 <CompanyLogoAvatar
-                  logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl}
+                  logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                   companyName={job.company || 'Industrial Company'}
                   size={38}
-                  borderRadius={4}
+                  borderRadius={RADIUS.xs}
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowJobTitle} numberOfLines={1}>
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   emptyApplicationsBox: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 20,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 6,
+    borderRadius: RADIUS.card,
     marginTop: 10,
   },
   exploreVacanciesBtnText: {
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: RADIUS.card,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 10,

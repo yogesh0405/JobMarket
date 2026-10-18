@@ -218,7 +218,7 @@ export const WalkInDrivePassModal: React.FC<WalkInDrivePassModalProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <CompanyDefaultLogo
                   companyName={data.company}
-                  logoUrl={data.companyLogo}
+                  logoUrl={data.companyLogo || (data as any).company_logo || (data as any).logoUrl || (data as any).logo_url || (data as any).logo}
                   size={46}
                   borderRadius="8px"
                 />

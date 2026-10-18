@@ -220,6 +220,7 @@ export const EmployerJobsListScreen: React.FC<Props> = ({ navigation }) => {
       (item as any).company_logo ||
       (item as any).logoUrl ||
       (item as any).logo_url ||
+      (item as any).logo ||
       user?.companyLogo ||
       user?.company_logo;
 

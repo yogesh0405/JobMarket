@@ -105,6 +105,16 @@ export class JobRepository {
       employerId: row.employer_id,
       company: row.company,
       companyLogo: row.company_logo,
+      jobLogo: row.job_uploaded_logo || row.job_logo || row.company_logo || null,
+      uploadedJobLogo: row.job_uploaded_logo || row.job_logo || null,
+      realCompanyLogo: row.real_company_logo || row.company_profile_logo || null,
+      companyProfileLogo: row.real_company_logo || row.company_profile_logo || null,
+      companyAddress: row.company_address || null,
+      companyCity: row.company_city || null,
+      companyIndustry: row.company_industry || null,
+      companyWebsite: row.company_website || null,
+      companyMidcZone: row.company_midc_zone || null,
+      companyVerified: row.company_verified !== undefined ? row.company_verified : true,
       companyColor: row.company_color,
       title: row.title,
       industry: row.industry,
@@ -202,13 +212,27 @@ export class JobRepository {
     const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
     if (!isUUID) return null;
 
-    return CacheService.getOrSet(`cache:job:${id}`, 180, async () => {
+    return CacheService.getOrSet(`cache:job:v2:${id}`, 180, async () => {
       const query = `
         SELECT j.*, 
-               COALESCE(NULLIF(j.company_logo, ''), NULLIF(u.profile_picture_url, '')) as company_logo
+               NULLIF(j.company_logo, '') as job_uploaded_logo,
+               COALESCE(NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, '')) as real_company_logo,
+               COALESCE(NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, ''), NULLIF(j.company_logo, '')) as company_profile_logo,
+               COALESCE(NULLIF(j.company_logo, ''), NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, '')) as company_logo,
+               c.address as company_address,
+               c.city as company_city,
+               c.industry as company_industry,
+               c.website as company_website,
+               c.midc_zone as company_midc_zone,
+               COALESCE(c.verified, u.aadhaar_verified, false) as company_verified
         FROM jobs j
         LEFT JOIN users u ON j.employer_id = u.id
+        LEFT JOIN companies c ON (
+          (j.employer_id IS NOT NULL AND c.employer_id = j.employer_id)
+          OR (j.company IS NOT NULL AND LOWER(TRIM(c.name)) = LOWER(TRIM(j.company)))
+        )
         WHERE j.id = $1
+        LIMIT 1
       `;
       const result = await pool.query(query, [id]);
       if (result.rows.length === 0) return null;
@@ -753,6 +777,8 @@ export class JobRepository {
     ];
 
     const result = await pool.query(query, values);
+    await CacheService.invalidatePattern('cache:jobs:*');
+    await CacheService.invalidate(`cache:job:${jobId}`);
     return this.mapDbJobToApi(result.rows[0]);
   }
 

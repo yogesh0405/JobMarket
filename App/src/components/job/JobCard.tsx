@@ -52,8 +52,8 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
   };
 
   const renderSalary = () => {
-    if (job.discloseSalary === false) return 'Not disclosed';
-    if (!job.salaryMin && !job.salaryMax) return 'Not disclosed';
+    if (job.discloseSalary === false || (job as any).disclose_salary === false) return 'Salary Not Disclosed';
+    if (!job.salaryMin && !job.salaryMax) return 'Salary Not Disclosed';
     if (job.salaryMin >= 100000) {
       const minLacs = (job.salaryMin / 100000).toFixed(0);
       const maxLacs = (job.salaryMax / 100000).toFixed(0);
@@ -61,15 +61,6 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
     }
     return formatSalary(job.salaryMin, job.salaryMax);
   };
-
-  const workModeColor = () => {
-    const mode = (job.workMode || '').toLowerCase();
-    if (mode.includes('remote')) return { bg: '#DCFCE7', color: '#15803D', border: '#BBF7D0' };
-    if (mode.includes('hybrid')) return { bg: '#FEF9C3', color: '#92400E', border: '#FDE68A' };
-    return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' };
-  };
-
-  const { bg: wmBg, color: wmColor, border: wmBorder } = workModeColor();
 
   const applicantRecord = job.applicants?.find(a => a.userId === currentUser?.id || a.id === currentUser?.id);
   const hasApplied = Boolean(
@@ -219,36 +210,32 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
         </div>
       </div>
 
-      {/* ── MIDDLE TAGS ROW: Work Mode + Shift + Job Type ── */}
+      {/* ── MIDDLE INFO ROW: Work Mode + Shift + Job Type + Education + Status (Clean, Chip-free) ── */}
       <div style={{
-        padding: '8px 14px 6px',
+        padding: '8px 14px',
         display: 'flex',
         alignItems: 'center',
-        gap: '5px',
+        gap: '12px',
         flexWrap: 'wrap',
-        rowGap: '5px',
+        rowGap: '6px',
         borderBottom: '1px solid #F1F5F9',
         flex: variant === 'carousel' ? '1' : undefined,
         alignContent: variant === 'carousel' ? 'flex-start' : undefined,
         overflow: variant === 'carousel' ? 'hidden' : undefined
       }}>
-        {/* Reported Badge */}
+        {/* Reported Status */}
         {reportedJobsStore.isReported(job.id) && (
           <span style={{
-            fontSize: '11px',
+            fontSize: '11.5px',
             fontWeight: '700',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            background: '#FEF2F2',
             color: '#DC2626',
-            border: '1px solid #FECACA',
             whiteSpace: 'nowrap',
             flexShrink: 0,
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px'
           }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
               <line x1="4" y1="22" x2="4" y2="15" />
             </svg>
@@ -256,15 +243,11 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
           </span>
         )}
 
-        {/* Work Mode badge */}
+        {/* Work Mode */}
         <span style={{
-          fontSize: '11px',
-          fontWeight: '700',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          background: wmBg,
-          color: wmColor,
-          border: `1px solid ${wmBorder}`,
+          fontSize: '11.5px',
+          fontWeight: '500',
+          color: '#475569',
           whiteSpace: 'nowrap',
           flexShrink: 0,
           display: 'inline-flex',
@@ -272,17 +255,17 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
           gap: '4px'
         }}>
           {(job.workMode || '').toLowerCase().includes('remote') ? (
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
               <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
           ) : (job.workMode || '').toLowerCase().includes('hybrid') ? (
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
               <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
             </svg>
           ) : (
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
               <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
               <path d="M6 12h12"/><path d="M6 7h12"/><path d="M6 17h12"/>
             </svg>
@@ -290,45 +273,37 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
           <span>{job.workMode || 'On-site'}</span>
         </span>
 
-        {/* Job Type badge */}
+        {/* Job Type */}
         <span style={{
-          fontSize: '11px',
-          fontWeight: '600',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          background: '#F1F5F9',
+          fontSize: '11.5px',
+          fontWeight: '500',
           color: '#475569',
-          border: '1px solid #E2E8F0',
           whiteSpace: 'nowrap',
           flexShrink: 0,
           display: 'inline-flex',
           alignItems: 'center',
           gap: '4px'
         }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
           </svg>
           <span>{job.jobType || 'Full-time'}</span>
         </span>
 
-        {/* Education badge */}
+        {/* Education */}
         {(job.educationRequirement || (job as any).education_requirement) && (
           <span style={{
-            fontSize: '11px',
-            fontWeight: '600',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            background: '#F0FDF4',
-            color: '#166534',
-            border: '1px solid #BBF7D0',
+            fontSize: '11.5px',
+            fontWeight: '500',
+            color: '#475569',
             whiteSpace: 'nowrap',
             flexShrink: 0,
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px'
           }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
               <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
             </svg>
@@ -337,44 +312,37 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
         )}
 
         {/* Shift Details */}
-        {(job as any).shiftDetails && (
+        {Boolean((job as any).shiftDetails && ((job as any).shiftDetails || '').replace(/\s*\(\s*\)/g, '').trim()) && (
           <span style={{
-            fontSize: '11px',
-            fontWeight: '600',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            background: '#F8F4FF',
-            color: '#6D28D9',
-            border: '1px solid #DDD6FE',
+            fontSize: '11.5px',
+            fontWeight: '500',
+            color: '#475569',
             whiteSpace: 'nowrap',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
-            gap: '3px'
+            gap: '4px'
           }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            {(job as any).shiftDetails}
+            <span>{((job as any).shiftDetails || '').replace(/\s*\(\s*\)/g, '').trim()}</span>
           </span>
         )}
 
-        {/* Real-time Application Status Badge */}
+        {/* Real-time Application Status Indicator */}
         {hasApplied && variant !== 'carousel' && (
           <span style={{
-            fontSize: '11px',
-            fontWeight: '800',
-            padding: '2px 8px',
-            borderRadius: '4px',
-            background: appDetails?.status === 'accepted' ? '#DCFCE7' : appDetails?.status === 'shortlisted' ? '#FAF5FF' : '#EFF6FF',
-            color: appDetails?.status === 'accepted' ? '#15803D' : appDetails?.status === 'shortlisted' ? '#9333EA' : '#2563EB',
-            border: appDetails?.status === 'accepted' ? '1px solid #BBF7D0' : appDetails?.status === 'shortlisted' ? '1px solid #E9D5FF' : '1px solid #BFDBFE',
+            fontSize: '11.5px',
+            fontWeight: '700',
+            color: appDetails?.status === 'accepted' ? '#15803D' : appDetails?.status === 'shortlisted' ? '#9333EA' : '#1B4FDF',
+            letterSpacing: '0.2px',
             whiteSpace: 'nowrap',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
             marginLeft: 'auto'
           }}>
-            <span>✓</span>
+            <span style={{ fontWeight: '900' }}>✓</span>
             <span>{appDetails?.status ? (appDetails.status.charAt(0).toUpperCase() + appDetails.status.slice(1)) : 'Applied'}</span>
           </span>
         )}
@@ -392,7 +360,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onSaveToggle, variant = '
         {/* Logo + Company info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <CompanyDefaultLogo
-            logoUrl={job.companyLogo || (job as any).company_logo}
+            logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
             companyName={job.company}
             size={38}
             borderRadius="4px"

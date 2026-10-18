@@ -431,22 +431,26 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     } else {
       showToast(`Unfollowed ${displayCompName}`, 'info');
     }
+    DeviceEventEmitter.emit('COMPANY_FOLLOW_CHANGED', { companyId: candidateId, isFollowing: nextFollowing });
 
     try {
       const res = await companyApi.toggleFollow(candidateId);
       if (res?.success && res.data) {
         setIsFollowing(Boolean(res.data.isFollowing));
         setFollowersCount(Number(res.data.followersCount) || 0);
+        DeviceEventEmitter.emit('COMPANY_FOLLOW_CHANGED', { companyId: candidateId, isFollowing: Boolean(res.data.isFollowing) });
       } else {
         // Rollback on server rejection
         setIsFollowing(prevFollowing);
         setFollowersCount(prevCount);
+        DeviceEventEmitter.emit('COMPANY_FOLLOW_CHANGED', { companyId: candidateId, isFollowing: prevFollowing });
         showToast(res?.error || 'Unable to update follow status.', 'error');
       }
     } catch (err: any) {
       // Rollback on network failure
       setIsFollowing(prevFollowing);
       setFollowersCount(prevCount);
+      DeviceEventEmitter.emit('COMPANY_FOLLOW_CHANGED', { companyId: candidateId, isFollowing: prevFollowing });
       showToast(err?.message || 'Network error while updating follow status.', 'error');
     } finally {
       setIsSubmittingFollow(false);

@@ -920,39 +920,27 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                 const status = (appDetails?.status || 'applied').toLowerCase();
                 const isShortlisted = status === 'shortlisted' || status === 'interview' || status === 'interview_scheduled';
                 
-                let badgeBg = '#EFF6FF';
-                let badgeBorder = '#DBEAFE';
                 let badgeColor = '#1B4FDF';
                 let badgeLabel = 'APPLIED';
                 let IconComp = Send;
 
                 if (status === 'reviewed' || status === 'under_review') {
-                  badgeBg = '#EFF6FF';
-                  badgeBorder = '#DBEAFE';
                   badgeColor = '#1B4FDF';
                   badgeLabel = 'UNDER REVIEW';
                   IconComp = Clock;
                 } else if (status === 'shortlisted') {
-                  badgeBg = '#F0FDF4';
-                  badgeBorder = '#BBF7D0';
                   badgeColor = '#15803D';
                   badgeLabel = 'SHORTLISTED';
                   IconComp = Award;
                 } else if (status === 'interview' || status === 'interview_scheduled') {
-                  badgeBg = '#FEF3C7';
-                  badgeBorder = '#FDE68A';
                   badgeColor = '#D97706';
                   badgeLabel = 'INTERVIEW';
                   IconComp = Calendar;
                 } else if (status === 'hired' || status === 'selected' || status === 'accepted') {
-                  badgeBg = '#DCFCE7';
-                  badgeBorder = '#86EFAC';
                   badgeColor = '#16A34A';
                   badgeLabel = 'HIRED';
                   IconComp = CheckCircle2;
                 } else if (status === 'rejected') {
-                  badgeBg = '#FEF2F2';
-                  badgeBorder = '#FECACA';
                   badgeColor = '#DC2626';
                   badgeLabel = 'REJECTED';
                   IconComp = AlertCircle;
@@ -982,7 +970,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <CompanyDefaultLogo
-                        logoUrl={job.companyLogo || (job as any).company_logo}
+                        logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                         companyName={job.company}
                         size={44}
                         borderRadius="6px"
@@ -1000,27 +988,24 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
 
                     <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '2px 0' }} />
 
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', width: '100%' }}>
-                      {job.location ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#475569', flexShrink: 1, maxWidth: '100%' }}>
-                          <MapPin size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.location}</span>
-                        </div>
-                      ) : null}
+                    {/* Metadata Info Rows (Clean, chip-free matching Best Fit card) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4.5px', marginTop: '1px', marginBottom: '2px', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {job.location || 'Location Not Specified'}
+                          {(job.job_type || job.jobType || job.workMode) ? `   |   ${job.job_type || job.jobType || job.workMode}` : ''}
+                        </span>
+                      </div>
 
                       {hasSalary ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, color: '#1B4FDF', flexShrink: 1, maxWidth: '100%' }}>
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <IndianRupee size={13} color="#1B4FDF" style={{ flexShrink: 0 }} />
+                          <span style={{ fontSize: '12px', color: '#1B4FDF', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {job.salary_min || job.salaryMin ? `₹${job.salary_min || job.salaryMin}` : ''}
                             {(job.salary_min || job.salaryMin) && (job.salary_max || job.salaryMax) ? ' - ' : ''}
                             {job.salary_max || job.salaryMax ? `₹${job.salary_max || job.salaryMax}` : ''}/mo
                           </span>
-                        </div>
-                      ) : null}
-
-                      {(job.workMode || job.job_type || job.jobType) ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3.5px', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '3px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, color: '#475569', flexShrink: 1, maxWidth: '100%' }}>
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.workMode || job.job_type || job.jobType}</span>
                         </div>
                       ) : null}
                     </div>
@@ -1050,14 +1035,10 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                             <span style={{ fontSize: '12px', fontWeight: 800, color: '#0369A1' }}>Walk-in Drive Entry Pass</span>
                           </div>
                           <span style={{
-                            background: '#E0F2FE',
-                            border: '1px solid #7DD3FC',
-                            padding: '1.5px 6px',
-                            borderRadius: '4px',
-                            fontSize: '9.5px',
+                            fontSize: '10px',
                             fontWeight: 800,
                             color: '#0284C7',
-                            letterSpacing: '0.4px'
+                            letterSpacing: '0.5px'
                           }}>PASS ISSUED</span>
                         </div>
 
@@ -1130,7 +1111,13 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%' }}>
                           <Calendar size={14} color="#1B4FDF" strokeWidth={2.2} />
                           <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A', flex: 1 }}>Interview Scheduled</span>
-                          <span style={{ background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '1.5px 5px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, color: '#1B4FDF', flexShrink: 0 }}>CONFIRMED</span>
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            color: '#1B4FDF',
+                            letterSpacing: '0.5px',
+                            flexShrink: 0
+                          }}>CONFIRMED</span>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', width: '100%' }}>
@@ -1187,23 +1174,19 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
                         </span>
                       </div>
 
-                      <span style={{
+                      <div style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        background: badgeBg,
-                        border: `1px solid ${badgeBorder}`,
+                        gap: '5px',
                         color: badgeColor,
-                        padding: '3px 7px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
+                        fontSize: '11px',
                         fontWeight: 800,
-                        letterSpacing: '0.2px',
+                        letterSpacing: '0.3px',
                         flexShrink: 0
                       }}>
-                        <IconComp size={11} strokeWidth={2.2} />
-                        {badgeLabel}
-                      </span>
+                        <IconComp size={12} strokeWidth={2.4} />
+                        <span>{badgeLabel}</span>
+                      </div>
                     </div>
                   </Link>
                 );
@@ -4215,8 +4198,8 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
                   return (
                     <div key={j.id} style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {j.companyLogo || (j as any).company_logo ? (
-                          <img src={j.companyLogo || (j as any).company_logo} alt={j.company || j.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {j.companyLogo || (j as any).company_logo || (j as any).logoUrl || (j as any).logo_url || (j as any).logo ? (
+                          <img src={j.companyLogo || (j as any).company_logo || (j as any).logoUrl || (j as any).logo_url || (j as any).logo} alt={j.company || j.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <CompanyDefaultLogo companyName={j.company || currentUser?.companyName || 'Company'} logoUrl={null} size={36} />
                         )}
@@ -5294,7 +5277,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <CompanyDefaultLogo
-                  logoUrl={manageVacanciesJob.companyLogo}
+                  logoUrl={manageVacanciesJob.companyLogo || (manageVacanciesJob as any).company_logo || (manageVacanciesJob as any).logoUrl || (manageVacanciesJob as any).logo_url || (manageVacanciesJob as any).logo}
                   companyName={manageVacanciesJob.company}
                   size={48}
                   borderRadius="8px"

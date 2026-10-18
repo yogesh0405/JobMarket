@@ -67,6 +67,8 @@ export const MobileBottomNav: React.FC = () => {
     location.pathname.startsWith('/profile/') ||
     location.pathname.startsWith('/candidate/') ||
     location.pathname.startsWith('/p/') ||
+    location.pathname.startsWith('/post-job') ||
+    location.pathname.startsWith('/edit-job') ||
     isJobDetailRoute ||
     isCompanyProfileRoute ||
     isBannersSection ||

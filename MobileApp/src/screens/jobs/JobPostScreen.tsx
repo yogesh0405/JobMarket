@@ -26,6 +26,7 @@ import { JobPostStep1Basic } from './components/JobPostStep1Basic';
 import { JobPostStep2Location } from './components/JobPostStep2Location';
 import { JobPostStep3WorkPay } from './components/JobPostStep3WorkPay';
 import { JobPostStep4Eligibility } from './components/JobPostStep4Eligibility';
+import { JobPostStep5Description } from './components/JobPostStep5Description';
 import { useJobPostForm } from './hooks/useJobPostForm';
 
 interface Props {
@@ -80,10 +81,11 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [navigation, form.isSubmittedRef]);
 
   const STEPS = [
-    { id: 1, title: 'Basic Details' },
+    { id: 1, title: 'Basic' },
     { id: 2, title: 'Location' },
-    { id: 3, title: 'Work & Pay' },
-    { id: 4, title: 'Role & Skills' },
+    { id: 3, title: 'Pay' },
+    { id: 4, title: 'Criteria' },
+    { id: 5, title: 'Description' },
   ];
 
   const handleNextStep = () => {
@@ -138,6 +140,38 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
     } else if (form.currentStep === 3) {
       form.setCurrentStep(4);
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    } else if (form.currentStep === 4) {
+      if (!form.applicationDeadline || !form.applicationDeadline.trim()) {
+        form.setError('Application Deadline is mandatory. Please select a deadline date.');
+        return;
+      }
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (form.applicationDeadline.trim() < todayStr) {
+        form.setError('Application Deadline cannot be a past date. Please select today or a future date.');
+        return;
+      }
+      if (form.hiringMethod === 'WALK_IN') {
+        if (!form.walkInDate) {
+          form.setError('Please select a Walk-in Drive Date.');
+          return;
+        }
+        if (!form.interviewAddress.trim()) {
+          form.setError('Please enter the Interview Venue Address for Walk-in Drive.');
+          return;
+        }
+      }
+      let activeSkills = [...form.skillsTags];
+      if (form.customSkillInput.trim() && !activeSkills.includes(form.customSkillInput.trim())) {
+        activeSkills.push(form.customSkillInput.trim());
+        form.setSkillsTags(activeSkills);
+        form.setCustomSkillInput('');
+      }
+      if (activeSkills.length === 0) {
+        form.setError('Key Skills are mandatory. Please select or add at least one skill.');
+        return;
+      }
+      form.setCurrentStep(5);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   };
 
@@ -156,6 +190,11 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
     if (success === false) {
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
+  };
+
+  const onFocusField = (e: any, margin?: number) => {
+    setIsKeyboardVisible(true);
+    handleFocusInput(e, scrollViewRef, margin ?? 70);
   };
 
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
@@ -209,230 +248,236 @@ export const JobPostScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </View>
 
-      <KeyboardAwareScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Admin Rejection Remarks Banner */}
-        {form.isRejected && (
-          <View style={styles.rejectionNoticeCard}>
-            <View style={styles.rejectionHeaderRow}>
-              <View style={styles.rejectionIconBadge}>
-                <AlertTriangle size={16} color="#DC2626" strokeWidth={2.4} />
+      {form.currentStep === 5 ? (
+        <JobPostStep5Description
+          description={form.description}
+          setDescription={form.setDescription}
+          showResponsibilities={form.showResponsibilities}
+          setShowResponsibilities={form.setShowResponsibilities}
+          responsibilities={form.responsibilities}
+          setResponsibilities={form.setResponsibilities}
+          showRequirements={form.showRequirements}
+          setShowRequirements={form.setShowRequirements}
+          requirements={form.requirements}
+          setRequirements={form.setRequirements}
+          title={form.title === 'Other' ? form.customTitle : form.title}
+          industry={form.industry === 'Other' ? form.customIndustry : form.industry}
+          onSubmit={handleFormSubmit}
+          onBack={handlePrevStep}
+          loading={form.loading}
+          isRejected={form.isRejected}
+          error={form.error}
+          bottomInset={bottomInset}
+        />
+      ) : (
+        <>
+          <KeyboardAwareScrollView
+            ref={scrollViewRef}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Admin Rejection Remarks Banner */}
+            {form.isRejected && (
+              <View style={styles.rejectionNoticeCard}>
+                <View style={styles.rejectionHeaderRow}>
+                  <View style={styles.rejectionIconBadge}>
+                    <AlertTriangle size={16} color="#DC2626" strokeWidth={2.4} />
+                  </View>
+                  <View style={styles.rejectionTitleCol}>
+                    <Text style={styles.rejectionTitle}>ADMIN REVISION REQUESTED</Text>
+                    <Text style={styles.rejectionSubtitle}>This job listing was returned with feedback during moderation</Text>
+                  </View>
+                </View>
+                <View style={styles.rejectionBodyBox}>
+                  <Text style={styles.rejectionReasonLabel}>MODERATOR REMARKS & REJECTION REASON:</Text>
+                  <Text style={styles.rejectionReasonText}>
+                    {form.rejectReason || 'This listing requires revisions to meet platform guidelines. Please review the details, update the necessary information, and resubmit for approval.'}
+                  </Text>
+                </View>
+                <Text style={styles.rejectionTipText}>
+                  Please review and correct the flagged fields across the 5 steps, then tap <Text style={{ fontWeight: '700', color: '#B91C1C' }}>"Resubmit for Approval"</Text> at Step 5.
+                </Text>
               </View>
-              <View style={styles.rejectionTitleCol}>
-                <Text style={styles.rejectionTitle}>ADMIN REVISION REQUESTED</Text>
-                <Text style={styles.rejectionSubtitle}>This job listing was returned with feedback during moderation</Text>
-              </View>
+            )}
+
+            {form.error ? <ErrorBanner message={form.error} /> : null}
+
+            {form.currentStep === 1 ? (
+              <JobPostStep1Basic
+                companyLogo={form.companyLogo}
+                onPickLogo={form.handlePickLogo}
+                availableCategories={form.availableCategories}
+                industry={form.industry}
+                customIndustry={form.customIndustry}
+                setCustomIndustry={form.setCustomIndustry}
+                title={form.title}
+                customTitle={form.customTitle}
+                setCustomTitle={form.setCustomTitle}
+                setTitle={form.setTitle}
+                currentRoleOptions={form.currentRoleOptions}
+                onIndustryChange={form.handleIndustryChange}
+                openingsInput={form.openingsInput}
+                setOpeningsInput={form.setOpeningsInput}
+                targetIti={form.targetIti}
+                setTargetIti={form.setTargetIti}
+                itiTrade={form.itiTrade}
+                setItiTrade={form.setItiTrade}
+                customItiTrade={form.customItiTrade}
+                setCustomItiTrade={form.setCustomItiTrade}
+                itiTradesList={ITI_TRADES_LIST}
+                isMidcLocation={form.isMidcLocation}
+                setIsMidcLocation={form.setIsMidcLocation}
+                midcZone={form.midcZone}
+                setMidcZone={form.setMidcZone}
+                customMidcZone={form.customMidcZone}
+                setCustomMidcZone={form.setCustomMidcZone}
+                midcList={MIDC_LIST}
+                onFocusInput={(e, margin) => onFocusField(e, margin ?? 85)}
+                onScrollToEnd={() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }}
+              />
+            ) : null}
+
+            {form.currentStep === 2 ? (
+              <JobPostStep2Location
+                location={form.location}
+                setLocation={form.setLocation}
+                googleMapsUrl={form.googleMapsUrl}
+                setGoogleMapsUrl={form.setGoogleMapsUrl}
+                autoResolveMsg={form.autoResolveMsg}
+                resolvingMap={form.resolvingMap}
+                onResolveMapUrl={form.handleResolveMapUrl}
+                latitude={form.latitude}
+                longitude={form.longitude}
+                resolvedAddress={form.resolvedAddress}
+                onFocusInput={(e, margin) => onFocusField(e, margin ?? 70)}
+              />
+            ) : null}
+
+            {form.currentStep === 3 ? (
+              <JobPostStep3WorkPay
+                experienceRequired={form.experienceRequired}
+                setExperienceRequired={form.setExperienceRequired}
+                minExperience={form.minExperience}
+                setMinExperience={form.setMinExperience}
+                maxExperience={form.maxExperience}
+                setMaxExperience={form.setMaxExperience}
+                educationRequirement={form.educationRequirement}
+                setEducationRequirement={form.setEducationRequirement}
+                customEducation={form.customEducation}
+                setCustomEducation={form.setCustomEducation}
+                discloseSalary={form.discloseSalary}
+                setDiscloseSalary={form.setDiscloseSalary}
+                salaryMin={form.salaryMin}
+                setSalaryMin={form.setSalaryMin}
+                salaryMax={form.salaryMax}
+                setSalaryMax={form.setSalaryMax}
+                workMode={form.workMode}
+                setWorkMode={form.setWorkMode}
+                workType={form.workType}
+                setWorkType={form.setWorkType}
+                shiftCategory={form.shiftCategory}
+                setShiftCategory={form.setShiftCategory}
+                overtime={form.overtime}
+                setOvertime={form.setOvertime}
+                canteen={form.canteen}
+                setCanteen={form.setCanteen}
+                busFacility={form.busFacility}
+                setBusFacility={form.setBusFacility}
+                accommodation={form.accommodation}
+                setAccommodation={form.setAccommodation}
+                pf={form.pf}
+                setPf={form.setPf}
+                esic={form.esic}
+                setEsic={form.setEsic}
+                uniform={form.uniform}
+                setUniform={form.setUniform}
+                medicalInsurance={form.medicalInsurance}
+                setMedicalInsurance={form.setMedicalInsurance}
+                onFocusInput={(e, margin) => onFocusField(e, margin ?? 70)}
+              />
+            ) : null}
+
+            {form.currentStep === 4 ? (
+              <JobPostStep4Eligibility
+                genderPreference={form.genderPreference}
+                setGenderPreference={form.setGenderPreference}
+                minAgeInput={form.minAgeInput}
+                setMinAgeInput={form.setMinAgeInput}
+                maxAgeInput={form.maxAgeInput}
+                setMaxAgeInput={form.setMaxAgeInput}
+                hiringMethod={form.hiringMethod}
+                setHiringMethod={form.setHiringMethod}
+                walkInDate={form.walkInDate}
+                setWalkInDate={form.setWalkInDate}
+                walkInStartTime={form.walkInStartTime}
+                setWalkInStartTime={form.setWalkInStartTime}
+                walkInEndTime={form.walkInEndTime}
+                setWalkInEndTime={form.setWalkInEndTime}
+                interviewAddress={form.interviewAddress}
+                setInterviewAddress={form.setInterviewAddress}
+                walkInContactPerson={form.walkInContactPerson}
+                setWalkInContactPerson={form.setWalkInContactPerson}
+                walkInContactNumber={form.walkInContactNumber}
+                setWalkInContactNumber={form.setWalkInContactNumber}
+                applicationDeadline={form.applicationDeadline}
+                setApplicationDeadline={form.setApplicationDeadline}
+                maxApplicantsInput={form.maxApplicantsInput}
+                setMaxApplicantsInput={form.setMaxApplicantsInput}
+                description={form.description}
+                setDescription={form.setDescription}
+                showResponsibilities={form.showResponsibilities}
+                setShowResponsibilities={form.setShowResponsibilities}
+                responsibilities={form.responsibilities}
+                setResponsibilities={form.setResponsibilities}
+                showRequirements={form.showRequirements}
+                setShowRequirements={form.setShowRequirements}
+                requirements={form.requirements}
+                setRequirements={form.setRequirements}
+                skillsTags={form.skillsTags}
+                customSkillInput={form.customSkillInput}
+                setCustomSkillInput={form.setCustomSkillInput}
+                onAddCustomSkill={form.handleAddCustomSkill}
+                onToggleSkill={form.handleToggleSkill}
+                availableSkills={form.availableSkills}
+                onFocusInput={(e, margin) => onFocusField(e, margin ?? 65)}
+              />
+            ) : null}
+          </KeyboardAwareScrollView>
+
+          {/* Fixed Sticky Action Bar at Bottom (Hidden while typing so Back/Next buttons do not move up with the keyboard) */}
+          {!isKeyboardVisible && (
+            <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
+              {form.currentStep === 1 ? (
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    if (form.isSubmittedRef) form.isSubmittedRef.current = true;
+                    if (navigation && typeof navigation.navigate === 'function') {
+                      navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+                    } else if (navigation?.canGoBack && navigation.canGoBack()) {
+                      navigation.goBack();
+                    }
+                  }}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.prevBtn} activeOpacity={0.85} onPress={handlePrevStep}>
+                  <ArrowLeft size={15} color={COLORS.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.prevBtnText}>Back</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={styles.nextBtn} activeOpacity={0.85} onPress={handleNextStep}>
+                <Text style={styles.nextBtnText}>Next Step</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.rejectionBodyBox}>
-              <Text style={styles.rejectionReasonLabel}>MODERATOR REMARKS & REJECTION REASON:</Text>
-              <Text style={styles.rejectionReasonText}>
-                {form.rejectReason || 'This listing requires revisions to meet platform guidelines. Please review the details, update the necessary information, and resubmit for approval.'}
-              </Text>
-            </View>
-            <Text style={styles.rejectionTipText}>
-              Please review and correct the flagged fields across the 4 steps, then tap <Text style={{ fontWeight: '700', color: '#B91C1C' }}>"Resubmit for Approval"</Text> at Step 4.
-            </Text>
-          </View>
-        )}
-
-        {form.error ? <ErrorBanner message={form.error} /> : null}
-
-        {form.currentStep === 1 ? (
-          <JobPostStep1Basic
-            companyLogo={form.companyLogo}
-            onPickLogo={form.handlePickLogo}
-            availableCategories={form.availableCategories}
-            industry={form.industry}
-            customIndustry={form.customIndustry}
-            setCustomIndustry={form.setCustomIndustry}
-            title={form.title}
-            customTitle={form.customTitle}
-            setCustomTitle={form.setCustomTitle}
-            setTitle={form.setTitle}
-            currentRoleOptions={form.currentRoleOptions}
-            onIndustryChange={form.handleIndustryChange}
-            openingsInput={form.openingsInput}
-            setOpeningsInput={form.setOpeningsInput}
-            targetIti={form.targetIti}
-            setTargetIti={form.setTargetIti}
-            itiTrade={form.itiTrade}
-            setItiTrade={form.setItiTrade}
-            customItiTrade={form.customItiTrade}
-            setCustomItiTrade={form.setCustomItiTrade}
-            itiTradesList={ITI_TRADES_LIST}
-            isMidcLocation={form.isMidcLocation}
-            setIsMidcLocation={form.setIsMidcLocation}
-            midcZone={form.midcZone}
-            setMidcZone={form.setMidcZone}
-            customMidcZone={form.customMidcZone}
-            setCustomMidcZone={form.setCustomMidcZone}
-            midcList={MIDC_LIST}
-            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 85)}
-            onScrollToEnd={() => {
-              scrollViewRef.current?.scrollToEnd({ animated: true });
-            }}
-          />
-        ) : null}
-
-        {form.currentStep === 2 ? (
-          <JobPostStep2Location
-            location={form.location}
-            setLocation={form.setLocation}
-            googleMapsUrl={form.googleMapsUrl}
-            setGoogleMapsUrl={form.setGoogleMapsUrl}
-            autoResolveMsg={form.autoResolveMsg}
-            resolvingMap={form.resolvingMap}
-            onResolveMapUrl={form.handleResolveMapUrl}
-            latitude={form.latitude}
-            longitude={form.longitude}
-            resolvedAddress={form.resolvedAddress}
-            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 70)}
-          />
-        ) : null}
-
-        {form.currentStep === 3 ? (
-          <JobPostStep3WorkPay
-            experienceRequired={form.experienceRequired}
-            setExperienceRequired={form.setExperienceRequired}
-            minExperience={form.minExperience}
-            setMinExperience={form.setMinExperience}
-            maxExperience={form.maxExperience}
-            setMaxExperience={form.setMaxExperience}
-            educationRequirement={form.educationRequirement}
-            setEducationRequirement={form.setEducationRequirement}
-            customEducation={form.customEducation}
-            setCustomEducation={form.setCustomEducation}
-            discloseSalary={form.discloseSalary}
-            setDiscloseSalary={form.setDiscloseSalary}
-            salaryMin={form.salaryMin}
-            setSalaryMin={form.setSalaryMin}
-            salaryMax={form.salaryMax}
-            setSalaryMax={form.setSalaryMax}
-            workMode={form.workMode}
-            setWorkMode={form.setWorkMode}
-            workType={form.workType}
-            setWorkType={form.setWorkType}
-            shiftCategory={form.shiftCategory}
-            setShiftCategory={form.setShiftCategory}
-            overtime={form.overtime}
-            setOvertime={form.setOvertime}
-            canteen={form.canteen}
-            setCanteen={form.setCanteen}
-            busFacility={form.busFacility}
-            setBusFacility={form.setBusFacility}
-            accommodation={form.accommodation}
-            setAccommodation={form.setAccommodation}
-            pf={form.pf}
-            setPf={form.setPf}
-            esic={form.esic}
-            setEsic={form.setEsic}
-            uniform={form.uniform}
-            setUniform={form.setUniform}
-            medicalInsurance={form.medicalInsurance}
-            setMedicalInsurance={form.setMedicalInsurance}
-            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 70)}
-          />
-        ) : null}
-
-        {form.currentStep === 4 ? (
-          <JobPostStep4Eligibility
-            genderPreference={form.genderPreference}
-            setGenderPreference={form.setGenderPreference}
-            minAgeInput={form.minAgeInput}
-            setMinAgeInput={form.setMinAgeInput}
-            maxAgeInput={form.maxAgeInput}
-            setMaxAgeInput={form.setMaxAgeInput}
-            hiringMethod={form.hiringMethod}
-            setHiringMethod={form.setHiringMethod}
-            walkInDate={form.walkInDate}
-            setWalkInDate={form.setWalkInDate}
-            walkInStartTime={form.walkInStartTime}
-            setWalkInStartTime={form.setWalkInStartTime}
-            walkInEndTime={form.walkInEndTime}
-            setWalkInEndTime={form.setWalkInEndTime}
-            interviewAddress={form.interviewAddress}
-            setInterviewAddress={form.setInterviewAddress}
-            walkInContactPerson={form.walkInContactPerson}
-            setWalkInContactPerson={form.setWalkInContactPerson}
-            walkInContactNumber={form.walkInContactNumber}
-            setWalkInContactNumber={form.setWalkInContactNumber}
-            applicationDeadline={form.applicationDeadline}
-            setApplicationDeadline={form.setApplicationDeadline}
-            maxApplicantsInput={form.maxApplicantsInput}
-            setMaxApplicantsInput={form.setMaxApplicantsInput}
-            description={form.description}
-            setDescription={form.setDescription}
-            showResponsibilities={form.showResponsibilities}
-            setShowResponsibilities={form.setShowResponsibilities}
-            responsibilities={form.responsibilities}
-            setResponsibilities={form.setResponsibilities}
-            showRequirements={form.showRequirements}
-            setShowRequirements={form.setShowRequirements}
-            requirements={form.requirements}
-            setRequirements={form.setRequirements}
-            skillsTags={form.skillsTags}
-            customSkillInput={form.customSkillInput}
-            setCustomSkillInput={form.setCustomSkillInput}
-            onAddCustomSkill={form.handleAddCustomSkill}
-            onToggleSkill={form.handleToggleSkill}
-            availableSkills={form.availableSkills}
-            onFocusInput={(e, margin) => handleFocusInput(e, scrollViewRef, margin ?? 65)}
-          />
-        ) : null}
-      </KeyboardAwareScrollView>
-
-      {/* Fixed Sticky Action Bar at Bottom (Hidden while typing so Back/Next buttons do not move up with the keyboard) */}
-      {!isKeyboardVisible && (
-        <View style={[styles.submitContainer, { paddingBottom: bottomInset + 14 }]}>
-          {form.currentStep === 1 ? (
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              activeOpacity={0.85}
-              onPress={() => {
-                if (form.isSubmittedRef) form.isSubmittedRef.current = true;
-                if (navigation && typeof navigation.navigate === 'function') {
-                  navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
-                } else if (navigation?.canGoBack && navigation.canGoBack()) {
-                  navigation.goBack();
-                }
-              }}
-            >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.prevBtn} activeOpacity={0.85} onPress={handlePrevStep}>
-              <ArrowLeft size={15} color={COLORS.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.prevBtnText}>Back</Text>
-            </TouchableOpacity>
           )}
-
-          {form.currentStep < 4 ? (
-            <TouchableOpacity style={styles.nextBtn} activeOpacity={0.85} onPress={handleNextStep}>
-              <Text style={styles.nextBtnText}>Next Step</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.submitBtn, form.loading && styles.submitBtnDisabled]}
-              activeOpacity={0.85}
-              disabled={form.loading}
-              onPress={handleFormSubmit}
-            >
-              <Text style={styles.submitBtnText}>
-                {form.loading
-                  ? form.isRejected
-                    ? 'Resubmitting...'
-                    : 'Submitting...'
-                  : form.isRejected
-                  ? 'Resubmit for Approval'
-                  : 'Submit'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        </>
       )}
 
       {/* Themed Discard Job Post Draft Confirmation Modal */}
@@ -493,7 +538,7 @@ const styles = StyleSheet.create({
   },
   stepNodeCol: {
     alignItems: 'center',
-    width: 60,
+    width: 54,
   },
   stepCircle: {
     width: 26,
@@ -524,7 +569,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   stepNodeTitle: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '500',
     color: '#64748B',
     marginTop: 3,

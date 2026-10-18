@@ -178,7 +178,12 @@ export const ManageVacanciesModal: React.FC<ManageVacanciesModalProps> = ({
   };
 
   const isFullyFilled = filledOpenings === totalOpenings;
-  const logoUri = job.companyLogo || (job as any).company_logo;
+  const logoUri =
+    job.companyLogo ||
+    (job as any).company_logo ||
+    (job as any).logoUrl ||
+    (job as any).logo_url ||
+    (job as any).logo;
 
   return (
     <Modal
