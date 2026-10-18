@@ -22,6 +22,9 @@ import { maintenanceMiddleware } from './middlewares/maintenanceMiddleware';
 
 const app = express();
 
+// Trust reverse proxy (Render, AWS ALB, Cloudflare, Nginx) for accurate client IP resolution
+app.set('trust proxy', 1);
+
 // Industry-Grade Smart Compression Middleware
 app.use(
   compression({

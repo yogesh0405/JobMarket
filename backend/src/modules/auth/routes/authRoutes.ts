@@ -12,8 +12,8 @@ import {
 
 const router = Router();
 
-// Apply rate limiting specifically for auth endpoints
-const authLimiter = rateLimiter('auth', 20, 60); // 20 requests per minute per IP
+// Apply rate limiting specifically for auth endpoints (60 req/min per IP allows multiple attempts/retries safely)
+const authLimiter = rateLimiter('auth', 60, 60);
 
 router.post('/signup', authLimiter, validate(signupSchema), AuthController.signup);
 router.post('/verify-otp', authLimiter, validate(verifyOTPSchema), AuthController.verifyOTP);

@@ -11,7 +11,7 @@ import {
 
 const router = Router();
 
-const authLimiter = rateLimiter('auth', 20, 60);
+const authLimiter = rateLimiter('auth', 60, 60);
 
 router.post('/signup', authLimiter, validate(signupSchema), AuthController.signup);
 router.post('/verify-otp', authLimiter, validate(verifyOTPSchema), AuthController.verifyOTP);

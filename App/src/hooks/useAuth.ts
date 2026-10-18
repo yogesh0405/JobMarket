@@ -82,13 +82,16 @@ export const useAuth = () => {
 
       if (!response.ok) {
         let errorMessage = data.error || data.message || 'Login failed';
-        const errorCode = data.errorCode || (data.errors && data.errors[0]);
+        const errorCode = data.errorCode || (typeof data.errors?.[0] === 'string' ? data.errors[0] : undefined);
         if (data.errors && data.errors.length > 0) {
           if (typeof data.errors[0] === 'object' && data.errors[0].message) {
             errorMessage = data.errors[0].message;
-          } else if (typeof data.errors[0] === 'string') {
+          } else if (typeof data.errors[0] === 'string' && !data.error && !data.message) {
             errorMessage = data.errors[0];
           }
+        }
+        if (errorCode === 'RATE_LIMIT_EXCEEDED' || errorMessage === 'RATE_LIMIT_EXCEEDED') {
+          errorMessage = data.error || data.message || 'Too many attempts. Please wait a moment before trying again.';
         }
         return { success: false, error: errorMessage, errorCode };
       }
