@@ -144,6 +144,26 @@ export const useJobs = () => {
     return state.jobs.find(j => j.id === id) || null;
   }, [dispatch, state.jobs]);
 
+  const fetchSimilarJobs = useCallback(async (id: string, limit: number = 6) => {
+    try {
+      const res = await apiFetch(`/api/v1/jobs/${id}/similar?limit=${limit}`);
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        return json.data;
+      }
+      if (Array.isArray(json)) {
+        return json;
+      }
+    } catch (err) {
+      console.error(`Error fetching similar jobs for ${id}:`, err);
+    }
+    const current = state.jobs.find(j => j.id === id);
+    if (!current) return [];
+    return state.jobs
+      .filter(j => j.id !== id && (j.status === 'active' || !j.status))
+      .slice(0, limit);
+  }, [state.jobs]);
+
   const getJobsByEmployer = useCallback((employerId: string) => {
     return state.jobs.filter(j => j.employerId === employerId || (j as any).employer_id === employerId);
   }, [state.jobs]);
@@ -489,6 +509,7 @@ export const useJobs = () => {
     getJobs,
     getJobById,
     fetchJobById,
+    fetchSimilarJobs,
     getJobsByEmployer,
     createJob,
     updateJob,

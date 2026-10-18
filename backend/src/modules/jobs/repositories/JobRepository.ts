@@ -240,6 +240,82 @@ export class JobRepository {
     });
   }
 
+  static async getSimilarJobs(jobId: string, limit: number = 6): Promise<any[]> {
+    const isUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(jobId);
+    const safeLimit = Math.min(20, Math.max(1, limit || 6));
+
+    if (!isUUID) {
+      return this.getJobs(safeLimit);
+    }
+
+    const cacheKey = `cache:job:similar:v1:${jobId}:${safeLimit}`;
+    return CacheService.getOrSet(cacheKey, 180, async () => {
+      const targetJob = await this.getJobById(jobId);
+      if (!targetJob) {
+        return this.getJobs(safeLimit);
+      }
+
+      const industry = (targetJob.industry || '').trim();
+      const trade = (targetJob.trade || '').trim();
+      const title = (targetJob.title || '').trim();
+      const location = (targetJob.location || '').trim();
+      const midcZone = (targetJob.midcZone || (targetJob as any).midc_zone || '').trim();
+      const jobType = (targetJob.jobType || (targetJob as any).job_type || '').trim();
+
+      const titleKeyword = title.split(/\s+/).slice(0, 2).join(' ').trim();
+      const cityKeyword = location.split(',')[0].trim();
+
+      const query = `
+        SELECT j.*, 
+               NULLIF(j.company_logo, '') as job_uploaded_logo,
+               COALESCE(NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, '')) as real_company_logo,
+               COALESCE(NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, ''), NULLIF(j.company_logo, '')) as company_profile_logo,
+               COALESCE(NULLIF(j.company_logo, ''), NULLIF(c.logo, ''), NULLIF(u.profile_picture_url, '')) as company_logo,
+               c.address as company_address,
+               c.city as company_city,
+               c.industry as company_industry,
+               c.website as company_website,
+               c.midc_zone as company_midc_zone,
+               COALESCE(c.verified, u.aadhaar_verified, false) as company_verified,
+               (
+                 (CASE WHEN $2 <> '' AND LOWER(TRIM(COALESCE(j.trade, ''))) = LOWER(TRIM($2)) THEN 40 ELSE 0 END) +
+                 (CASE WHEN $3 <> '' AND LOWER(TRIM(COALESCE(j.industry, ''))) = LOWER(TRIM($3)) THEN 30 ELSE 0 END) +
+                 (CASE WHEN $4 <> '' AND j.title ILIKE '%' || $4 || '%' THEN 25 ELSE 0 END) +
+                 (CASE WHEN $5 <> '' AND (j.location ILIKE '%' || $5 || '%' OR j.midc_zone ILIKE '%' || $5 || '%') THEN 20 ELSE 0 END) +
+                 (CASE WHEN $6 <> '' AND LOWER(TRIM(COALESCE(j.midc_zone, ''))) = LOWER(TRIM($6)) THEN 20 ELSE 0 END) +
+                 (CASE WHEN $7 <> '' AND LOWER(TRIM(COALESCE(j.job_type, ''))) = LOWER(TRIM($7)) THEN 10 ELSE 0 END)
+               ) as similarity_score
+        FROM jobs j
+        LEFT JOIN users u ON j.employer_id = u.id
+        LEFT JOIN companies c ON (
+          (j.employer_id IS NOT NULL AND c.employer_id = j.employer_id)
+          OR (j.company IS NOT NULL AND LOWER(TRIM(c.name)) = LOWER(TRIM(j.company)))
+        )
+        WHERE j.id <> $1
+          AND (j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved')
+        ORDER BY similarity_score DESC, j.posted_at DESC
+        LIMIT $8
+      `;
+
+      const result = await pool.query(query, [
+        jobId,
+        trade,
+        industry,
+        titleKeyword,
+        cityKeyword,
+        midcZone,
+        jobType,
+        safeLimit,
+      ]);
+
+      if (result.rows.length === 0) {
+        return this.getJobs(safeLimit);
+      }
+
+      return result.rows.map((row) => this.mapDbJobToApi(row));
+    });
+  }
+
   static async getJobsByEmployer(employerId: string): Promise<any[]> {
     const query = `
       SELECT 

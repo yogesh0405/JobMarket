@@ -26,6 +26,7 @@ router.get('/workers/all', JobController.getAllCandidates);
 router.get('/candidates/all', JobController.getAllCandidates);
 router.get('/candidates', JobController.getAllCandidates);
 router.get('/search', JobController.searchJobs);
+router.get('/:id/similar', JobController.getSimilarJobs);
 router.get('/:id', JobController.getJobById);
 
 router.post('/', jobCreateLimiter, JobController.createJob);

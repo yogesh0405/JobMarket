@@ -68,6 +68,17 @@ export class JobController {
     }
   }
 
+  static async getSimilarJobs(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 6;
+      const data = await JobRepository.getSimilarJobs(id, limit);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getJobById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params.id as string;

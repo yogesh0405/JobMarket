@@ -20,6 +20,7 @@ import {
   Ticket,
   ShieldCheck,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { jobsApi } from '../../api/jobsApi';
@@ -109,6 +110,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [reportMeta, setReportMeta] = useState<ReportedJobMetadata | undefined>(() => {
     return initialJobId ? reportedJobsStore.getReportMetadata(initialJobId) : undefined;
   });
+  const [similarJobs, setSimilarJobs] = useState<Job[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState<boolean>(false);
 
   // Apply blue status bar ONLY while on Candidate Job Details, restore on exit
   useFocusEffect(
@@ -191,6 +194,35 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
     fetchDetails();
     return () => {
       mounted = false;
+    };
+  }, [activeJobId]);
+
+  useEffect(() => {
+    if (!activeJobId) {
+      setSimilarJobs([]);
+      return;
+    }
+    let isMounted = true;
+    setLoadingSimilar(true);
+
+    jobsApi
+      .getSimilarJobs(activeJobId, 6)
+      .then((res: any) => {
+        if (!isMounted) return;
+        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        const filtered = list.filter((j: any) => (j?.id || j?._id) !== activeJobId);
+        setSimilarJobs(filtered);
+      })
+      .catch((err) => {
+        logger.error('Failed to load similar jobs', err);
+        if (isMounted) setSimilarJobs([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingSimilar(false);
+      });
+
+    return () => {
+      isMounted = false;
     };
   }, [activeJobId]);
 
@@ -790,6 +822,103 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
             </>
           )}
         </View>
+
+        {/* SIMILAR JOBS SECTION */}
+        {similarJobs && similarJobs.length > 0 && (
+          <View style={styles.similarJobsSection}>
+            <View style={styles.similarSectionDivider} />
+
+            <View style={styles.similarSectionHeaderRow}>
+              <View style={styles.similarTitleGroup}>
+                <Text style={styles.similarSectionTitle}>Similar Job Openings</Text>
+                <View style={styles.similarCountBadge}>
+                  <Text style={styles.similarCountText}>{similarJobs.length}</Text>
+                </View>
+              </View>
+              <Text style={styles.similarSectionSubtitle}>Matching trade, role & location</Text>
+            </View>
+
+            <View style={styles.similarJobsList}>
+              {similarJobs.map((simJob) => {
+                const sId = simJob.id || (simJob as any)._id;
+                const sTitle = simJob.title || (simJob as any).job_title || 'Industrial Position';
+                const sCompany = simJob.company || (simJob as any).company_name || 'Industrial Partner';
+                const sLocation = simJob.location || (simJob as any).midc_zone || 'MIDC Area';
+                const sSalary =
+                  simJob.salaryMin && simJob.salaryMax
+                    ? `₹${simJob.salaryMin.toLocaleString('en-IN')} - ₹${simJob.salaryMax.toLocaleString('en-IN')}`
+                    : simJob.salaryMin
+                    ? `₹${simJob.salaryMin.toLocaleString('en-IN')}+`
+                    : 'Salary Not Disclosed';
+                const sJobType = simJob.jobType || (simJob as any).job_type || 'Full Time';
+                const sTrade = simJob.trade || simJob.industry || '';
+
+                return (
+                  <TouchableOpacity
+                    key={sId}
+                    style={styles.similarJobCard}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      if (typeof navigation.push === 'function') {
+                        navigation.push('CandidateJobDetail', {
+                          jobId: sId,
+                          job: simJob,
+                        });
+                      } else {
+                        navigation.navigate('CandidateJobDetail', {
+                          jobId: sId,
+                          job: simJob,
+                        });
+                      }
+                    }}
+                  >
+                    <View style={styles.similarCardTopRow}>
+                      <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                        <Text style={styles.similarCardTitle} numberOfLines={1}>
+                          {sTitle}
+                        </Text>
+                        <Text style={styles.similarCardCompany} numberOfLines={1}>
+                          {sCompany}
+                        </Text>
+                      </View>
+                      <View style={styles.similarJobTypeBadge}>
+                        <Text style={styles.similarJobTypeBadgeText}>{sJobType}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.similarCardMetaRow}>
+                      <View style={styles.similarMetaItem}>
+                        <MapPin size={12} color="#64748B" />
+                        <Text style={styles.similarMetaText} numberOfLines={1}>
+                          {sLocation}
+                        </Text>
+                      </View>
+                      <View style={styles.similarMetaItem}>
+                        <Text style={styles.similarSalaryText}>{sSalary}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.similarCardBottomRow}>
+                      {sTrade ? (
+                        <View style={styles.similarTradeTag}>
+                          <Text style={styles.similarTradeTagText} numberOfLines={1}>
+                            {sTrade}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View />
+                      )}
+                      <View style={styles.similarViewBtn}>
+                        <Text style={styles.similarViewBtnText}>View Details</Text>
+                        <ChevronRight size={13} color="#0A58E2" strokeWidth={2.5} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* BOTTOM FIXED CTA ACTION BAR */}
@@ -1158,5 +1287,140 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 13.5,
     fontWeight: '700',
+  },
+  similarJobsSection: {
+    marginTop: 10,
+  },
+  similarSectionDivider: {
+    height: 1,
+    backgroundColor: '#94A3B8',
+    marginVertical: 6,
+  },
+  similarSectionHeaderRow: {
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  similarTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  similarSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  similarCountBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: RADIUS.full,
+  },
+  similarCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0A58E2',
+  },
+  similarSectionSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  similarJobsList: {
+    gap: 10,
+  },
+  similarJobCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: RADIUS.card,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    padding: 12,
+  },
+  similarCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  similarCardTitle: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  similarCardCompany: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    marginTop: 2,
+  },
+  similarJobTypeBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.xs,
+  },
+  similarJobTypeBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  similarCardMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  similarMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  similarMetaText: {
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  similarSalaryText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  similarCardBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F8FAFC',
+  },
+  similarTradeTag: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.xs,
+    maxWidth: '65%',
+  },
+  similarTradeTagText: {
+    fontSize: 10.5,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  similarViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  similarViewBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0A58E2',
   },
 });

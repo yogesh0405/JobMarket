@@ -13,6 +13,13 @@ export const jobsApi = {
     return apiFetch(`/api/v1/jobs/${id}`);
   },
 
+  getSimilarJobs: async (id: string, limit: number = 6): Promise<ApiResponse<Job[]>> => {
+    if (!isValidId(id)) {
+      return { success: true, data: [] } as any;
+    }
+    return apiFetch(`/api/v1/jobs/${id}/similar?limit=${limit}`);
+  },
+
   createJob: async (jobData: Partial<Job>): Promise<ApiResponse<Job>> => {
     return apiFetch('/api/v1/jobs', {
       method: 'POST',

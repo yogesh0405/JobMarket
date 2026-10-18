@@ -39,6 +39,7 @@ import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
 import { ReportJobModal } from '../../components/jobs/ReportJobModal';
 import { reportedJobsStore, ReportedJobMetadata } from '../../utils/reportedJobsStore';
+import { JobCard } from '../../components/job/JobCard';
 import '../../styles/jobDetail.css';
 
 const ensureArray = (val: any): string[] => {
@@ -59,7 +60,7 @@ export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getJobById, fetchJobById, applyToJob, toggleSaveJob, isJobSaved, fetchCandidateAppliedJobs } = useJobs();
+  const { getJobById, fetchJobById, fetchSimilarJobs, applyToJob, toggleSaveJob, isJobSaved, fetchCandidateAppliedJobs } = useJobs();
   const { currentUser } = useAuth();
   const { showToast } = useToast();
   const { state } = useStore();
@@ -84,6 +85,8 @@ export const JobDetailPage: React.FC = () => {
   const [reportMeta, setReportMeta] = useState<ReportedJobMetadata | undefined>(() => {
     return id ? reportedJobsStore.getReportMetadata(id) : undefined;
   });
+  const [similarJobs, setSimilarJobs] = useState<any[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState<boolean>(false);
 
   const jobIdStr = job?.id;
   const storeSaved = jobIdStr ? isJobSaved(jobIdStr) : false;
@@ -105,6 +108,29 @@ export const JobDetailPage: React.FC = () => {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (id && fetchSimilarJobs) {
+      setLoadingSimilar(true);
+      fetchSimilarJobs(id, 4)
+        .then((data: any) => {
+          if (isMounted) {
+            const list = Array.isArray(data) ? data : [];
+            setSimilarJobs(list.filter((j: any) => j.id !== id));
+          }
+        })
+        .catch(() => {
+          if (isMounted) setSimilarJobs([]);
+        })
+        .finally(() => {
+          if (isMounted) setLoadingSimilar(false);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [id, fetchSimilarJobs]);
 
   const companyTargetId = (job as any)?.companyId || (job as any)?.employer_id || (job as any)?.employerId || job?.company;
 
@@ -1020,6 +1046,25 @@ export const JobDetailPage: React.FC = () => {
           </div>
 
         </div>
+
+        {/* Similar Jobs Section */}
+        {similarJobs && similarJobs.length > 0 && (
+          <section className="jd-similar-section">
+            <div className="jd-similar-header">
+              <div className="jd-similar-title-wrap">
+                <h3 className="jd-similar-title">Similar Job Openings</h3>
+                <span className="jd-similar-badge">{similarJobs.length} Recommended</span>
+              </div>
+              <p className="jd-similar-subtitle">Industrial opportunities matching trade, category & zone</p>
+            </div>
+
+            <div className="jd-similar-grid">
+              {similarJobs.map((simJob) => (
+                <JobCard key={simJob.id} job={simJob} />
+              ))}
+            </div>
+          </section>
+        )}
 
       </div>
 

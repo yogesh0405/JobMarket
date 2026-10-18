@@ -45,6 +45,7 @@ router.get('/', JobController.getJobs);
 router.post('/', requireAuth, actionLimiter, JobController.createJob);
 
 // Specific Job Actions (/:id parameter matches only after specific static routes)
+router.get('/:id/similar', JobController.getSimilarJobs);
 router.get('/:id', JobController.getJobById);
 router.put('/:id', requireAuth, actionLimiter, JobController.updateJob);
 router.delete('/:id', requireAuth, actionLimiter, JobController.deleteJob);
