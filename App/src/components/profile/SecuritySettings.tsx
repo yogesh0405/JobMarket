@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { apiFetch } from '../../utils/api';
@@ -717,32 +718,40 @@ export const SecuritySettings: React.FC = () => {
         }
 
         .del-confirm-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(15, 23, 42, 0.65);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 99999;
-          padding: 16px;
-          backdrop-filter: blur(2px);
-          animation: delFadeIn 0.15s ease-out;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+          background-color: rgba(15, 23, 42, 0.65) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 9999999 !important;
+          padding: 16px !important;
+          box-sizing: border-box !important;
+          backdrop-filter: blur(4px) !important;
+          -webkit-backdrop-filter: blur(4px) !important;
+          animation: delFadeIn 0.15s ease-out !important;
+          margin: 0 !important;
         }
 
         .del-confirm-card {
-          background-color: #FFFFFF;
-          border-radius: 12px;
-          border: 1px solid #E2E8F0;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-          max-width: 400px;
-          width: 100%;
-          padding: 24px;
-          box-sizing: border-box;
-          text-align: center;
-          animation: delScaleUp 0.15s ease-out;
+          margin: auto !important;
+          background-color: #FFFFFF !important;
+          border-radius: 16px !important;
+          border: 1px solid #E2E8F0 !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+          max-width: 400px !important;
+          width: 100% !important;
+          padding: 26px 24px !important;
+          box-sizing: border-box !important;
+          text-align: center !important;
+          position: relative !important;
         }
 
         .del-confirm-icon-circle {
@@ -1691,7 +1700,7 @@ export const SecuritySettings: React.FC = () => {
       )}
 
       {/* STEP 1: THEMED ACCOUNT DELETION CONFIRMATION MESSAGE MODAL */}
-      {showDeleteConfirmModal && (
+      {showDeleteConfirmModal && typeof document !== 'undefined' && createPortal(
         <div className="del-confirm-overlay" onClick={() => setShowDeleteConfirmModal(false)}>
           <div className="del-confirm-card" onClick={(e) => e.stopPropagation()}>
             {/* Center Circular Danger Icon Badge */}
@@ -1731,7 +1740,8 @@ export const SecuritySettings: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* STEP 2: THEMED ACCOUNT DELETION EMAIL OTP VERIFICATION MODAL (Parity with MobileApp DeleteAccountModal.tsx) */}

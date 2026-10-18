@@ -77,6 +77,7 @@ export const Layout: React.FC = () => {
                      location.pathname.startsWith('/about') ||
                      location.pathname.startsWith('/terms') ||
                      location.pathname.startsWith('/privacy') ||
+                     location.pathname.startsWith('/security') ||
                      location.pathname.startsWith('/contact') ||
                      location.pathname.startsWith('/support') ||
                      location.pathname.startsWith('/notifications') ||

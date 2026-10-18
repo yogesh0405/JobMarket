@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, KeyRound, Lock, Eye, EyeOff, RotateCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 
@@ -139,37 +140,46 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     isDeleting ||
     isSendingOtp;
 
-  return (
+  const modalContent = (
     <div className="del-modal-overlay" onClick={onClose}>
       <style>{`
         /* Desktop View Styles */
         .del-modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(15, 23, 42, 0.65);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 99999;
-          padding: 16px;
-          backdrop-filter: blur(2px);
-          animation: delFadeIn 0.15s ease-out;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+          background-color: rgba(15, 23, 42, 0.65) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 9999999 !important;
+          padding: 16px !important;
+          box-sizing: border-box !important;
+          backdrop-filter: blur(4px) !important;
+          -webkit-backdrop-filter: blur(4px) !important;
+          animation: delFadeIn 0.15s ease-out !important;
+          margin: 0 !important;
         }
 
         .del-modal-card {
-          background-color: #FFFFFF;
-          border-radius: 12px;
-          border: 1px solid #E2E8F0;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-          max-width: 420px;
-          width: 100%;
-          padding: 26px 24px;
-          box-sizing: border-box;
-          text-align: center;
-          animation: delScaleUp 0.15s ease-out;
+          margin: auto !important;
+          background-color: #FFFFFF !important;
+          border-radius: 16px !important;
+          border: 1px solid #E2E8F0 !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+          max-width: 420px !important;
+          width: 100% !important;
+          padding: 26px 24px !important;
+          box-sizing: border-box !important;
+          text-align: center !important;
+          animation: delScaleUp 0.15s ease-out !important;
+          position: relative !important;
         }
 
         .del-icon-circle {
@@ -581,4 +591,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 };

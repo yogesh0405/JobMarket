@@ -140,6 +140,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.modalOverlay}>
@@ -293,6 +294,8 @@ const styles = StyleSheet.create({
   keyboardContainer: {
     width: '100%',
     maxWidth: 360,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalCard: {
     width: '100%',
