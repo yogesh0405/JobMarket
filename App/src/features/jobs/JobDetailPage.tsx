@@ -1048,7 +1048,21 @@ export const JobDetailPage: React.FC = () => {
         </div>
 
         {/* Similar Jobs Section */}
-        {similarJobs && similarJobs.length > 0 && (
+        {loadingSimilar ? (
+          <section className="jd-similar-section">
+            <div className="jd-similar-header">
+              <div className="jd-similar-title-wrap">
+                <h3 className="jd-similar-title">Similar Job Openings</h3>
+              </div>
+              <p className="jd-similar-subtitle">Finding matching industrial opportunities...</p>
+            </div>
+            <div className="jd-similar-grid">
+              {[1, 2].map((n) => (
+                <div key={n} style={{ height: '180px', backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', opacity: 0.6 }} />
+              ))}
+            </div>
+          </section>
+        ) : similarJobs && similarJobs.length > 0 ? (
           <section className="jd-similar-section">
             <div className="jd-similar-header">
               <div className="jd-similar-title-wrap">
@@ -1064,7 +1078,7 @@ export const JobDetailPage: React.FC = () => {
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
       </div>
 

@@ -148,20 +148,38 @@ export const useJobs = () => {
     try {
       const res = await apiFetch(`/api/v1/jobs/${id}/similar?limit=${limit}`);
       const json = await res.json();
-      if (res.ok && Array.isArray(json.data)) {
+      if (res.ok && Array.isArray(json.data) && json.data.length > 0) {
         return json.data;
       }
-      if (Array.isArray(json)) {
+      if (Array.isArray(json) && json.length > 0) {
         return json;
       }
     } catch (err) {
       console.error(`Error fetching similar jobs for ${id}:`, err);
     }
-    const current = state.jobs.find(j => j.id === id);
-    if (!current) return [];
-    return state.jobs
-      .filter(j => j.id !== id && (j.status === 'active' || !j.status))
-      .slice(0, limit);
+    const current = state.jobs.find((j: any) => j.id === id);
+    const activeJobs = state.jobs.filter((j: any) => {
+      const s = String(j.status || '').toLowerCase();
+      return j.id !== id && (!j.status || s === 'active' || s === 'approved');
+    });
+
+    if (current) {
+      const targetTrade = String(current.trade || '').toLowerCase();
+      const targetIndustry = String(current.industry || '').toLowerCase();
+      const matched = activeJobs.filter((j: any) => {
+        const jTrade = String(j.trade || '').toLowerCase();
+        const jIndustry = String(j.industry || '').toLowerCase();
+        return (
+          (targetTrade && jTrade && (jTrade.includes(targetTrade) || targetTrade.includes(jTrade))) ||
+          (targetIndustry && jIndustry && (jIndustry.includes(targetIndustry) || targetIndustry.includes(jIndustry)))
+        );
+      });
+      if (matched.length > 0) {
+        return matched.slice(0, limit);
+      }
+    }
+
+    return activeJobs.slice(0, limit);
   }, [state.jobs]);
 
   const getJobsByEmployer = useCallback((employerId: string) => {

@@ -235,15 +235,47 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
 
     jobsApi
       .getSimilarJobs(activeJobId, 6)
-      .then((res: any) => {
+      .then(async (res: any) => {
         if (!isMounted) return;
         const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-        const filtered = list.filter((j: any) => (j?.id || j?._id) !== activeJobId);
-        setSimilarJobs(filtered);
+        let filtered = list.filter((j: any) => (j?.id || j?._id) !== activeJobId);
+
+        // Fallback: if server returned empty, retrieve active jobs matching trade/industry
+        if (filtered.length === 0) {
+          try {
+            const allRes: any = await candidateApi.getAllJobs();
+            const allList = Array.isArray(allRes?.data) ? allRes.data : Array.isArray(allRes) ? allRes : [];
+            const targetJob = job || passedJob;
+            const targetTrade = String(targetJob?.trade || '').toLowerCase();
+            const targetInd = String(targetJob?.industry || '').toLowerCase();
+
+            const matched = allList.filter((j: any) => {
+              const jId = j?.id || j?._id;
+              if (jId === activeJobId) return false;
+              const jTrade = String(j?.trade || '').toLowerCase();
+              const jInd = String(j?.industry || '').toLowerCase();
+              return (
+                (targetTrade && jTrade && (jTrade.includes(targetTrade) || targetTrade.includes(jTrade))) ||
+                (targetInd && jInd && (jInd.includes(targetInd) || targetInd.includes(jInd)))
+              );
+            });
+
+            filtered = matched.length > 0 ? matched.slice(0, 6) : allList.filter((j: any) => (j?.id || j?._id) !== activeJobId).slice(0, 6);
+          } catch (_) {}
+        }
+
+        if (isMounted) setSimilarJobs(filtered);
       })
-      .catch((err) => {
+      .catch(async (err) => {
         logger.error('Failed to load similar jobs', err);
-        if (isMounted) setSimilarJobs([]);
+        if (!isMounted) return;
+        try {
+          const allRes: any = await candidateApi.getAllJobs();
+          const allList = Array.isArray(allRes?.data) ? allRes.data : Array.isArray(allRes) ? allRes : [];
+          if (isMounted) setSimilarJobs(allList.filter((j: any) => (j?.id || j?._id) !== activeJobId).slice(0, 6));
+        } catch (_) {
+          if (isMounted) setSimilarJobs([]);
+        }
       })
       .finally(() => {
         if (isMounted) setLoadingSimilar(false);

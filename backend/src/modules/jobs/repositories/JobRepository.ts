@@ -248,36 +248,40 @@ export class JobRepository {
       return this.getJobs(safeLimit);
     }
 
-    const cacheKey = `cache:job:similar:v3:${jobId}:${safeLimit}`;
+    const cacheKey = `cache:job:similar:v4:${jobId}:${safeLimit}`;
     return CacheService.getOrSet(cacheKey, 180, async () => {
       const targetJob = await this.getJobById(jobId);
       if (!targetJob) {
         return [];
       }
 
-      const industry = (targetJob.industry || '').trim();
-      const trade = (targetJob.trade || '').trim();
-      const title = (targetJob.title || '').trim();
-      const location = (targetJob.location || '').trim();
-      const midcZone = (targetJob.midcZone || (targetJob as any).midc_zone || '').trim();
+      // Domain definitions with word-boundary regex patterns to avoid false substring collisions
+      const DOMAIN_PATTERNS: Record<string, RegExp> = {
+        healthcare: /\b(health|healthcare|pharma|pharmaceutical|pharmaceuticals|chemist|chemistry|medicine|medical|hospital|clinic|clinical|nurse|nursing|doctor|pathology|dmlt|lab|laboratory|patient|icu|hplc)\b/i,
+        manufacturing: /\b(manufacturing|welder|welding|weld|fabrication|fabricator|machinist|machining|lathe|fitter|fitting|press|stamping|die|casting|foundry|cnc|vmc|toolroom|tool|extrusion|boiler|vulcanization|assembly|hydraulic|hydraulics|forging|furnace|kiln)\b/i,
+        electrical: /\b(electrical|electrician|wireman|wiring|plc|scada|automation|switchgear|transformer|motor|rewinding|substation|solar|photovoltaic|electronics|electronic|circuit)\b/i,
+        it_software: /\b(software|developer|development|engineer|react|node|javascript|typescript|python|java|backend|frontend|fullstack|stack|web|programmer|programming|coder|coding|database|sql|devops|qa|cloud)\b/i,
+        education: /\b(education|academic|academics|teacher|teaching|professor|faculty|school|college|university|lecturer|instructor|tutor|cbse|diploma)\b/i,
+        logistics: /\b(logistics|warehouse|warehousing|supply|supply-chain|transport|transportation|freight|driver|truck|trailer|crane|forklift|storekeeper|inventory|shipping)\b/i,
+        hospitality_retail: /\b(hospitality|hotel|restaurant|dining|chef|kitchen|culinary|food|retail|cashier|store|supermarket|mall|cashier|billing)\b/i,
+        safety_facility: /\b(safety|ehs|environment|security|guard|cctv|etp|stp|effluent|fire|facility|housekeeping|cleaner)\b/i,
+      };
 
-      // Extract core distinctive trade/skill keywords
-      const stopWords = /^(operator|operation|operating|operations|technician|worker|engineer|engineering|supervisor|helper|senior|junior|specialist|assistant|executive|line|machine|machinery|heavy|level|grade|trainee|fresher|lead|head|staff|manager|management|drawing|reading|control|quality|safety|compliance|process|shop|floor|general|skill|skills|plant|production|maintenance|attendant)$/i;
+      const detectDomain = (text: string): string | null => {
+        const scores: Record<string, number> = {};
+        for (const [domain, regex] of Object.entries(DOMAIN_PATTERNS)) {
+          const matches = text.match(new RegExp(regex.source, 'gi'));
+          if (matches) scores[domain] = matches.length;
+        }
+        const sorted = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
+        return sorted[0] || null;
+      };
 
-      const rawSkills = Array.isArray(targetJob.skills) ? targetJob.skills : [];
-      const allWords = `${trade} ${title} ${rawSkills.join(' ')}`
-        .split(/[\s&,/()+-]+/)
-        .map((w) => w.trim())
-        .filter((w) => w.length >= 2 && !stopWords.test(w));
+      const targetSkills = Array.isArray(targetJob.skills) ? targetJob.skills : [];
+      const targetText = `${targetJob.title || ''} ${targetJob.trade || ''} ${targetJob.industry || ''} ${targetSkills.join(' ')}`;
+      const targetDomain = detectDomain(targetText);
 
-      const uniqueTokens = Array.from(new Set(allWords.map((w) => w.toLowerCase())));
-      const k1 = uniqueTokens[0] || '';
-      const k2 = uniqueTokens[1] || '';
-      const k3 = uniqueTokens[2] || '';
-      const k4 = uniqueTokens[3] || '';
-
-      const cityKeyword = location.split(',')[0].trim();
-
+      // Fetch all approved/active jobs with complete company details
       const query = `
         SELECT j.*, 
                NULLIF(j.company_logo, '') as job_uploaded_logo,
@@ -289,25 +293,7 @@ export class JobRepository {
                c.industry as company_industry,
                c.website as company_website,
                c.midc_zone as company_midc_zone,
-               COALESCE(c.verified, u.aadhaar_verified, false) as company_verified,
-               (
-                 -- 1. Exact Trade Match (80 pts)
-                 (CASE WHEN $2 <> '' AND LOWER(TRIM(COALESCE(j.trade, ''))) = LOWER(TRIM($2)) THEN 80 ELSE 0 END) +
-                 -- 2. Bidirectional Substring Trade Match (60 pts)
-                 (CASE WHEN $2 <> '' AND (j.trade ILIKE '%' || $2 || '%' OR $2 ILIKE '%' || j.trade || '%') THEN 60 ELSE 0 END) +
-                 -- 3. Trade in Title (50 pts)
-                 (CASE WHEN $2 <> '' AND j.title ILIKE '%' || $2 || '%' THEN 50 ELSE 0 END) +
-                 -- 4. Distinctive Core Tokens (k1, k2, k3, k4) in Trade, Title or Skills
-                 (CASE WHEN $3 <> '' AND (j.trade ILIKE '%' || $3 || '%' OR j.title ILIKE '%' || $3 || '%' OR j.skills::text ILIKE '%' || $3 || '%') THEN 50 ELSE 0 END) +
-                 (CASE WHEN $4 <> '' AND (j.trade ILIKE '%' || $4 || '%' OR j.title ILIKE '%' || $4 || '%' OR j.skills::text ILIKE '%' || $4 || '%') THEN 40 ELSE 0 END) +
-                 (CASE WHEN $5 <> '' AND (j.trade ILIKE '%' || $5 || '%' OR j.title ILIKE '%' || $5 || '%' OR j.skills::text ILIKE '%' || $5 || '%') THEN 30 ELSE 0 END) +
-                 (CASE WHEN $6 <> '' AND (j.trade ILIKE '%' || $6 || '%' OR j.title ILIKE '%' || $6 || '%' OR j.skills::text ILIKE '%' || $6 || '%') THEN 20 ELSE 0 END) +
-                 -- 5. Industry Match (15 pts)
-                 (CASE WHEN $7 <> '' AND (j.industry ILIKE '%' || $7 || '%' OR $7 ILIKE '%' || j.industry || '%') THEN 15 ELSE 0 END) +
-                 -- 6. Location & MIDC Zone (tie-breaker)
-                 (CASE WHEN $8 <> '' AND LOWER(TRIM(COALESCE(j.midc_zone, ''))) = LOWER(TRIM($8)) THEN 10 ELSE 0 END) +
-                 (CASE WHEN $9 <> '' AND j.location ILIKE '%' || $9 || '%' THEN 5 ELSE 0 END)
-               ) as similarity_score
+               COALESCE(c.verified, u.aadhaar_verified, false) as company_verified
         FROM jobs j
         LEFT JOIN users u ON j.employer_id = u.id
         LEFT JOIN companies c ON (
@@ -316,35 +302,84 @@ export class JobRepository {
         )
         WHERE j.id <> $1
           AND (j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved')
-        ORDER BY similarity_score DESC, j.posted_at DESC
-        LIMIT $10
+        ORDER BY j.posted_at DESC
       `;
 
-      const result = await pool.query(query, [
-        jobId,
-        trade,
-        k1,
-        k2,
-        k3,
-        k4,
-        industry,
-        midcZone,
-        cityKeyword,
-        safeLimit,
-      ]);
-
+      const result = await pool.query(query, [jobId]);
       if (result.rows.length === 0) {
         return [];
       }
 
-      // Combine genuine trade/skill matches (score >= 25) with industry matches (score >= 15)
-      const relevantJobs = result.rows.filter((row: any) => Number(row.similarity_score || 0) >= 25);
-      const industryJobs = result.rows.filter(
-        (row: any) => Number(row.similarity_score || 0) >= 15 && !relevantJobs.some((rj: any) => rj.id === row.id)
-      );
+      const stopWords = new Set(['operator', 'technician', 'engineer', 'machine', 'machinery', 'senior', 'junior', 'assistant', 'executive', 'general', 'process', 'skills', 'level', 'role']);
+      const targetTokens = (targetText.toLowerCase().match(/\b[a-z]{3,}\b/g) || []).filter((w) => !stopWords.has(w));
 
-      const combined = [...relevantJobs, ...industryJobs].slice(0, safeLimit);
-      return combined.map((row) => this.mapDbJobToApi(row));
+      const scored = result.rows.map((row) => {
+        const jSkills = Array.isArray(row.skills) ? row.skills : [];
+        const jText = `${row.title || ''} ${row.trade || ''} ${row.industry || ''} ${jSkills.join(' ')}`;
+        const jDomain = detectDomain(jText);
+        let score = 0;
+
+        // 1. Trade Match (exact or bidirectional substring)
+        if (targetJob.trade && row.trade) {
+          const t1 = targetJob.trade.trim().toLowerCase();
+          const t2 = row.trade.trim().toLowerCase();
+          if (t1 === t2) {
+            score += 100;
+          } else if (t1.includes(t2) || t2.includes(t1)) {
+            score += 60;
+          }
+        }
+
+        // 2. Industry Match
+        if (targetJob.industry && row.industry) {
+          const i1 = targetJob.industry.trim().toLowerCase();
+          const i2 = row.industry.trim().toLowerCase();
+          if (i1 === i2) {
+            score += 50;
+          } else if (i1.includes(i2) || i2.includes(i1)) {
+            score += 30;
+          }
+        }
+
+        // 3. Domain Alignment & Cross-Domain Isolation
+        if (targetDomain && jDomain) {
+          if (targetDomain === jDomain) {
+            score += 45;
+          } else {
+            // Strong penalty prevents inappropriate crossover (e.g. nurse seeing teacher)
+            score -= 40;
+          }
+        }
+
+        // 4. Specific Token & Stem Match
+        const jWordSet = new Set(jText.toLowerCase().match(/\b[a-z]{3,}\b/g) || []);
+        for (const w of targetTokens) {
+          if (jWordSet.has(w)) score += 15;
+        }
+
+        // 5. Geographic Alignment (tie-breaker)
+        if (targetJob.midcZone && row.midc_zone && String(targetJob.midcZone).trim().toLowerCase() === String(row.midc_zone).trim().toLowerCase()) {
+          score += 8;
+        }
+        if (targetJob.location && row.location && targetJob.location.split(',')[0].trim().toLowerCase() === row.location.split(',')[0].trim().toLowerCase()) {
+          score += 4;
+        }
+
+        return { row, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+
+      // Select top candidates: prioritize positive scoring matches (>= 20)
+      let topPicks = scored.filter((s) => s.score >= 20).map((s) => s.row);
+      if (topPicks.length < safeLimit) {
+        const remaining = scored.filter((s) => !topPicks.some((p) => p.id === s.row.id)).map((s) => s.row);
+        topPicks = [...topPicks, ...remaining].slice(0, safeLimit);
+      } else {
+        topPicks = topPicks.slice(0, safeLimit);
+      }
+
+      return topPicks.map((row) => this.mapDbJobToApi(row));
     });
   }
 
