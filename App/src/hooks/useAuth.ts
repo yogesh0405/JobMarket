@@ -449,6 +449,11 @@ export const useAuth = () => {
       // If user logged out while request was in flight, abort immediately
       if (!localStorage.getItem('accessToken')) return;
 
+      if (response.status === 401 || response.status === 404) {
+        logout();
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         // Check token once more before updating store
@@ -513,7 +518,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Failed to sync user:', error);
     }
-  }, [dispatch]);
+  }, [dispatch, logout]);
 
   const loginWithGoogle = useCallback(async (tokenOrPayload: string | { idToken?: string; accessToken?: string; picture?: string; name?: string; email?: string }, role: UserRole) => {
     try {

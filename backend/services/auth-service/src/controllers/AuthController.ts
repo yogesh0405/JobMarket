@@ -790,9 +790,10 @@ export class AuthController {
       // Delete user sessions from DB
       await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId]).catch(() => {});
 
-      // Invalidate Redis profile cache & delete refresh tokens
+      // Invalidate Redis profile cache & delete refresh tokens and active sessions
       await CacheService.invalidate(`user:profile:${userId}`).catch(() => {});
       await redisClient.del(`refresh_token:${userId}`).catch(() => {});
+      await redisClient.del(`auth:session:${userId}`).catch(() => {});
       await OtpStore.del(redisKey).catch(() => {});
 
       // Delete user from DB (Foreign keys CASCADE / SET NULL to handle profiles, applications, etc.)

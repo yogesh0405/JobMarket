@@ -99,16 +99,41 @@ export const LoginPage: React.FC = () => {
 
   useEffect(() => {
     const isDeleted = searchParams.get('deleted') === 'true';
+    let hasDeletedFlag = false;
+    let sessionMsg = '';
+    try {
+      if (typeof window !== 'undefined') {
+        hasDeletedFlag = sessionStorage.getItem('ACCOUNT_DELETED_FLAG') === 'true';
+        sessionMsg = sessionStorage.getItem('ACCOUNT_DELETED_MSG') || '';
+      }
+    } catch (_) {}
+
     const stateMsg = (location.state as any)?.message;
-    const sessionMsg = typeof window !== 'undefined' ? sessionStorage.getItem('ACCOUNT_DELETED_MSG') : null;
-    if (isDeleted || stateMsg || sessionMsg) {
+    if (isDeleted || stateMsg || hasDeletedFlag || sessionMsg) {
       const msg = stateMsg || sessionMsg || 'Your account has been deleted successfully.';
       setSuccessBanner(msg);
       showToast(msg, 'success');
+
+      // Ensure all credentials, storage, and session tokens are completely obliterated
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('token');
+      localStorage.removeItem('saved_jobs_ids');
+      try {
+        const saved = localStorage.getItem('jobMarketplace_react');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          parsed.currentUser = null;
+          localStorage.setItem('jobMarketplace_react', JSON.stringify(parsed));
+        }
+      } catch (_) {}
+
       try {
         sessionStorage.removeItem('ACCOUNT_DELETED_FLAG');
         sessionStorage.removeItem('ACCOUNT_DELETED_MSG');
       } catch (_) {}
+
       if (isDeleted) {
         searchParams.delete('deleted');
         setSearchParams(searchParams, { replace: true });
@@ -117,6 +142,17 @@ export const LoginPage: React.FC = () => {
   }, [searchParams, setSearchParams, location.state, showToast]);
 
   useEffect(() => {
+    // If account was deleted, never auto-redirect to dashboard even if currentUser was momentarily in memory
+    const isDeletedParam = searchParams.get('deleted') === 'true';
+    let hasDeletedFlag = false;
+    try {
+      hasDeletedFlag = sessionStorage.getItem('ACCOUNT_DELETED_FLAG') === 'true';
+    } catch (_) {}
+
+    if (isDeletedParam || hasDeletedFlag) {
+      return;
+    }
+
     if (currentUser) {
       const fromPath = (location.state as any)?.from;
       if (fromPath && typeof fromPath === 'string' && !fromPath.startsWith('/login') && !fromPath.startsWith('/auth')) {
@@ -125,7 +161,7 @@ export const LoginPage: React.FC = () => {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [currentUser, navigate, location.state]);
+  }, [currentUser, navigate, location.state, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

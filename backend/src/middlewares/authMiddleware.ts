@@ -61,32 +61,38 @@ export const requireAuth = async (req: AuthenticatedRequest, res: Response, next
       req.sessionId = sessionId;
     }
 
-    // Live account status check — enforces suspension immediately even within token TTL
+    // Live account status check — enforces deletion & suspension immediately even within token TTL
     const userId = decoded.id || decoded.userId;
     if (userId) {
       try {
         const { rows } = await pool.query('SELECT status FROM users WHERE id = $1 LIMIT 1', [userId]);
-        if (rows.length > 0) {
-          const status = rows[0].status;
-          if (status === 'BLOCKED') {
-            return res.status(403).json({
-              success: false,
-              errorCode: 'ACCOUNT_BLOCKED',
-              error: 'Your account has been suspended by the platform administrator. Please contact support@jobmarket.com for assistance.',
-              message: 'Your account has been suspended by the platform administrator. Please contact support@jobmarket.com for assistance.'
-            });
-          }
-          if (status === 'INACTIVE') {
-            return res.status(403).json({
-              success: false,
-              errorCode: 'ACCOUNT_INACTIVE',
-              error: 'Your account is currently inactive. Please verify your email to continue.',
-              message: 'Your account is currently inactive. Please verify your email to continue.'
-            });
-          }
+        if (rows.length === 0) {
+          return res.status(401).json({
+            success: false,
+            errorCode: 'ACCOUNT_DELETED',
+            error: 'Account does not exist or has been permanently deleted. Please sign in again.',
+            message: 'Account not found'
+          });
+        }
+        const status = rows[0].status;
+        if (status === 'BLOCKED') {
+          return res.status(403).json({
+            success: false,
+            errorCode: 'ACCOUNT_BLOCKED',
+            error: 'Your account has been suspended by the platform administrator. Please contact support@jobmarket.com for assistance.',
+            message: 'Your account has been suspended by the platform administrator. Please contact support@jobmarket.com for assistance.'
+          });
+        }
+        if (status === 'INACTIVE') {
+          return res.status(403).json({
+            success: false,
+            errorCode: 'ACCOUNT_INACTIVE',
+            error: 'Your account is currently inactive. Please verify your email to continue.',
+            message: 'Your account is currently inactive. Please verify your email to continue.'
+          });
         }
       } catch (_) {
-        // Non-blocking — do not fail request if status check fails
+        // Non-blocking — do not fail request if status check fails due to DB network issues
       }
     }
 

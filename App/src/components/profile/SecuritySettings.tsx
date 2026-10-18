@@ -455,11 +455,28 @@ export const SecuritySettings: React.FC = () => {
       sessionStorage.setItem('ACCOUNT_DELETED_FLAG', 'true');
       sessionStorage.setItem('ACCOUNT_DELETED_MSG', 'Your account has been deleted successfully.');
     } catch (_) {}
-    await logout();
-    navigate('/login?deleted=true', {
-      replace: true,
-      state: { message: 'Your account has been deleted successfully.' }
-    });
+
+    // Synchronously purge all local auth tokens and session identifiers immediately
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('sessionId');
+    localStorage.removeItem('token');
+    localStorage.removeItem('saved_jobs_ids');
+    try {
+      const saved = localStorage.getItem('jobMarketplace_react');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        parsed.currentUser = null;
+        localStorage.setItem('jobMarketplace_react', JSON.stringify(parsed));
+      }
+    } catch (_) {}
+
+    try {
+      await logout();
+    } catch (_) {}
+
+    // Hard redirect to login page. This resets React state in memory, clears timers and prevents bouncing back to /dashboard
+    window.location.href = '/login?deleted=true';
   };
 
   return (

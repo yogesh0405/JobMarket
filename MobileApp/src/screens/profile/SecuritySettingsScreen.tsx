@@ -38,6 +38,7 @@ import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { COLORS, RADIUS } from '../../constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../../context/ToastContext';
+import { clearAuthSession } from '../../utils/secureStorage';
 import { PushNotificationManager } from '../../services/PushNotificationManager';
 import { SecurityPasswordModals } from './components/SecurityPasswordModals';
 import { DeleteAccountModal } from './components/DeleteAccountModal';
@@ -421,7 +422,6 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleDeleteSuccess = async () => {
     setIsDeleteModalVisible(false);
-    const userRole = (user as any)?.role || 'candidate';
     try {
       await AsyncStorage.setItem('ACCOUNT_DELETED_FLAG', 'true');
       await AsyncStorage.setItem(
@@ -430,14 +430,8 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
       );
     } catch (_) {}
     showToast('Your account has been deleted successfully.', 'success');
+    await clearAuthSession();
     await logout();
-    setTimeout(() => {
-      PushNotificationManager.navigate('EmployerLogin', {
-        deletedSuccess: true,
-        successMessage: 'Your account has been deleted successfully.',
-        initialRole: userRole,
-      });
-    }, 200);
   };
 
   return (

@@ -95,6 +95,13 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
       return response;
     }
 
+    let json401: any = {};
+    try { json401 = await response.clone().json(); } catch (_) {}
+    if (json401?.errorCode === 'ACCOUNT_DELETED') {
+      clearSession();
+      return response;
+    }
+
     const refreshToken = localStorage.getItem('refreshToken');
     const sessionId = localStorage.getItem('sessionId');
 
@@ -157,6 +164,16 @@ function clearSession() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('sessionId');
+  localStorage.removeItem('token');
+  localStorage.removeItem('saved_jobs_ids');
+  try {
+    const saved = localStorage.getItem('jobMarketplace_react');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      parsed.currentUser = null;
+      localStorage.setItem('jobMarketplace_react', JSON.stringify(parsed));
+    }
+  } catch (_) {}
   // Dispatch a custom logout event so hooks/store can capture it and redirect
   window.dispatchEvent(new Event('auth:logout'));
 }

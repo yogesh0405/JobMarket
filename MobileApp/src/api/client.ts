@@ -149,21 +149,21 @@ export async function apiFetch<T = any>(endpoint: string, options: RequestInit =
     throw new Error(netErr.message || 'Network error. Please check your internet connection.');
   }
 
-  // Handle 403 Account Suspended — do NOT attempt refresh, force logout immediately
-  if (response.status === 403 && !isAuthEndpoint(endpoint)) {
+  // Handle 403 Account Suspended or 401 Account Deleted — do NOT attempt refresh, force logout immediately
+  if ((response.status === 403 || response.status === 401) && !isAuthEndpoint(endpoint)) {
     let suspendedJson: any = {};
     try { suspendedJson = JSON.parse(await response.clone().text()); } catch (_) {}
     const errorCode = suspendedJson?.errorCode;
-    if (errorCode === 'ACCOUNT_BLOCKED' || errorCode === 'ACCOUNT_INACTIVE') {
+    if (errorCode === 'ACCOUNT_DELETED' || errorCode === 'ACCOUNT_BLOCKED' || errorCode === 'ACCOUNT_INACTIVE') {
       await clearAuthSession();
       if (onUnauthenticatedCallback) {
         onUnauthenticatedCallback(errorCode);
       }
       const err: any = new Error(
-        suspendedJson?.error || suspendedJson?.message || 'Your account has been suspended.'
+        suspendedJson?.error || suspendedJson?.message || 'Your session has ended.'
       );
-      err.status = 403;
-      err.statusCode = 403;
+      err.status = response.status;
+      err.statusCode = response.status;
       err.errorCode = errorCode;
       err.data = suspendedJson;
       throw err;
