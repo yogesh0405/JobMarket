@@ -40,16 +40,16 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const topInset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
 
-  const handleOpenPrivacy = async () => {
-    try {
-      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/privacy');
-    } catch (_) {}
+  const handleOpenTermsAndPrivacy = (tab?: 'terms' | 'privacy') => {
+    navigation.navigate('TermsAndPrivacy', tab ? { initialTab: tab } : undefined);
   };
 
-  const handleOpenTerms = async () => {
-    try {
-      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/terms');
-    } catch (_) {}
+  const handleOpenPrivacy = () => {
+    navigation.navigate('TermsAndPrivacy', { initialTab: 'privacy' });
+  };
+
+  const handleOpenTerms = () => {
+    navigation.navigate('TermsAndPrivacy', { initialTab: 'terms' });
   };
 
   const CORPORATE_PROFESSIONAL_IMG = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80';
@@ -424,30 +424,13 @@ export const AboutScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.legalRow}
             activeOpacity={0.7}
-            onPress={handleOpenPrivacy}
+            onPress={() => handleOpenTermsAndPrivacy()}
           >
             <View style={styles.legalRowLeft}>
               <FileText size={16} color={COLORS.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.legalRowTitle}>Privacy Policy</Text>
-                <Text style={styles.legalRowSub}>How we collect, store, and protect candidate data</Text>
-              </View>
-            </View>
-            <ChevronRight size={16} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <View style={styles.cardDivider} />
-
-          <TouchableOpacity
-            style={styles.legalRow}
-            activeOpacity={0.7}
-            onPress={handleOpenTerms}
-          >
-            <View style={styles.legalRowLeft}>
-              <FileText size={16} color={COLORS.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.legalRowTitle}>Terms of Service</Text>
-                <Text style={styles.legalRowSub}>Usage conditions, candidate rights, and employer policies</Text>
+                <Text style={styles.legalRowTitle}>Terms & Privacy Policy</Text>
+                <Text style={styles.legalRowSub}>Platform terms of service, candidate rights & data protection</Text>
               </View>
             </View>
             <ChevronRight size={16} color="#94A3B8" />

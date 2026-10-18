@@ -39,6 +39,7 @@ import { CompanyFilterScreen } from '../screens/company/CompanyFilterScreen';
 import { CandidateGlobalSearchScreen } from '../screens/candidate/CandidateGlobalSearchScreen';
 import { CandidateSearchScreen } from '../screens/candidates/CandidateSearchScreen';
 import { NotFoundScreen } from '../screens/common/NotFoundScreen';
+import { TermsAndPrivacyScreen } from '../screens/legal/TermsAndPrivacyScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -71,6 +72,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="ReportJob" component={ReportJobScreen} />
           <Stack.Screen name="JobFilter" component={JobFilterScreen} />
           <Stack.Screen name="CompanyFilter" component={CompanyFilterScreen} />
+          <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Terms" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Privacy" component={TermsAndPrivacyScreen} />
           <Stack.Screen name="NotFound" component={NotFoundScreen} />
         </>
       ) : isCandidate ? (
@@ -87,6 +91,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+          <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Terms" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Privacy" component={TermsAndPrivacyScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Notifications" component={NotificationScreen} />
           <Stack.Screen name="CandidateJobMap" component={CandidateJobMapScreen} />
@@ -127,6 +134,9 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
           <Stack.Screen name="AboutUs" component={AboutScreen} />
           <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
+          <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Terms" component={TermsAndPrivacyScreen} />
+          <Stack.Screen name="Privacy" component={TermsAndPrivacyScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
           <Stack.Screen name="Notifications" component={NotificationScreen} />
           <Stack.Screen name="CandidateFilter" component={CandidateFilterScreen} />

@@ -24,6 +24,7 @@ import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
 import { TermsPage } from './features/static/TermsPage';
 import { PrivacyPage } from './features/static/PrivacyPage';
+import { TermsAndPrivacyPage } from './features/static/TermsAndPrivacyPage';
 import { CompanyProfilePage } from './features/company/CompanyProfilePage';
 import { CompaniesDirectoryPage } from './features/company/CompaniesDirectoryPage';
 import { GlobalSearchPage } from './features/search/GlobalSearchPage';
@@ -236,10 +237,13 @@ export const App: React.FC = () => {
           <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/help" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/support" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/about/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/about/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={currentUser ? <Navigate to="/dashboard?tab=support&view=terms" replace /> : <TermsPage />} />
+          <Route path="/about/terms" element={currentUser ? <Navigate to="/dashboard?tab=support&view=terms" replace /> : <TermsPage />} />
+          <Route path="/privacy" element={currentUser ? <Navigate to="/dashboard?tab=support&view=privacy" replace /> : <PrivacyPage />} />
+          <Route path="/about/privacy" element={currentUser ? <Navigate to="/dashboard?tab=support&view=privacy" replace /> : <PrivacyPage />} />
+          <Route path="/terms-privacy" element={<TermsAndPrivacyPage />} />
+          <Route path="/terms-and-privacy" element={<TermsAndPrivacyPage />} />
+          <Route path="/legal" element={<TermsAndPrivacyPage />} />
           <Route path="/404" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

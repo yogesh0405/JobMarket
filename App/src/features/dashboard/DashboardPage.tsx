@@ -522,7 +522,7 @@ export const DashboardPage: React.FC = () => {
               <div style={{ height: 1, background: 'var(--border)', margin: 'var(--space-2) 0' }}></div>
               <button
                 className={`dashboard-nav-item tab-security ${tab === 'security' ? 'active' : ''}`}
-                onClick={() => navigate('/security')}
+                onClick={() => setTab('security')}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -567,7 +567,7 @@ export const DashboardPage: React.FC = () => {
             {tab === 'resume' ? (
               <ResumePage embeddedInDashboard />
             ) : tab === 'security' ? (
-              <Navigate to="/security" replace />
+              <SecuritySettings />
             ) : tab === 'notifications' || tab === 'alerts' ? (
               <NotificationsPage />
             ) : tab === 'about' ? (
@@ -5242,7 +5242,7 @@ const EmployerDashboard: React.FC<EmployerProps> = ({ tab, currentUser, getJobsB
         return <ProfilePage />;
 
       case 'security':
-        return <Navigate to="/security" replace />;
+        return <SecuritySettings />;
 
       default:
         return null;

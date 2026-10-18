@@ -23,6 +23,7 @@ import {
   Trash2,
   ExternalLink,
   FileText,
+  ChevronRight,
 } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -391,12 +392,12 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleOpenPrivacyPolicy = async () => {
-    try {
-      await WebBrowser.openBrowserAsync('https://job-market-wine.vercel.app/privacy');
-    } catch (_) {
-      Alert.alert('Privacy Policy', 'Please visit https://job-market-wine.vercel.app/privacy to review our full data privacy policy.');
-    }
+  const handleOpenPrivacyPolicy = () => {
+    navigation.navigate('TermsAndPrivacy', { initialTab: 'privacy' });
+  };
+
+  const handleOpenTermsOfService = () => {
+    navigation.navigate('TermsAndPrivacy', { initialTab: 'terms' });
   };
 
   const handleDeleteAccountPress = () => {
@@ -755,19 +756,37 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
           ) : null}
         </View>
 
-        {/* CARD 4: PRIVACY & DATA PROTECTION */}
+        {/* CARD 4: TERMS & PRIVACY POLICIES */}
         <View style={styles.sectionCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderCol}>
-              <Text style={styles.cardTitle}>Privacy & Data Protection</Text>
+              <Text style={styles.cardTitle}>Terms & Privacy Policies</Text>
               <Text style={styles.cardSubtitle}>
-                Review how we collect, store, and safeguard your personal information and documents.
+                Review platform usage terms, hiring rules, and candidate data privacy protections.
               </Text>
             </View>
             <View style={styles.cardHeaderIconBox}>
               <ShieldCheck size={18} color="#1764E8" />
             </View>
           </View>
+
+          {/* Terms of Service Link Row */}
+          <TouchableOpacity
+            style={styles.privacyLinkRow}
+            activeOpacity={0.7}
+            onPress={handleOpenTermsOfService}
+          >
+            <View style={styles.privacyLinkLeft}>
+              <FileText size={16} color="#1764E8" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.privacyLinkText}>Terms of Service</Text>
+                <Text style={styles.privacyLinkSub}>Usage rules, candidate rights & fair hiring terms</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 2 }} />
 
           {/* Privacy Policy Link Row */}
           <TouchableOpacity
@@ -776,13 +795,13 @@ export const SecuritySettingsScreen: React.FC<Props> = ({ navigation }) => {
             onPress={handleOpenPrivacyPolicy}
           >
             <View style={styles.privacyLinkLeft}>
-              <FileText size={15} color="#1764E8" />
+              <ShieldCheck size={16} color="#1764E8" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.privacyLinkText}>Platform Privacy Policy</Text>
-                <Text style={styles.privacyLinkSub}>Data handling & candidate privacy rights</Text>
+                <Text style={styles.privacyLinkText}>Privacy Policy</Text>
+                <Text style={styles.privacyLinkSub}>Data handling, encryption & erasure rights</Text>
               </View>
             </View>
-            <ExternalLink size={14} color="#1764E8" />
+            <ChevronRight size={16} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 

@@ -14,7 +14,9 @@ import {
   EyeOff,
   ArrowLeft,
   AlertTriangle,
-  Trash2
+  Trash2,
+  FileText,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DeleteAccountModal } from './DeleteAccountModal';
@@ -1442,6 +1444,79 @@ export const SecuritySettings: React.FC = () => {
                 <span>{isTerminatingSessions ? 'Terminating...' : 'Log Out from All Other Devices'}</span>
             </button>
           )}
+        </div>
+
+        {/* CARD: TERMS & PRIVACY POLICIES */}
+        <div className="sec-card-box">
+          <div className="sec-card-header-row">
+            <div>
+              <h2 className="sec-card-title">Terms & Privacy Policies</h2>
+              <p className="sec-card-subtitle">
+                Review platform usage terms, hiring rules, and candidate data privacy protections.
+              </p>
+            </div>
+            <div className="sec-card-header-icon-box">
+              <ShieldCheck size={18} color="#1764E8" />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/terms-privacy?tab=terms')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 14px',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EFF6FF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FileText size={16} color="#2563EB" />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>Terms of Service</div>
+                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>Platform usage rules, candidate rights & fair hiring terms</div>
+                </div>
+              </div>
+              <ChevronRight size={16} color="#94A3B8" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/terms-privacy?tab=privacy')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 14px',
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EFF6FF'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#F8FAFC'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={16} color="#2563EB" />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>Privacy Policy</div>
+                  <div style={{ fontSize: '11.5px', color: '#64748B' }}>Data handling, encryption standards & candidate privacy rights</div>
+                </div>
+              </div>
+              <ChevronRight size={16} color="#94A3B8" />
+            </button>
+          </div>
         </div>
 
         {/* CARD 4: DELETE ACCOUNT (Google Play & Privacy Compliant) */}

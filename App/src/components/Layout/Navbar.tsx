@@ -202,12 +202,6 @@ export const Navbar: React.FC = () => {
     if (location.pathname.startsWith('/security')) {
       return 'Security & Sessions';
     }
-    if (location.pathname.startsWith('/terms')) {
-      return 'Terms & Conditions';
-    }
-    if (location.pathname.startsWith('/privacy')) {
-      return 'Privacy Policy';
-    }
     if (location.pathname.startsWith('/about')) {
       return 'About JobMarket';
     }
