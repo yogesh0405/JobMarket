@@ -236,10 +236,10 @@ export const App: React.FC = () => {
           <Route path="/contact" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/help" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
           <Route path="/support" element={currentUser ? <Navigate to="/dashboard?tab=support" replace /> : <ContactPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/about/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/about/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={currentUser ? <Navigate to="/dashboard?tab=support&view=terms" replace /> : <TermsPage />} />
+          <Route path="/about/terms" element={currentUser ? <Navigate to="/dashboard?tab=support&view=terms" replace /> : <TermsPage />} />
+          <Route path="/privacy" element={currentUser ? <Navigate to="/dashboard?tab=support&view=privacy" replace /> : <PrivacyPage />} />
+          <Route path="/about/privacy" element={currentUser ? <Navigate to="/dashboard?tab=support&view=privacy" replace /> : <PrivacyPage />} />
           <Route path="/404" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>

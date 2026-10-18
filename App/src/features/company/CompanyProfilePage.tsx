@@ -14,6 +14,7 @@ import {
   Search,
   ArrowLeft,
   ExternalLink,
+  Navigation,
   FileText,
   Share2,
   Check,
@@ -32,15 +33,13 @@ import {
   GraduationCap,
   CheckCircle2,
   Heart,
-  Sparkles,
   Filter,
   Wrench,
   Cpu,
   Layers,
   Settings,
   ShieldAlert,
-  HelpCircle,
-  Copy
+  HelpCircle
 } from 'lucide-react';
 import companyHeaderBg from '../../assets/company_header_bg.jpg';
 import { apiFetch } from '../../utils/api';
@@ -108,7 +107,6 @@ export const CompanyProfilePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedAddress, setCopiedAddress] = useState(false);
 
   // Real-Time Genuine Follow State
   const [isFollowing, setIsFollowing] = useState(false);
@@ -331,12 +329,6 @@ export const CompanyProfilePage: React.FC = () => {
         setTimeout(() => setCopiedLink(false), 2200);
       }
     );
-  };
-
-  const handleCopyAddress = (addr: string) => {
-    navigator.clipboard.writeText(addr);
-    setCopiedAddress(true);
-    setTimeout(() => setCopiedAddress(false), 2200);
   };
 
   // Robust Company Name Resolution
@@ -1131,51 +1123,6 @@ export const CompanyProfilePage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Company At A Glance Grid */}
-                <div className="cmp-surface-card">
-                  <div className="cmp-card-header">
-                    <div className="cmp-card-title-group">
-                      <div className="cmp-card-icon-wrap">
-                        <Sparkles size={18} strokeWidth={2.2} />
-                      </div>
-                      <div>
-                        <h3 className="cmp-card-title">Enterprise At A Glance</h3>
-                        <p className="cmp-card-subtitle">Key structural metrics and credentials</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="cmp-glance-grid">
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">Founded Year</span>
-                      <span className="cmp-glance-val">{company.founded_year || '1998'} (Established)</span>
-                    </div>
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">Ownership Type</span>
-                      <span className="cmp-glance-val">{company.company_type || 'Public Limited / MNC'}</span>
-                    </div>
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">Workforce Scale</span>
-                      <span className="cmp-glance-val">{company.company_size || '500+ Active Employees'}</span>
-                    </div>
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">Industrial Zone</span>
-                      <span className="cmp-glance-val">{company.midc_zone || 'Waluj MIDC Industrial Area'}</span>
-                    </div>
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">GSTIN Verification</span>
-                      <span className="cmp-glance-val" style={{ fontFamily: 'monospace', color: '#10B981' }}>
-                        {company.gst_number || company.gstin || '27AABCU9603R1ZN'} (Verified)
-                      </span>
-                    </div>
-                    <div className="cmp-glance-item">
-                      <span className="cmp-glance-label">Recruitment Status</span>
-                      <span className="cmp-glance-val" style={{ color: '#1B4FDF' }}>
-                        Actively Hiring ({jobs.length} roles)
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </>
             )}
 
@@ -1189,73 +1136,71 @@ export const CompanyProfilePage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="cmp-card-title">Plant Location & Operations</h3>
-                      <p className="cmp-card-subtitle">Manufacturing premises and physical address</p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleCopyAddress(formattedLocation)}
-                    style={{
-                      background: '#F1F5F9',
-                      border: '1px solid #CBD5E1',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    {copiedAddress ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
-                    <span>{copiedAddress ? 'Address Copied!' : 'Copy Address'}</span>
-                  </button>
-                </div>
-
-                <div style={{ padding: '16px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    <MapPin size={22} color="#1B4FDF" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 4px 0' }}>
-                        Primary Manufacturing Plant
-                      </h4>
-                      <p style={{ fontSize: '13.5px', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-                        {formattedLocation}
-                      </p>
-                      <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '12px', color: '#1B4FDF', fontWeight: 600 }}>
-                        Zone: {company.midc_zone || 'Waluj Industrial Area'}
-                      </span>
+                      <p className="cmp-card-subtitle">Primary manufacturing facility, shifts & compliance</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Statutory Registration Details */}
-                <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', margin: '0 0 12px 0' }}>
-                  Statutory Registrations & Identifiers
-                </h4>
-                <div className="cmp-glance-grid">
-                  <div className="cmp-glance-item">
-                    <span className="cmp-glance-label">GSTIN / Registration</span>
-                    <span className="cmp-glance-val" style={{ fontFamily: 'monospace' }}>
+                <div style={{ padding: '2px 0 14px 0', borderBottom: '1px solid #F1F5F9' }}>
+                  <p style={{ fontSize: '13.5px', color: '#334155', margin: '0 0 10px 0', lineHeight: 1.5, fontWeight: 500 }}>
+                    {formattedLocation}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Building2 size={13} color="#64748B" />
+                      Zone: {company.midc_zone || 'Waluj Industrial Area'}
+                    </span>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(formattedLocation)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#1B4FDF',
+                        textDecoration: 'none',
+                        padding: '5px 11px',
+                        backgroundColor: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      <Navigation size={12} strokeWidth={2.4} />
+                      <span>Directions</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Operations & Statutory Details */}
+                <div className="cmp-statutory-list" style={{ marginTop: '6px' }}>
+                  <div className="cmp-statutory-row">
+                    <span className="cmp-statutory-label">Operating Shifts</span>
+                    <span className="cmp-statutory-val">3 Shifts (Morning, General, Night)</span>
+                  </div>
+                  <div className="cmp-statutory-row">
+                    <span className="cmp-statutory-label">GSTIN / Registration</span>
+                    <span className="cmp-statutory-val" style={{ fontFamily: 'monospace' }}>
                       {company.gst_number || company.gstin || '27AABCU9603R1ZN'}
                     </span>
                   </div>
-                  <div className="cmp-glance-item">
-                    <span className="cmp-glance-label">Plant Operating Shifts</span>
-                    <span className="cmp-glance-val">3 Shifts (Morning, General, Night)</span>
-                  </div>
-                  <div className="cmp-glance-item">
-                    <span className="cmp-glance-label">HR / Careers Helpline</span>
-                    <span className="cmp-glance-val">
-                      {company.phone || '+91 240 2554000'}
+                  <div className="cmp-statutory-row">
+                    <span className="cmp-statutory-label">Plant Desk Phone</span>
+                    <span className="cmp-statutory-val">
+                      <a href={`tel:${(company.phone || '+91 240 2554000').replace(/[^\d+]/g, '')}`} style={{ color: '#1B4FDF', textDecoration: 'none', fontWeight: 600 }}>
+                        {company.phone || '+91 240 2554000'}
+                      </a>
                     </span>
                   </div>
-                  <div className="cmp-glance-item">
-                    <span className="cmp-glance-label">HR Inquiry Email</span>
-                    <span className="cmp-glance-val" style={{ color: '#1B4FDF' }}>
-                      {company.email || 'careers@jobmarket.in'}
+                  <div className="cmp-statutory-row">
+                    <span className="cmp-statutory-label">Facility Email</span>
+                    <span className="cmp-statutory-val">
+                      <a href={`mailto:${company.email || 'careers@jobmarket.in'}`} style={{ color: '#1B4FDF', textDecoration: 'none', fontWeight: 600 }}>
+                        {company.email || 'careers@jobmarket.in'}
+                      </a>
                     </span>
                   </div>
                 </div>
@@ -1318,23 +1263,6 @@ export const CompanyProfilePage: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Verification & Trust Guarantee Card */}
-            <div className="cmp-side-card" style={{ borderLeft: '4px solid #10B981' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <ShieldCheck size={20} color="#10B981" strokeWidth={2.4} />
-                <h4 style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                  Verified Employer Seal
-                </h4>
-              </div>
-              <p style={{ fontSize: '12.5px', color: '#64748B', lineHeight: '18px', margin: '0 0 12px 0' }}>
-                This employer has undergone Aadhaar, GSTIN, and MIDC manufacturing credential verification on JobMarket.
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#047857', fontWeight: 600 }}>
-                <Check size={14} strokeWidth={2.8} />
-                <span>100% Authentic Vacancies Guaranteed</span>
-              </div>
             </div>
 
             {/* Direct HR Inquiries Card */}

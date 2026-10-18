@@ -7,33 +7,32 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  Share,
   StatusBar,
   Platform,
   DeviceEventEmitter,
 } from 'react-native';
 import {
   Building2,
-  ArrowLeft,
-  Share2,
   Briefcase,
+  MapPin,
   Layers,
+  ChevronRight,
+  X,
+  Wrench,
+  ShieldCheck,
+  Settings,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
 import { apiFetch } from '../../api/client';
-import { jobsApi } from '../../api/jobsApi';
 import { companyApi } from '../../api/companyApi';
-import { Header } from '../../components/common/Header';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { CompanySkeleton } from '../../components/common/SkeletonLoader';
-import { COLORS } from '../../constants/theme';
 import { CompanyHeaderCard } from './components/CompanyHeaderCard';
-import { CompanyMetricsBar } from './components/CompanyMetricsBar';
 import { CompanyOverviewSection } from './components/CompanyOverviewSection';
-import { CompanyDetailsCard } from './components/CompanyDetailsCard';
+import { CompanyOperationsSection } from './components/CompanyOperationsSection';
 import { CompanyActiveJobsSection } from './components/CompanyActiveJobsSection';
 import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar';
 import { shareCompany } from '../../utils/shareUtils';
@@ -52,7 +51,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const routeCompanyId = route?.params?.companyId || route?.params?.id || routeCompany?.id;
 
   const userCompanyName = (user?.company_name || user?.companyName || user?.name || '').trim();
-
   const isViewingExternal = Boolean(routeCompanyId || routeCompany || route?.params?.name);
 
   // Determine Company ID or Name from route params or logged-in user
@@ -62,8 +60,8 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     routeCompany?.name ||
     (!isViewingExternal ? ((userCompanyName && userCompanyName !== 'My Company') ? userCompanyName : user?.id || '') : '');
 
-  // Tab State: JOBS vs OVERVIEW (Two options)
-  const [activeTab, setActiveTab] = useState<'jobs' | 'overview'>('jobs');
+  // 3-Option Interactive Tabs matching Web App
+  const [activeTab, setActiveTab] = useState<'jobs' | 'overview' | 'operations'>('jobs');
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   // Company State
@@ -79,7 +77,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [isSubmittingFollow, setIsSubmittingFollow] = useState<boolean>(false);
 
-  // Apply blue status bar ONLY while on Employer Company Profile, restore on exit
+  // Apply blue status bar ONLY while on Company Profile, restore on exit
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'android') {
@@ -96,18 +94,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       };
     }, [])
   );
-
-  // Live Backend Analytics State
-  const [analyticsData, setAnalyticsData] = useState({
-    totalJobs: 0,
-    activeJobs: 0,
-    totalApplications: 0,
-    shortlisted: 0,
-    interviewed: 0,
-    hired: 0,
-    rejected: 0,
-    avgResponseTimeHours: 24,
-  });
 
   // Owner Verification
   const isOwner = useMemo(() => {
@@ -147,7 +133,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       }
     }
 
-    // Only load logged-in user profile if NOT viewing an external company
     if (!isViewingExternal && user?.id && user.id !== targetCompanyId) {
       try {
         const json = await apiFetch(`/api/v1/companies/${encodeURIComponent(user.id)}`);
@@ -183,7 +168,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       }
     } catch (_) {}
 
-    // Fallback: Populate strictly from route parameters or user state without mixing external and user profiles
+    // Fallback: Populate strictly from route parameters or user state
     setCompany((prev: any) => {
       if (prev && prev.name) return prev;
       if (routeCompany && routeCompany.name) return routeCompany;
@@ -230,7 +215,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     setLoadingCompany(false);
   };
 
-  // Load Live Company Job Openings from Live Backend API (Strictly Live & Active Positions Only)
+  // Load Live Company Job Openings
   const loadCompanyJobs = async () => {
     setLoadingJobs(true);
 
@@ -240,7 +225,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
     let resolvedJobs: any[] = [];
 
-    // 1. Primary: Query the exact same backend company jobs endpoint as Web App
     const queryCandidates = [employerId, compId, compName].filter(
       (c) => c && c !== 'My Company' && c !== '00000000-0000-0000-0000-000000000000'
     );
@@ -251,61 +235,30 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         const json = await apiFetch(`/api/v1/companies/${encodeURIComponent(candidate)}/jobs`);
         const list = Array.isArray(json) ? json : (json?.data || []);
         if (Array.isArray(list) && list.length > 0) {
-          resolvedJobs = list.filter((j: any) => j && isJobLive(j));
+          resolvedJobs = list;
+          break;
         }
-      } catch (err) {
-        console.warn('Backend company jobs fetch notice:', err);
-      }
+      } catch (_) {}
     }
 
-    // 2. Secondary / Fallback: If company jobs endpoint returned nothing and isOwner, fetch getMyJobs strictly filtered by isJobLive
-    if (resolvedJobs.length === 0 && isOwner) {
+    if (resolvedJobs.length === 0) {
       try {
-        const res = await jobsApi.getMyJobs();
-        const myJobsList = Array.isArray(res) ? res : (res?.data || []);
-        if (Array.isArray(myJobsList) && myJobsList.length > 0) {
-          resolvedJobs = myJobsList.filter((j: any) => {
-            if (!j) return false;
-            const empId = (j.employer_id || j.employerId || '').toString().toLowerCase();
-            const currentUserId = (user?.id || '').toString().toLowerCase();
-            if (empId && currentUserId && empId !== currentUserId) {
-              return false;
-            }
-            return isJobLive(j);
-          });
-        }
-      } catch (err) {
-        console.warn('Backend owner jobs fetch notice:', err);
-      }
-    }
-
-    // 3. Fallback for external companies: /api/v1/jobs strictly filtered by company and isJobLive
-    if (resolvedJobs.length === 0 && (employerId || compName)) {
-      try {
-        const allJobsRes = await apiFetch('/api/v1/jobs');
-        const allList = Array.isArray(allJobsRes) ? allJobsRes : (allJobsRes?.data || []);
-        if (Array.isArray(allList) && allList.length > 0) {
+        const json = await apiFetch('/api/v1/jobs');
+        const allJobs = Array.isArray(json) ? json : (json?.data || []);
+        if (Array.isArray(allJobs) && allJobs.length > 0) {
           const compLower = compName.toLowerCase();
-          resolvedJobs = allList.filter((j: any) => {
+          resolvedJobs = allJobs.filter((j: any) => {
             if (!j) return false;
-            const jEmpId = (j.employer_id || j.employerId || '').toString();
-            const jComp = (j.company || j.company_name || '').trim().toLowerCase();
-
-            let matches = false;
-            if (employerId && jEmpId) {
-              matches = jEmpId.toLowerCase() === employerId.toLowerCase();
-            } else if (compLower && jComp) {
-              matches = jComp === compLower;
-            }
-            return matches && isJobLive(j);
+            if (employerId && (j.employer_id === employerId || j.employerId === employerId)) return true;
+            if (compId && (j.company_id === compId || j.companyId === compId)) return true;
+            const jc = (j.company || '').toLowerCase().trim();
+            return compLower && (jc === compLower || jc.includes(compLower) || compLower.includes(jc));
           });
         }
       } catch (_) {}
     }
 
-    // Defensive final filter: strictly active & live job postings only!
-    const strictlyLiveJobs = resolvedJobs.filter(isJobLive);
-    setJobs(strictlyLiveJobs);
+    setJobs(resolvedJobs);
     setLoadingJobs(false);
   };
 
@@ -335,47 +288,15 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
     });
   }, [liveJobs, selectedDept]);
 
-  // Fetch 100% Real Live Recruitment Analytics Data from Backend
-  const fetchAnalytics = useCallback(async () => {
-    if (!isOwner) return;
-    try {
-      const json = await apiFetch('/api/v1/jobs/employer/analytics');
-      const data = json?.data || json;
-      if (data && typeof data === 'object') {
-        const liveTotalJobs = Number(data.totalJobs ?? jobs.length);
-        const liveActiveJobs = Number(data.activeJobs ?? jobs.filter(isJobLive).length);
-        const liveApplications = Number(data.totalApplications ?? 0);
-        const liveShortlisted = Number(data.shortlisted ?? 0);
-        const liveInterviewed = Number(data.interviewed ?? 0);
-        const liveHired = Number(data.hired ?? 0);
-        const liveRejected = Number(data.rejected ?? 0);
-
-        setAnalyticsData({
-          totalJobs: liveTotalJobs,
-          activeJobs: liveActiveJobs,
-          totalApplications: liveApplications,
-          shortlisted: liveShortlisted,
-          interviewed: liveInterviewed,
-          hired: liveHired,
-          rejected: liveRejected,
-          avgResponseTimeHours: Number(data.avgResponseTimeHours || 24),
-        });
-        return;
-      }
-    } catch (_) {}
-
-    // Fallback: derive 100% real live metrics directly from loaded jobs array
-    const realTotalJobs = jobs.length;
-    const realActiveJobs = jobs.filter(isJobLive).length;
-    const realAppsCount = jobs.reduce((acc, j) => acc + Number(j?.applicationsCount || j?.applicants_count || j?.applications_count || 0), 0);
-
-    setAnalyticsData((prev) => ({
-      ...prev,
-      totalJobs: realTotalJobs,
-      activeJobs: realActiveJobs,
-      totalApplications: realAppsCount,
-    }));
-  }, [isOwner, jobs]);
+  // Department icon helper
+  const getDeptIcon = (name: string) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('assembly') || n.includes('production')) return Layers;
+    if (n.includes('quality') || n.includes('testing')) return ShieldCheck;
+    if (n.includes('maintenance') || n.includes('tooling') || n.includes('machin')) return Wrench;
+    if (n.includes('finance') || n.includes('bank') || n.includes('account')) return Briefcase;
+    return Settings;
+  };
 
   // Load Live Real-Time Follower Status and Count
   const loadFollowStatus = useCallback(async () => {
@@ -447,58 +368,24 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         showToast(res?.error || 'Unable to update follow status.', 'error');
       }
     } catch (err: any) {
-      // Rollback on network failure
       setIsFollowing(prevFollowing);
       setFollowersCount(prevCount);
       DeviceEventEmitter.emit('COMPANY_FOLLOW_CHANGED', { companyId: candidateId, isFollowing: prevFollowing });
-      showToast(err?.message || 'Network error while updating follow status.', 'error');
     } finally {
       setIsSubmittingFollow(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadCompanyDetails();
-      loadCompanyJobs();
-      loadFollowStatus();
-      if (isOwner) {
-        fetchAnalytics();
-      }
-    }, [targetCompanyId, isOwner, loadFollowStatus])
-  );
-
   useEffect(() => {
     loadCompanyDetails();
-    loadCompanyJobs();
     loadFollowStatus();
-  }, [targetCompanyId, loadFollowStatus]);
+  }, [targetCompanyId, routeCompanyId]);
 
   useEffect(() => {
-    if (isOwner) {
-      fetchAnalytics();
+    if (company) {
+      loadCompanyJobs();
     }
-  }, [isOwner, targetCompanyId]);
-
-  useEffect(() => {
-    const subPosted = DeviceEventEmitter.addListener('JOB_POSTED', () => {
-      loadCompanyJobs();
-      if (isOwner) fetchAnalytics();
-    });
-    const subUpdated = DeviceEventEmitter.addListener('JOB_UPDATED', () => {
-      loadCompanyJobs();
-      if (isOwner) fetchAnalytics();
-    });
-    const subDeleted = DeviceEventEmitter.addListener('JOB_DELETED', () => {
-      loadCompanyJobs();
-      if (isOwner) fetchAnalytics();
-    });
-    return () => {
-      subPosted.remove();
-      subUpdated.remove();
-      subDeleted.remove();
-    };
-  }, [isOwner]);
+  }, [company?.id, company?.name, company?.employer_id]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -508,7 +395,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         loadCompanyDetails(),
         loadCompanyJobs(),
         loadFollowStatus(),
-        fetchAnalytics(),
       ]);
     } catch (_) {
     } finally {
@@ -525,31 +411,6 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
       industry: company?.industry,
       location: company?.city || company?.address || company?.midc_zone,
     });
-  };
-
-  const handleSaveSuccess = async (updatedCompany: any) => {
-    if (updatedCompany) {
-      setCompany((prev: any) => ({ ...prev, ...updatedCompany }));
-    }
-    const newLogo =
-      updatedCompany?.logo ||
-      updatedCompany?.logoUrl ||
-      updatedCompany?.profile_picture_url ||
-      updatedCompany?.profilePictureUrl;
-    if (newLogo) {
-      await updateUserProfile({
-        companyLogo: newLogo,
-        company_logo: newLogo,
-        profilePictureUrl: newLogo,
-        profile_picture_url: newLogo,
-        avatar_url: newLogo,
-        avatarUrl: newLogo,
-        avatar: newLogo,
-      } as any);
-    }
-    await refreshUser().catch(() => {});
-    loadCompanyDetails();
-    Alert.alert('Profile Saved', 'Company profile updated successfully!');
   };
 
   const formattedLocation = useMemo(() => {
@@ -576,15 +437,15 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
       {/* Main Body Scroll Area */}
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#F7F9FC' }}
+        style={{ flex: 1, backgroundColor: '#F8FAFC' }}
         contentContainerStyle={[
           styles.scrollContentBody,
-          { paddingBottom: Math.max(insets.bottom + 140, 160) },
+          { paddingBottom: Math.max(insets.bottom + 80, 100) },
         ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Primary Blue Header Banner */}
+        {/* 1. Header Banner & Floating Elevated Card */}
         {company ? (
           <CompanyHeaderCard
             company={company}
@@ -615,17 +476,7 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
           />
         ) : null}
 
-        {/* 2. Metrics Bar with Live Active Jobs, Followers, and Post Job Action (Original Position) */}
-        <CompanyMetricsBar
-          jobsCount={liveJobs.length}
-          followersCount={followersCount}
-          midcZone={company?.midc_zone || company?.midcZone}
-          isVerified={company?.verified !== false}
-          isOwner={isOwner}
-          onPostJobPress={() => navigation.navigate('JobPost')}
-        />
-
-        {/* 3. Two-Option Tab Bar (Jobs & Overview exact below the metrics bar) */}
+        {/* 2. Interactive Navigation Tabs Bar (Exact Web Layout: Jobs, Overview, Plant & Operations) */}
         <View style={styles.tabBarWrapper}>
           <View style={styles.tabBarRow}>
             {/* Tab 1: Jobs */}
@@ -638,9 +489,9 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
               ]}
             >
               <Briefcase
-                size={16}
-                color={activeTab === 'jobs' ? '#0A58E2' : '#64748B'}
-                strokeWidth={activeTab === 'jobs' ? 2.4 : 2}
+                size={15}
+                color={activeTab === 'jobs' ? '#1B4FDF' : '#64748B'}
+                strokeWidth={activeTab === 'jobs' ? 2.5 : 2}
               />
               <Text
                 style={[
@@ -677,9 +528,9 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
               ]}
             >
               <Building2
-                size={16}
-                color={activeTab === 'overview' ? '#0A58E2' : '#64748B'}
-                strokeWidth={activeTab === 'overview' ? 2.4 : 2}
+                size={15}
+                color={activeTab === 'overview' ? '#1B4FDF' : '#64748B'}
+                strokeWidth={activeTab === 'overview' ? 2.5 : 2}
               />
               <Text
                 style={[
@@ -690,6 +541,32 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
                 Overview
               </Text>
             </TouchableOpacity>
+
+            {/* Tab 3: Plant & Operations */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setActiveTab('operations')}
+              style={[
+                styles.tabItem,
+                styles.tabItemOperations,
+                activeTab === 'operations' && styles.tabItemActive,
+              ]}
+            >
+              <MapPin
+                size={15}
+                color={activeTab === 'operations' ? '#1B4FDF' : '#64748B'}
+                strokeWidth={activeTab === 'operations' ? 2.5 : 2}
+              />
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === 'operations' && styles.tabLabelActive,
+                ]}
+                numberOfLines={1}
+              >
+                Plant & Operations
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -698,89 +575,101 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
         {loadingCompany ? (
           <CompanySkeleton />
         ) : activeTab === 'overview' ? (
-          <>
-            {/* About Company & Operations Section */}
-            <CompanyOverviewSection
-              description={company?.description}
-              companyName={company?.name}
-              specializations={company?.specializations}
-            />
-
-            {/* Company Details Sidebar Card */}
-            <CompanyDetailsCard
-              company={company}
-              formattedLocation={formattedLocation}
-            />
-          </>
+          /* TAB 2: OVERVIEW */
+          <CompanyOverviewSection
+            company={company}
+            jobsCount={liveJobs.length}
+            formattedLocation={formattedLocation}
+            onSharePress={handleShare}
+          />
+        ) : activeTab === 'operations' ? (
+          /* TAB 3: PLANT & OPERATIONS */
+          <CompanyOperationsSection
+            company={company}
+            formattedLocation={formattedLocation}
+          />
         ) : (
-          /* activeTab === 'jobs' (DEFAULT) */
+          /* TAB 1: JOBS (DEFAULT) */
           <>
-            {/* Departments Hiring Section (Filterable by trade) */}
+            {/* "Departments hiring at [Company]" Section */}
             {departmentsList.length > 0 && (
-              <View style={styles.deptCardContainer}>
-                <View style={styles.deptHeaderRow}>
-                  <View style={styles.deptTitleWrap}>
-                    <View style={styles.deptIconWrap}>
-                      <Layers size={16} color="#0A58E2" strokeWidth={2.2} />
+              <View style={styles.deptSurfaceCard}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardHeaderTitleGroup}>
+                    <View style={styles.cardIconWrap}>
+                      <Layers size={16} color="#1B4FDF" strokeWidth={2.4} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.deptTitleText}>
+                      <Text style={styles.cardTitleText}>
                         Departments hiring at {company?.name || 'Company'}
                       </Text>
-                      <Text style={styles.deptSubtitleText}>
-                        Explore vacancies categorized by trade
+                      <Text style={styles.cardSubtitleText}>
+                        Explore live vacancies categorized by technical department & trade
                       </Text>
                     </View>
                   </View>
+
                   {selectedDept && (
                     <TouchableOpacity
+                      activeOpacity={0.7}
                       onPress={() => setSelectedDept(null)}
-                      style={styles.clearFilterBtn}
+                      style={styles.clearFilterLink}
                     >
-                      <Text style={styles.clearFilterText}>Clear</Text>
+                      <X size={13} color="#1B4FDF" />
+                      <Text style={styles.clearFilterLinkText}>Clear</Text>
                     </TouchableOpacity>
                   )}
                 </View>
 
+                {/* Horizontal Scroll of Department Cards */}
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.deptScrollContainer}
+                  contentContainerStyle={styles.deptCardsScroll}
                 >
                   {departmentsList.map((dept, idx) => {
                     const isSelected = selectedDept === dept.name;
+                    const IconComp = getDeptIcon(dept.name);
+
                     return (
                       <TouchableOpacity
                         key={idx}
-                        activeOpacity={0.7}
+                        activeOpacity={0.75}
                         onPress={() => setSelectedDept(isSelected ? null : dept.name)}
                         style={[
-                          styles.deptChip,
-                          isSelected && styles.deptChipSelected,
+                          styles.deptCard,
+                          isSelected && styles.deptCardSelected,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.deptChipName,
-                            isSelected && styles.deptChipNameSelected,
-                          ]}
-                        >
-                          {dept.name}
-                        </Text>
-                        <View
-                          style={[
-                            styles.deptCountBadge,
-                            isSelected && styles.deptCountBadgeSelected,
-                          ]}
-                        >
+                        <View style={styles.deptCardTop}>
+                          <View style={styles.deptIconBox}>
+                            <IconComp size={16} color="#1B4FDF" strokeWidth={2.2} />
+                          </View>
                           <Text
                             style={[
-                              styles.deptCountText,
-                              isSelected && styles.deptCountTextSelected,
+                              styles.deptCardName,
+                              isSelected && styles.deptCardNameSelected,
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {dept.name}
+                          </Text>
+                        </View>
+
+                        <View style={styles.deptOpeningsLink}>
+                          <Text
+                            style={[
+                              styles.deptOpeningsText,
+                              isSelected && styles.deptOpeningsTextSelected,
                             ]}
                           >
-                            {dept.count}
+                            {dept.count} {dept.count === 1 ? 'opening' : 'openings'}
                           </Text>
+                          <ChevronRight
+                            size={13}
+                            color={isSelected ? '#1541BD' : '#1B4FDF'}
+                            strokeWidth={2.4}
+                          />
                         </View>
                       </TouchableOpacity>
                     );
@@ -789,10 +678,14 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
               </View>
             )}
 
-            {/* Active Job Openings Section - Strictly Live Openings Only */}
+            {/* Active Job Openings Section */}
             <CompanyActiveJobsSection
               jobs={filteredByDeptJobs}
               companyName={company?.name}
+              isOwner={isOwner}
+              selectedDept={selectedDept}
+              onClearDept={() => setSelectedDept(null)}
+              onPostJobPress={() => navigation.navigate('JobPost')}
               onJobPress={(job: any) => {
                 navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
               }}
@@ -814,7 +707,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#F8FAFC',
+  },
+  scrollContentBody: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   tabBarWrapper: {
     backgroundColor: '#FFFFFF',
@@ -825,29 +722,32 @@ const styles = StyleSheet.create({
   tabBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   tabItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    gap: 6,
     paddingVertical: 12,
     borderBottomWidth: 2.5,
     borderBottomColor: 'transparent',
   },
   tabItemActive: {
-    borderBottomColor: '#0A58E2',
+    borderBottomColor: '#1B4FDF',
+  },
+  tabItemOperations: {
+    marginRight: 12,
   },
   tabLabel: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#64748B',
   },
   tabLabelActive: {
-    color: '#0A58E2',
-    fontWeight: '800',
+    color: '#1B4FDF',
+    fontWeight: '700',
   },
   counterBadge: {
     backgroundColor: '#EFF6FF',
@@ -859,43 +759,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   counterBadgeActive: {
-    backgroundColor: '#0A58E2',
+    backgroundColor: '#1B4FDF',
   },
   counterBadgeText: {
     fontSize: 10.5,
     fontWeight: '700',
-    color: '#0A58E2',
+    color: '#1B4FDF',
   },
   counterBadgeTextActive: {
     color: '#FFFFFF',
   },
-  deptCardContainer: {
+  deptSurfaceCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E7EBF2',
-    borderRadius: 8,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
     padding: 14,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginBottom: 12,
-    shadowColor: '#142A50',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
   },
-  deptHeaderRow: {
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  deptTitleWrap: {
+  cardHeaderTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     flex: 1,
   },
-  deptIconWrap: {
+  cardIconWrap: {
     width: 32,
     height: 32,
     borderRadius: 8,
@@ -903,74 +803,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deptTitleText: {
-    fontSize: 13.5,
+  cardTitleText: {
+    fontSize: 14.5,
     fontWeight: '700',
     color: '#0F172A',
   },
-  deptSubtitleText: {
+  cardSubtitleText: {
     fontSize: 11,
     color: '#64748B',
+    marginTop: 1,
   },
-  clearFilterBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 6,
-  },
-  clearFilterText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#0A58E2',
-  },
-  deptScrollContainer: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  deptChip: {
+  clearFilterLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  deptChipSelected: {
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     backgroundColor: '#EFF6FF',
-    borderColor: '#0A58E2',
-  },
-  deptChipName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  deptChipNameSelected: {
-    color: '#0A58E2',
-    fontWeight: '700',
-  },
-  deptCountBadge: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
     borderRadius: 6,
   },
-  deptCountBadgeSelected: {
-    backgroundColor: '#0A58E2',
+  clearFilterLinkText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#1B4FDF',
   },
-  deptCountText: {
-    fontSize: 10,
+  deptCardsScroll: {
+    gap: 10,
+    paddingVertical: 2,
+  },
+  deptCard: {
+    width: 172,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    height: 78,
+    justifyContent: 'center',
+    gap: 5,
+  },
+  deptCardSelected: {
+    borderColor: '#1B4FDF',
+    backgroundColor: '#F8FAFF',
+  },
+  deptCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deptIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  deptCardName: {
+    fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#0F172A',
+    flex: 1,
+    lineHeight: 15,
   },
-  deptCountTextSelected: {
-    color: '#FFFFFF',
+  deptCardNameSelected: {
+    color: '#1B4FDF',
   },
-  scrollContentBody: {
-    paddingHorizontal: 0,
-    paddingTop: 0,
-    paddingBottom: 100,
+  deptOpeningsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  deptOpeningsText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1B4FDF',
+  },
+  deptOpeningsTextSelected: {
+    color: '#1541BD',
   },
 });

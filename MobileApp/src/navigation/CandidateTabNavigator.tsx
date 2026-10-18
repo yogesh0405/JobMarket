@@ -52,6 +52,8 @@ const CandidateCustomNotchedTabBar: React.FC<any> = ({ state, descriptors, navig
     focusedRouteName === 'CandidateJobDetail' ||
     focusedRouteName === 'CandidateApplyConfirm' ||
     focusedRouteName === 'CandidateJobMapView' ||
+    focusedRouteName === 'CandidateJobMap' ||
+    focusedRouteName === 'CandidateMap' ||
     focusedRouteName === 'ReportJob' ||
     focusedRouteName === 'JobDetail' ||
     focusedRouteName === 'JobDetails' ||

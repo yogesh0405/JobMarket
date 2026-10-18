@@ -496,12 +496,6 @@ export const JobDetailPage: React.FC = () => {
                   </span>
                 )}
 
-                {job.location && (
-                  <span className="jd-pill">
-                    {job.location}
-                  </span>
-                )}
-
                 {(job.work_mode || job.workMode || job.job_type || job.jobType) && (
                   <span className="jd-pill">
                     {job.work_mode || job.workMode || job.job_type || job.jobType}

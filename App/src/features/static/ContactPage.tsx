@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Mail,
@@ -17,7 +17,9 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  Paperclip
+  Paperclip,
+  FileText,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../utils/api';
@@ -176,14 +178,58 @@ const formatTicketDisplayDate = (dateStr?: string): string => {
 
 export const ContactPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const user = currentUser;
 
+  // URL 'view' param: 'terms' | 'privacy'
+  const initialPolicy = searchParams.get('view') === 'terms'
+    ? 'TERMS'
+    : searchParams.get('view') === 'privacy'
+    ? 'PRIVACY'
+    : null;
+  const [policyView, setPolicyView] = useState<'TERMS' | 'PRIVACY' | null>(initialPolicy);
+
   // 2 Primary Top Tabs: 'FAQ' | 'CONTACT'
-  const [mainTab, setMainTab] = useState<'FAQ' | 'CONTACT'>('FAQ');
+  const [mainTab, setMainTab] = useState<'FAQ' | 'CONTACT'>(initialPolicy ? 'CONTACT' : 'FAQ');
 
   // Help & Contact View: show 4 options menu vs detailed ticket manager
   const [showTicketManager, setShowTicketManager] = useState(false);
+
+  // Sync if searchParams changes externally
+  useEffect(() => {
+    const v = searchParams.get('view');
+    if (v === 'terms') {
+      setPolicyView('TERMS');
+      setMainTab('CONTACT');
+      setShowTicketManager(false);
+      setActiveTicketDetail(null);
+    } else if (v === 'privacy') {
+      setPolicyView('PRIVACY');
+      setMainTab('CONTACT');
+      setShowTicketManager(false);
+      setActiveTicketDetail(null);
+    } else if (!v && policyView) {
+      setPolicyView(null);
+    }
+  }, [searchParams]);
+
+  const handleOpenPolicy = (view: 'TERMS' | 'PRIVACY') => {
+    setPolicyView(view);
+    setShowTicketManager(false);
+    setActiveTicketDetail(null);
+    setMainTab('CONTACT');
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('view', view.toLowerCase());
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const handleClosePolicy = () => {
+    setPolicyView(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('view');
+    setSearchParams(newParams, { replace: true });
+  };
 
   // Contact Section Sub-Tab: 'CREATE' | 'MY_TICKETS'
   const [ticketSubTab, setTicketSubTab] = useState<'CREATE' | 'MY_TICKETS'>('CREATE');
@@ -653,6 +699,12 @@ export const ContactPage: React.FC = () => {
           gap: 10px;
         }
 
+        .help-legal-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+
         .help-contact-card {
           background-color: #FFFFFF;
           border: 1px solid #E2E8F0;
@@ -949,7 +1001,8 @@ export const ContactPage: React.FC = () => {
           }
 
           /* Mobile Help & Contact 4 Option Cards (radius 14px, 12x14 padding, 13px title, 19px icon) */
-          .help-contact-grid {
+          .help-contact-grid,
+          .help-legal-grid {
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -1675,14 +1728,16 @@ export const ContactPage: React.FC = () => {
           )}
         </div>
       ) : (
-        /* 3. MAIN HELP CENTER (FAQ VS HELP & CONTACT) */
+        /* 3. MAIN HELP CENTER (FAQ VS HELP & CONTACT) & IN-PLACE POLICY VIEW */
         <div>
-          {/* Mobile Sticky Header Bar (16px title, 13px tabs with blue active indicator) */}
+          {/* Mobile Sticky Header Bar */}
           <div className="help-mobile-top-bar">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px' }}>
               <button
                 onClick={() => {
-                  if (window.history.length > 1) {
+                  if (policyView) {
+                    handleClosePolicy();
+                  } else if (window.history.length > 1) {
                     navigate(-1);
                   } else {
                     navigate('/dashboard');
@@ -1703,8 +1758,11 @@ export const ContactPage: React.FC = () => {
             <div style={{ display: 'flex', borderTop: '1px solid #E2E8F0' }}>
               <button
                 type="button"
-                className={`help-mobile-tab-btn ${mainTab === 'FAQ' ? 'active' : ''}`}
-                onClick={() => setMainTab('FAQ')}
+                className={`help-mobile-tab-btn ${mainTab === 'FAQ' && !policyView ? 'active' : ''}`}
+                onClick={() => {
+                  setMainTab('FAQ');
+                  handleClosePolicy();
+                }}
                 style={{
                   flex: 1,
                   textAlign: 'center',
@@ -1715,7 +1773,7 @@ export const ContactPage: React.FC = () => {
                 }}
               >
                 FAQ
-                {mainTab === 'FAQ' && (
+                {mainTab === 'FAQ' && !policyView && (
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2.5px', backgroundColor: '#1B4FDF', borderRadius: '2px' }} />
                 )}
               </button>
@@ -1723,7 +1781,10 @@ export const ContactPage: React.FC = () => {
               <button
                 type="button"
                 className={`help-mobile-tab-btn ${mainTab === 'CONTACT' ? 'active' : ''}`}
-                onClick={() => setMainTab('CONTACT')}
+                onClick={() => {
+                  setMainTab('CONTACT');
+                  handleClosePolicy();
+                }}
                 style={{
                   flex: 1,
                   textAlign: 'center',
@@ -1747,8 +1808,11 @@ export const ContactPage: React.FC = () => {
               <div className="help-desktop-tabs">
                 <button
                   type="button"
-                  className={`help-desktop-tab-btn ${mainTab === 'FAQ' ? 'active' : ''}`}
-                  onClick={() => setMainTab('FAQ')}
+                  className={`help-desktop-tab-btn ${mainTab === 'FAQ' && !policyView ? 'active' : ''}`}
+                  onClick={() => {
+                    setMainTab('FAQ');
+                    handleClosePolicy();
+                  }}
                 >
                   <HelpCircle size={15} />
                   <span>Frequently Asked Questions (FAQ)</span>
@@ -1756,7 +1820,10 @@ export const ContactPage: React.FC = () => {
                 <button
                   type="button"
                   className={`help-desktop-tab-btn ${mainTab === 'CONTACT' ? 'active' : ''}`}
-                  onClick={() => setMainTab('CONTACT')}
+                  onClick={() => {
+                    setMainTab('CONTACT');
+                    handleClosePolicy();
+                  }}
                 >
                   <Headphones size={15} />
                   <span>Help & Contact Channels</span>
@@ -1788,7 +1855,175 @@ export const ContactPage: React.FC = () => {
               </button>
             </div>
 
-            {mainTab === 'FAQ' ? (
+            {policyView ? (
+              /* CLEAN TERMS & PRIVACY POLICY COMPONENT VIEW */
+              <div className="help-card" style={{ padding: '24px 28px', minHeight: '520px' }}>
+                {/* Header: Title + Last Updated. Back button is only visible on mobile (hidden on desktop) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingBottom: '16px',
+                  borderBottom: '1px solid #E2E8F0',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  flexShrink: 0
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={handleClosePolicy}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '6px',
+                        color: '#0F172A',
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F1F5F9')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      title="Back to Help & Contact Channels"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft size={20} color="#0F172A" strokeWidth={2.4} />
+                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {policyView === 'TERMS' ? (
+                        <FileText size={20} color="#1B4FDF" />
+                      ) : (
+                        <ShieldCheck size={20} color="#1B4FDF" />
+                      )}
+                      <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.3px', margin: 0 }}>
+                        {policyView === 'TERMS' ? 'Terms & Conditions' : 'Privacy Policy'}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                    Effective August 2026
+                  </span>
+                </div>
+
+                {/* Clean Scrollable Content Body */}
+                <div style={{
+                  overflowY: 'auto',
+                  maxHeight: 'calc(100vh - 250px)',
+                  paddingRight: '6px',
+                  paddingTop: '16px'
+                }}>
+                  {policyView === 'TERMS' ? (
+                    <div>
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          1. Acceptance of Terms
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          By creating an account or accessing the JobMarket platform (web or mobile), you agree to be bound by these Terms of Service. If you do not agree, please do not use our services.
+                        </p>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          2. User Accounts & Responsibilities
+                        </h3>
+                        <ul style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.7', margin: 0, paddingLeft: '20px' }}>
+                          <li><strong style={{ color: '#0F172A' }}>Candidates:</strong> You agree to provide accurate information regarding your skills, work history, and contact details. Misrepresenting identity or qualifications is strictly prohibited.</li>
+                          <li><strong style={{ color: '#0F172A' }}>Employers:</strong> You agree that all job postings represent genuine employment opportunities with transparent compensation, job roles, and locations.</li>
+                          <li>You are responsible for maintaining the confidentiality of your login credentials and one-time passcodes (OTP).</li>
+                        </ul>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          3. Job Postings & Fair Hiring Policy
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          JobMarket strictly prohibits discriminatory hiring practices, deceptive job offers, advance fee scams, or multi-level marketing schemes. Any job post violating these standards will be removed immediately, and offending accounts will be banned.
+                        </p>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          4. Free Candidate Access & Employer Services
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          Job searching, profile creation, and applying for jobs is 100% free for all job seekers. JobMarket will never ask candidates to pay for job applications or interviews.
+                        </p>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          5. Limitation of Liability
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          JobMarket facilitates connections between employers and candidates. While we verify employers and job listings, we do not guarantee employment, interview outcomes, or candidate performance.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          1. Information We Collect
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          We collect information you provide directly to us when creating a profile, including your full name, email address, phone number, employment history, skills, and uploaded resume files. When signing in with Google OAuth, we receive only your verified email and name.
+                        </p>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          2. How We Use & Protect Your Data
+                        </h3>
+                        <ul style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.7', margin: 0, paddingLeft: '20px' }}>
+                          <li><strong style={{ color: '#0F172A' }}>Job Applications:</strong> Your resume and profile details are shared with employers only when you actively apply for their vacancies or enable public visibility.</li>
+                          <li><strong style={{ color: '#0F172A' }}>Zero Data Selling:</strong> We never sell, rent, or trade your personal information or contact details to third-party telemarketers or advertisers.</li>
+                          <li><strong style={{ color: '#0F172A' }}>Encrypted Storage:</strong> All database transactions, sessions, and uploads are encrypted using modern industry standards (SSL/TLS HTTPS encryption).</li>
+                        </ul>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          3. Cookies & Session Management
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          JobMarket uses secure session cookies and local storage tokens solely to keep you logged in and preserve your job search preferences. We do not track you across external third-party websites.
+                        </p>
+                      </div>
+
+                      <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '16px 0' }} />
+
+                      <div>
+                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                          4. Your Rights & Account Deletion
+                        </h3>
+                        <p style={{ fontSize: '13.5px', color: '#475569', lineHeight: '1.65', margin: 0 }}>
+                          You have complete ownership over your data. You may edit your profile, update or remove your resume, or request permanent deletion of your account and records anytime from your dashboard settings or by contacting our data protection officer.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : mainTab === 'FAQ' ? (
               /* TAB 1: FAQ ACCORDION */
               <div className="help-card">
                 {/* Category Pills (11.5px font, radius 16px, padding 6x12) */}
@@ -1931,78 +2166,164 @@ export const ContactPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* TAB 2: HELP & CONTACT 4 OPTIONS VIEW */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div className="help-contact-grid">
-                  {/* Option 1: Support Ticket */}
-                  <div
-                    className="help-contact-card"
-                    onClick={() => {
-                      setTicketSubTab('MY_TICKETS');
-                      setShowTicketManager(true);
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <Headphones size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
-                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
-                        Support Ticket
-                      </span>
-                    </div>
-                    {myTickets.length > 0 ? (
-                      <span className="help-contact-badge" style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', padding: '2px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, color: '#1B4FDF', flexShrink: 0 }}>
-                        {myTickets.length}
-                      </span>
-                    ) : (
-                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
-                    )}
+              /* TAB 2: HELP & CONTACT CHANNELS + POLICIES VIEW */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* 1. Support & Contact Channels */}
+                <div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', margin: '0 0 2px 0' }}>
+                      Support & Contact Channels
+                    </h3>
+                    <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+                      Reach our support desk, open assistance tickets, or contact us directly
+                    </p>
                   </div>
 
-                  {/* Option 2: Contact */}
-                  <a
-                    href="tel:18002098800"
-                    className="help-contact-card"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <Phone size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
-                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
-                        Contact
-                      </span>
+                  <div className="help-contact-grid">
+                    {/* Option 1: Support Ticket */}
+                    <div
+                      className="help-contact-card"
+                      onClick={() => {
+                        setTicketSubTab('MY_TICKETS');
+                        setShowTicketManager(true);
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <Headphones size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                        <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+                          Support Ticket
+                        </span>
+                      </div>
+                      {myTickets.length > 0 ? (
+                        <span className="help-contact-badge" style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', padding: '2px 7px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, color: '#1B4FDF', flexShrink: 0 }}>
+                          {myTickets.length}
+                        </span>
+                      ) : (
+                        <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                      )}
                     </div>
-                    <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
-                  </a>
 
-                  {/* Option 3: Email */}
-                  <a
-                    href="mailto:support@jobmarket.com"
-                    className="help-contact-card"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <Mail size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
-                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
-                        Email
-                      </span>
-                    </div>
-                    <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
-                  </a>
+                    {/* Option 2: Contact */}
+                    <a
+                      href="tel:18002098800"
+                      className="help-contact-card"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <Phone size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                        <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+                          Contact
+                        </span>
+                      </div>
+                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    </a>
 
-                  {/* Option 4: Website */}
-                  <a
-                    href="https://jobmarket-ongn.onrender.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="help-contact-card"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <Globe size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
-                      <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
-                        Website
-                      </span>
+                    {/* Option 3: Email */}
+                    <a
+                      href="mailto:support@jobmarket.com"
+                      className="help-contact-card"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <Mail size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                        <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+                          Email
+                        </span>
+                      </div>
+                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    </a>
+
+                    {/* Option 4: Website */}
+                    <a
+                      href="https://jobmarket-ongn.onrender.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="help-contact-card"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <Globe size={17} color="#0F172A" strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                        <span className="help-contact-title" style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+                          Website
+                        </span>
+                      </div>
+                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    </a>
+                  </div>
+                </div>
+
+                {/* 2. Terms & Legal Policies Section */}
+                <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', margin: '0 0 2px 0' }}>
+                      Terms & Legal Policies
+                    </h3>
+                    <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+                      Review our platform terms of service, candidate data protections, and privacy policy
+                    </p>
+                  </div>
+
+                  <div className="help-legal-grid">
+                    {/* Terms of Service */}
+                    <div
+                      className="help-contact-card"
+                      onClick={() => handleOpenPolicy('TERMS')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          backgroundColor: '#EFF6FF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <FileText size={16} color="#1B4FDF" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', display: 'block' }}>
+                            Terms of Service
+                          </span>
+                          <span style={{ fontSize: '11.5px', color: '#64748B', display: 'block' }}>
+                            User agreements, rules & guidelines
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
                     </div>
-                    <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
-                  </a>
+
+                    {/* Privacy Policy */}
+                    <div
+                      className="help-contact-card"
+                      onClick={() => handleOpenPolicy('PRIVACY')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          backgroundColor: '#ECFDF5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <ShieldCheck size={16} color="#059669" />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', display: 'block' }}>
+                            Privacy Policy
+                          </span>
+                          <span style={{ fontSize: '11.5px', color: '#64748B', display: 'block' }}>
+                            Data security, collection & usage
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight size={15} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

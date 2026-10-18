@@ -8,7 +8,11 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Platform,
+  UIManager,
+  LayoutAnimation,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import {
   Briefcase,
@@ -47,6 +51,7 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
   onSelectJob,
   navigation,
 }) => {
+  const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
@@ -55,6 +60,21 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
   const [distanceFilter, setDistanceFilter] = useState('All');
   const [modeFilter, setModeFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
+
+  const bottomInset = Math.max(insets.bottom, 12);
+  const collapsedHeight = 58 + bottomInset;
+  const expandedHeight = Math.min(
+    Dimensions.get('window').height * 0.62,
+    Dimensions.get('window').height - 180
+  );
+
+  const handleToggleSheet = () => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSheetExpanded((prev) => !prev);
+  };
 
   // Prepare map jobs with precise Google Maps coordinates & corporate logos
   const mapJobs = jobs.map((job, idx) => {
@@ -500,11 +520,19 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
         </View>
       </View>
 
-      {/* Bottom Sheet Drawer (Matching Web App Screenshot 100%) */}
-      <View style={[styles.bottomSheet, sheetExpanded && styles.bottomSheetExpanded]}>
+      {/* Bottom Sheet Drawer */}
+      <View
+        style={[
+          styles.bottomSheet,
+          {
+            height: sheetExpanded ? expandedHeight : collapsedHeight,
+            paddingBottom: bottomInset,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.sheetHeaderTouch}
-          onPress={() => setSheetExpanded(!sheetExpanded)}
+          onPress={handleToggleSheet}
           activeOpacity={0.9}
         >
           <View style={styles.sheetHandlePill} />
@@ -534,58 +562,63 @@ export const InteractiveJobMapView: React.FC<InteractiveJobMapViewProps> = ({
         </TouchableOpacity>
 
         {/* Scrollable Job List inside Bottom Sheet */}
-        <ScrollView
-          style={styles.sheetBody}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
-        >
-          {visibleSheetJobs.slice(0, 30).map((job) => {
-            const isSelected = selectedJob?.id === job.id;
-            const logoUrl = job.companyLogo || (job as any).company_logo;
+        {sheetExpanded && (
+          <ScrollView
+            style={styles.sheetBody}
+            contentContainerStyle={[
+              styles.sheetBodyContent,
+              { paddingBottom: bottomInset + 32 },
+            ]}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
+            {visibleSheetJobs.slice(0, 30).map((job) => {
+              const isSelected = selectedJob?.id === job.id;
 
-            return (
-              <TouchableOpacity
-                key={job.id}
-                activeOpacity={0.85}
-                style={[styles.sheetJobCard, isSelected && styles.sheetJobCardActive]}
-                onPress={() => handleSelectJobFromSheet(job)}
-              >
-                <CompanyLogoAvatar
-                  logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
-                  companyName={job.company || 'Enterprise'}
-                  size={40}
-                  borderRadius={6}
-                />
-
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.cardJobTitle} numberOfLines={1}>
-                    {job.title}
-                  </Text>
-                  <Text style={styles.cardCompanyText} numberOfLines={1}>
-                    {job.company || 'Industrial Company'} • {job.location || 'Chhatrapati Sambhajinagar'}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
-                    <Text style={styles.cardSalaryBadge}>
-                      ₹{(job.salary_min ?? (job as any).salaryMin ?? 15000).toLocaleString('en-IN')} - ₹{(job.salary_max ?? (job as any).salaryMax ?? 30000).toLocaleString('en-IN')}/yr
-                    </Text>
-                  </View>
-                </View>
-
+              return (
                 <TouchableOpacity
-                  style={styles.viewDetailArrowBtn}
-                  onPress={() =>
-                    navigation.navigate('CandidateJobsTab', {
-                      screen: 'CandidateJobDetail',
-                      params: { jobId: job.id, job: job },
-                    })
-                  }
+                  key={job.id}
+                  activeOpacity={0.85}
+                  style={[styles.sheetJobCard, isSelected && styles.sheetJobCardActive]}
+                  onPress={() => handleSelectJobFromSheet(job)}
                 >
-                  <ExternalLink size={16} color={COLORS.primary} />
+                  <CompanyLogoAvatar
+                    logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
+                    companyName={job.company || 'Enterprise'}
+                    size={40}
+                    borderRadius={6}
+                  />
+
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.cardJobTitle} numberOfLines={1}>
+                      {job.title}
+                    </Text>
+                    <Text style={styles.cardCompanyText} numberOfLines={1}>
+                      {job.company || 'Industrial Company'} • {job.location || 'Chhatrapati Sambhajinagar'}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                      <Text style={styles.cardSalaryBadge}>
+                        ₹{(job.salary_min ?? (job as any).salaryMin ?? 15000).toLocaleString('en-IN')} - ₹{(job.salary_max ?? (job as any).salaryMax ?? 30000).toLocaleString('en-IN')}/yr
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.viewDetailArrowBtn}
+                    onPress={() =>
+                      navigation.navigate('CandidateJobsTab', {
+                        screen: 'CandidateJobDetail',
+                        params: { jobId: job.id, job: job },
+                      })
+                    }
+                  >
+                    <ExternalLink size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
     </View>
   );
@@ -690,7 +723,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 140,
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -703,9 +735,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     paddingHorizontal: 16,
     paddingTop: 8,
-  },
-  bottomSheetExpanded: {
-    height: Dimensions.get('window').height * 0.62,
   },
   sheetHeaderTouch: {
     alignItems: 'center',
@@ -759,6 +788,9 @@ const styles = StyleSheet.create({
   sheetBody: {
     flex: 1,
     marginTop: 6,
+  },
+  sheetBodyContent: {
+    paddingBottom: 24,
   },
   sheetJobCard: {
     flexDirection: 'row',
