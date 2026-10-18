@@ -46,6 +46,24 @@ interface ScoredJob {
   matchBadgeText: string;
 }
 
+const STOP_WORDS = /^(operator|operation|operating|operations|technician|worker|engineer|engineering|supervisor|helper|senior|junior|specialist|assistant|executive|line|machine|machinery|heavy|level|grade|trainee|fresher|lead|head|staff|manager|management|general|skill|skills|shop|floor)$/i;
+
+function escapeRegex(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesWord(text: string, word: string): boolean {
+  if (!text || !word) return false;
+  const w = word.trim().toLowerCase();
+  if (w.length < 2) return false;
+  try {
+    const regex = new RegExp(`(^|[^a-zA-Z0-9])${escapeRegex(w)}([^a-zA-Z0-9]|$)`, 'i');
+    return regex.test(text);
+  } catch {
+    return text.toLowerCase().includes(w);
+  }
+}
+
 export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionProps> = ({
   jobs,
   loading,
@@ -53,13 +71,15 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
   handleToggleSave,
   navigation,
 }) => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [profileRefreshTick, setProfileRefreshTick] = useState(0);
   const [appliedTick, setAppliedTick] = useState(0);
 
-  // Subscribe to profile updates and applied jobs store
+  // Subscribe to profile updates and applied jobs store, and refresh profile on mount
   useEffect(() => {
+    refreshUser().catch(() => {});
     const subProfile = DeviceEventEmitter.addListener('USER_PROFILE_UPDATED', () => {
+      refreshUser().catch(() => {});
       setProfileRefreshTick((prev) => prev + 1);
     });
     const subApplied = appliedJobsStore.subscribe(() => {
@@ -69,13 +89,13 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
       subProfile.remove();
       subApplied();
     };
-  }, []);
+  }, [refreshUser]);
 
   // 1. Candidate Primary Trade & Category
   const primaryTrade = useMemo(() => {
     const trade =
       user?.tradeSpecialization ||
-      user?.trade_specialization ||
+      (user as any)?.trade_specialization ||
       (user as any)?.trade ||
       (user as any)?.headline ||
       (user as any)?.industry ||
@@ -83,7 +103,7 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
     return typeof trade === 'string' ? trade.trim() : '';
   }, [
     user?.tradeSpecialization,
-    user?.trade_specialization,
+    (user as any)?.trade_specialization,
     (user as any)?.trade,
     (user as any)?.headline,
     (user as any)?.industry,
@@ -102,15 +122,21 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
       .filter((s: string) => s.length >= 2);
   }, [user?.skills, (user as any)?.keySkills, (user as any)?.skills_list, profileRefreshTick]);
 
+  const hasCandidateProfile = Boolean(primaryTrade || candidateSkills.length > 0);
+
   // 3. Precision Matching & Scoring Algorithm
   const bestFitJobs = useMemo<ScoredJob[]>(() => {
     if (!jobs || jobs.length === 0) return [];
 
     const tradeClean = primaryTrade.toLowerCase();
-    const skillsClean = candidateSkills.map((s) => s.toLowerCase());
+    const tradeTokens = tradeClean
+      .split(/[\s/&,()+-.]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length >= 2 && !STOP_WORDS.test(t));
 
-    const scoredList: ScoredJob[] = jobs.map((job) => {
+    const scoredList = jobs.map((job) => {
       let score = 0;
+      let tradeMatched = false;
       const matchedSkills: string[] = [];
 
       const title = (job.title || '').toLowerCase();
@@ -118,98 +144,116 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
       const industry = (job.industry || '').toLowerCase();
       const desc = (job.description || '').toLowerCase();
       const jobSkills = Array.isArray(job.skills) ? job.skills.map((s) => (s || '').toLowerCase()) : [];
-      const jobReqs = Array.isArray(job.requirements) ? job.requirements.map((r) => (r || '').toLowerCase()) : [];
-      const jobResps = Array.isArray(job.responsibilities) ? job.responsibilities.map((r) => (r || '').toLowerCase()) : [];
-      const allJobText = `${title} ${trade} ${industry} ${desc} ${jobSkills.join(' ')} ${jobReqs.join(' ')} ${jobResps.join(' ')}`;
+      const jobSkillsText = jobSkills.join(' ');
+      const allJobText = `${title} ${trade} ${industry} ${jobSkillsText} ${desc}`;
 
-      // Primary Trade / Category Match (up to 50 pts)
-      let tradeMatched = false;
+      // A. Primary Trade Direct & Token Match
       if (tradeClean) {
         if (trade && (trade === tradeClean || trade.includes(tradeClean) || tradeClean.includes(trade))) {
-          score += 50;
+          score += 70;
           tradeMatched = true;
         } else if (title && (title.includes(tradeClean) || tradeClean.includes(title))) {
-          score += 45;
+          score += 60;
           tradeMatched = true;
-        } else if (matchJobAgainstKeyword(job, tradeClean, 'trade')) {
-          score += 38;
-          tradeMatched = true;
-        } else {
-          const tokens = tradeClean.split(/\s+/).filter((t) => t.length > 2);
-          const hits = tokens.filter((t) => allJobText.includes(t));
-          if (hits.length > 0) {
-            score += hits.length * 15;
+        }
+
+        tradeTokens.forEach((token) => {
+          if (matchesWord(trade, token)) {
+            score += 35;
+            tradeMatched = true;
+          } else if (matchesWord(title, token)) {
+            score += 30;
+            tradeMatched = true;
+          } else if (matchesWord(jobSkillsText, token)) {
+            score += 20;
+            tradeMatched = true;
+          } else if (matchesWord(desc, token)) {
+            score += 15;
             tradeMatched = true;
           }
-        }
+        });
       }
 
-      // Skills Overlap Match (up to 35 pts)
-      skillsClean.forEach((skill, idx) => {
-        const origSkill = candidateSkills[idx] || skill;
-        const inSkills = jobSkills.some((js) => js === skill || js.includes(skill) || skill.includes(js));
-        const inText = allJobText.includes(skill);
+      // B. Candidate Skills Matching (word boundary to prevent substring false-positives)
+      candidateSkills.forEach((cSkill) => {
+        const inSkills = jobSkills.some((js) => matchesWord(js, cSkill));
+        const inText = matchesWord(allJobText, cSkill);
 
         if (inSkills || inText) {
-          if (!matchedSkills.includes(origSkill)) {
-            matchedSkills.push(origSkill);
-            score += 15;
+          if (!matchedSkills.includes(cSkill)) {
+            matchedSkills.push(cSkill);
+            score += 25;
           }
         }
       });
 
-      // Industry / Sector Match (up to 10 pts)
+      // C. Industry / Sector Match (bonus tie-breaker)
       if (user?.industry) {
         const uInd = user.industry.toLowerCase();
-        if (industry.includes(uInd) || uInd.includes(industry)) {
-          score += 10;
+        if (matchesWord(industry, uInd) || matchesWord(uInd, industry)) {
+          score += 15;
         }
       }
 
-      // Freshness (up to 5 pts)
+      // D. Freshness (up to 5 pts)
       const ageDays = job.posted_at ? (Date.now() - new Date(job.posted_at).getTime()) / (1000 * 60 * 60 * 24) : 999;
       if (ageDays <= 3) score += 5;
       else if (ageDays <= 7) score += 3;
 
-      // Realistic Match Percentage
-      let matchPct = 82;
-      if (tradeMatched && matchedSkills.length >= 2) {
-        matchPct = Math.min(99, 93 + Math.min(6, matchedSkills.length * 2));
-      } else if (tradeMatched || matchedSkills.length >= 1) {
-        matchPct = Math.min(95, 87 + matchedSkills.length * 2);
-      } else {
-        matchPct = Math.min(88, 78 + Math.round((score / 100) * 10));
-      }
+      let matchPct = 90;
+      let matchBadge = 'Featured';
 
-      let matchBadge = `${matchPct}% Match`;
-      if (tradeMatched && matchedSkills.length > 0) {
-        matchBadge = `${matchPct}% Best Fit`;
-      } else if (tradeMatched) {
-        matchBadge = `${matchPct}% Role Fit`;
-      } else if (matchedSkills.length > 0) {
-        matchBadge = `${matchPct}% Skill Fit`;
+      if (hasCandidateProfile) {
+        if (tradeMatched && matchedSkills.length >= 2) {
+          matchPct = Math.min(99, 94 + matchedSkills.length);
+          matchBadge = `${matchPct}% Best Fit`;
+        } else if (tradeMatched && matchedSkills.length >= 1) {
+          matchPct = 92;
+          matchBadge = `${matchPct}% Best Fit`;
+        } else if (tradeMatched) {
+          matchPct = 88;
+          matchBadge = `${matchPct}% Role Fit`;
+        } else if (matchedSkills.length > 0) {
+          matchPct = Math.min(92, 82 + matchedSkills.length * 4);
+          matchBadge = `${matchPct}% Skill Fit`;
+        }
       }
 
       return {
         job,
         score,
+        tradeMatched,
         matchPercentage: matchPct,
         matchedSkills: matchedSkills.slice(0, 3),
         matchBadgeText: matchBadge,
       };
     });
 
-    // Sort by highest score descending, then match percentage, then recency
-    return scoredList
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        if (b.matchPercentage !== a.matchPercentage) return b.matchPercentage - a.matchPercentage;
-        const tA = a.job.posted_at ? new Date(a.job.posted_at).getTime() : 0;
-        const tB = b.job.posted_at ? new Date(b.job.posted_at).getTime() : 0;
-        return tB - tA;
-      })
-      .slice(0, 3);
-  }, [jobs, primaryTrade, candidateSkills, user?.industry, profileRefreshTick]);
+    if (hasCandidateProfile) {
+      // Strictly only include jobs that match candidate trade or skills with score >= 20
+      const matched = scoredList.filter(
+        (item) => (item.tradeMatched || item.matchedSkills.length > 0) && item.score >= 20
+      );
+
+      return matched
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          const tA = a.job.posted_at ? new Date(a.job.posted_at).getTime() : 0;
+          const tB = b.job.posted_at ? new Date(b.job.posted_at).getTime() : 0;
+          return tB - tA;
+        })
+        .slice(0, 3);
+    } else {
+      // Default to top 3 active opportunities
+      return scoredList
+        .sort((a, b) => {
+          const tA = a.job.posted_at ? new Date(a.job.posted_at).getTime() : 0;
+          const tB = b.job.posted_at ? new Date(b.job.posted_at).getTime() : 0;
+          return tB - tA;
+        })
+        .slice(0, 3);
+    }
+  }, [jobs, primaryTrade, candidateSkills, user?.industry, profileRefreshTick, hasCandidateProfile]);
 
   const handleApplyNow = useCallback((job: Job) => {
     navigation.navigate('CandidateJobsTab', {
@@ -247,13 +291,15 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
           <View style={styles.titleWithBadgeRow}>
             <Text style={styles.sectionTitle}>Best Fit For You</Text>
             <View style={styles.topBadge}>
-              <Text style={styles.topBadgeText}>TOP 3</Text>
+              <Text style={styles.topBadgeText}>{hasCandidateProfile ? 'TOP 3' : 'FEATURED'}</Text>
             </View>
           </View>
           <Text style={styles.sectionSubtitle} numberOfLines={1}>
-            {primaryTrade
-              ? `Matched to trade "${primaryTrade}" & verified skills`
-              : 'Precision matches based on profile trade & skills'}
+            {hasCandidateProfile
+              ? primaryTrade
+                ? `Matched to trade "${primaryTrade}" & verified skills`
+                : 'Matched to your verified profile skills'
+              : 'Featured industrial opportunities across MIDC'}
           </Text>
         </View>
 
@@ -311,10 +357,30 @@ export const CandidateHomeBestFitSection: React.FC<CandidateHomeBestFitSectionPr
       ) : bestFitJobs.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Building2 size={24} color="#94A3B8" />
-          <Text style={styles.emptyTitle}>No matching job vacancies available right now</Text>
-          <Text style={styles.emptySub}>
-            Try updating your trade specialization or adding additional skills.
+          <Text style={styles.emptyTitle}>
+            {primaryTrade
+              ? `No active openings match trade "${primaryTrade}"`
+              : 'No matching job vacancies available right now'}
           </Text>
+          <Text style={styles.emptySub}>
+            Try updating your trade specialization or adding additional technical skills to see more matches.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+            <TouchableOpacity
+              style={styles.emptyActionBtn}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('CandidateJobsTab', { screen: 'CandidateJobSearch', params: {} })}
+            >
+              <Text style={styles.emptyActionBtnText}>Explore All Jobs</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.emptyActionBtn, styles.emptyActionBtnOutline]}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('CandidateEditProfile')}
+            >
+              <Text style={[styles.emptyActionBtnText, { color: COLORS.primary }]}>Update Skills</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         /* Top 3 Best Fit Job Cards using clean, rounded reference style */
@@ -609,6 +675,22 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 4,
     textAlign: 'center',
+  },
+  emptyActionBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  emptyActionBtnOutline: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  emptyActionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   cardsListContainer: {
     gap: 12,

@@ -248,11 +248,11 @@ export class JobRepository {
       return this.getJobs(safeLimit);
     }
 
-    const cacheKey = `cache:job:similar:v1:${jobId}:${safeLimit}`;
+    const cacheKey = `cache:job:similar:v3:${jobId}:${safeLimit}`;
     return CacheService.getOrSet(cacheKey, 180, async () => {
       const targetJob = await this.getJobById(jobId);
       if (!targetJob) {
-        return this.getJobs(safeLimit);
+        return [];
       }
 
       const industry = (targetJob.industry || '').trim();
@@ -260,9 +260,22 @@ export class JobRepository {
       const title = (targetJob.title || '').trim();
       const location = (targetJob.location || '').trim();
       const midcZone = (targetJob.midcZone || (targetJob as any).midc_zone || '').trim();
-      const jobType = (targetJob.jobType || (targetJob as any).job_type || '').trim();
 
-      const titleKeyword = title.split(/\s+/).slice(0, 2).join(' ').trim();
+      // Extract core distinctive trade/skill keywords
+      const stopWords = /^(operator|operation|operating|operations|technician|worker|engineer|engineering|supervisor|helper|senior|junior|specialist|assistant|executive|line|machine|machinery|heavy|level|grade|trainee|fresher|lead|head|staff|manager|management|drawing|reading|control|quality|safety|compliance|process|shop|floor|general|skill|skills|plant|production|maintenance|attendant)$/i;
+
+      const rawSkills = Array.isArray(targetJob.skills) ? targetJob.skills : [];
+      const allWords = `${trade} ${title} ${rawSkills.join(' ')}`
+        .split(/[\s&,/()+-]+/)
+        .map((w) => w.trim())
+        .filter((w) => w.length >= 2 && !stopWords.test(w));
+
+      const uniqueTokens = Array.from(new Set(allWords.map((w) => w.toLowerCase())));
+      const k1 = uniqueTokens[0] || '';
+      const k2 = uniqueTokens[1] || '';
+      const k3 = uniqueTokens[2] || '';
+      const k4 = uniqueTokens[3] || '';
+
       const cityKeyword = location.split(',')[0].trim();
 
       const query = `
@@ -278,12 +291,22 @@ export class JobRepository {
                c.midc_zone as company_midc_zone,
                COALESCE(c.verified, u.aadhaar_verified, false) as company_verified,
                (
-                 (CASE WHEN $2 <> '' AND LOWER(TRIM(COALESCE(j.trade, ''))) = LOWER(TRIM($2)) THEN 40 ELSE 0 END) +
-                 (CASE WHEN $3 <> '' AND LOWER(TRIM(COALESCE(j.industry, ''))) = LOWER(TRIM($3)) THEN 30 ELSE 0 END) +
-                 (CASE WHEN $4 <> '' AND j.title ILIKE '%' || $4 || '%' THEN 25 ELSE 0 END) +
-                 (CASE WHEN $5 <> '' AND (j.location ILIKE '%' || $5 || '%' OR j.midc_zone ILIKE '%' || $5 || '%') THEN 20 ELSE 0 END) +
-                 (CASE WHEN $6 <> '' AND LOWER(TRIM(COALESCE(j.midc_zone, ''))) = LOWER(TRIM($6)) THEN 20 ELSE 0 END) +
-                 (CASE WHEN $7 <> '' AND LOWER(TRIM(COALESCE(j.job_type, ''))) = LOWER(TRIM($7)) THEN 10 ELSE 0 END)
+                 -- 1. Exact Trade Match (80 pts)
+                 (CASE WHEN $2 <> '' AND LOWER(TRIM(COALESCE(j.trade, ''))) = LOWER(TRIM($2)) THEN 80 ELSE 0 END) +
+                 -- 2. Bidirectional Substring Trade Match (60 pts)
+                 (CASE WHEN $2 <> '' AND (j.trade ILIKE '%' || $2 || '%' OR $2 ILIKE '%' || j.trade || '%') THEN 60 ELSE 0 END) +
+                 -- 3. Trade in Title (50 pts)
+                 (CASE WHEN $2 <> '' AND j.title ILIKE '%' || $2 || '%' THEN 50 ELSE 0 END) +
+                 -- 4. Distinctive Core Tokens (k1, k2, k3, k4) in Trade, Title or Skills
+                 (CASE WHEN $3 <> '' AND (j.trade ILIKE '%' || $3 || '%' OR j.title ILIKE '%' || $3 || '%' OR j.skills::text ILIKE '%' || $3 || '%') THEN 50 ELSE 0 END) +
+                 (CASE WHEN $4 <> '' AND (j.trade ILIKE '%' || $4 || '%' OR j.title ILIKE '%' || $4 || '%' OR j.skills::text ILIKE '%' || $4 || '%') THEN 40 ELSE 0 END) +
+                 (CASE WHEN $5 <> '' AND (j.trade ILIKE '%' || $5 || '%' OR j.title ILIKE '%' || $5 || '%' OR j.skills::text ILIKE '%' || $5 || '%') THEN 30 ELSE 0 END) +
+                 (CASE WHEN $6 <> '' AND (j.trade ILIKE '%' || $6 || '%' OR j.title ILIKE '%' || $6 || '%' OR j.skills::text ILIKE '%' || $6 || '%') THEN 20 ELSE 0 END) +
+                 -- 5. Industry Match (15 pts)
+                 (CASE WHEN $7 <> '' AND (j.industry ILIKE '%' || $7 || '%' OR $7 ILIKE '%' || j.industry || '%') THEN 15 ELSE 0 END) +
+                 -- 6. Location & MIDC Zone (tie-breaker)
+                 (CASE WHEN $8 <> '' AND LOWER(TRIM(COALESCE(j.midc_zone, ''))) = LOWER(TRIM($8)) THEN 10 ELSE 0 END) +
+                 (CASE WHEN $9 <> '' AND j.location ILIKE '%' || $9 || '%' THEN 5 ELSE 0 END)
                ) as similarity_score
         FROM jobs j
         LEFT JOIN users u ON j.employer_id = u.id
@@ -294,25 +317,34 @@ export class JobRepository {
         WHERE j.id <> $1
           AND (j.status IS NULL OR LOWER(j.status) = 'active' OR LOWER(j.status) = 'approved')
         ORDER BY similarity_score DESC, j.posted_at DESC
-        LIMIT $8
+        LIMIT $10
       `;
 
       const result = await pool.query(query, [
         jobId,
         trade,
+        k1,
+        k2,
+        k3,
+        k4,
         industry,
-        titleKeyword,
-        cityKeyword,
         midcZone,
-        jobType,
+        cityKeyword,
         safeLimit,
       ]);
 
       if (result.rows.length === 0) {
-        return this.getJobs(safeLimit);
+        return [];
       }
 
-      return result.rows.map((row) => this.mapDbJobToApi(row));
+      // Combine genuine trade/skill matches (score >= 25) with industry matches (score >= 15)
+      const relevantJobs = result.rows.filter((row: any) => Number(row.similarity_score || 0) >= 25);
+      const industryJobs = result.rows.filter(
+        (row: any) => Number(row.similarity_score || 0) >= 15 && !relevantJobs.some((rj: any) => rj.id === row.id)
+      );
+
+      const combined = [...relevantJobs, ...industryJobs].slice(0, safeLimit);
+      return combined.map((row) => this.mapDbJobToApi(row));
     });
   }
 
