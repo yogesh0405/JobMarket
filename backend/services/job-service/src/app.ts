@@ -7,6 +7,7 @@ import jobRoutes from './routes/jobRoutes';
 import { errorHandler } from '../../../shared/middlewares/errorHandler';
 
 const app = express();
+app.set('trust proxy', true);
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: (origin, cb) => cb(null, true), credentials: true }));

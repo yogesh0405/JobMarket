@@ -69,8 +69,8 @@ app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
   });
 });
 
-// Production Edge Defense: Global API Rate Limiter (200 requests per 60s per IP)
-const globalApiLimiter = rateLimiter('gateway_api', 200, 60);
+// Production Edge Defense: Global API Rate Limiter (600 requests per 60s per IP)
+const globalApiLimiter = rateLimiter('gateway_api', 600, 60);
 app.use('/api', globalApiLimiter);
 
 const authServiceProxy = createServiceProxy(env.AUTH_SERVICE_PORT);

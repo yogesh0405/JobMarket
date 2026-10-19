@@ -13,8 +13,18 @@ const keepAliveAgent = new http.Agent({
 
 export const createServiceProxy = (targetPort: number, fallbackHandler?: (req: Request, res: Response, next: NextFunction) => void) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    const clientIp = (req.headers['cf-connecting-ip'] as string) ||
+      (typeof req.headers['x-forwarded-for'] === 'string' ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      '127.0.0.1';
+
     const forwardHeaders: Record<string, any> = {
       ...req.headers,
+      'x-forwarded-for': req.headers['x-forwarded-for']
+        ? `${req.headers['x-forwarded-for']}, ${req.ip || '127.0.0.1'}`
+        : clientIp,
+      'x-real-ip': clientIp,
       host: `127.0.0.1:${targetPort}`,
     };
 

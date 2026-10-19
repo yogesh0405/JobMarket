@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes';
 import { errorHandler } from '../../../shared/middlewares/errorHandler';
 
 const app = express();
+app.set('trust proxy', true);
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: (origin, cb) => cb(null, true), credentials: true }));
