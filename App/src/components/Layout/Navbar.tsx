@@ -16,7 +16,8 @@ import {
   User, 
   FileText, 
   Building2, 
-  Home
+  Home,
+  FileSearch
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -133,33 +134,36 @@ export const Navbar: React.FC = () => {
     : (currentUser?.name || 'User');
   const userIndustry = currentUser?.tradeSpecialization || (currentUser as any)?.trade_specialization || (currentUser as any)?.industry || (currentUser as any)?.headline || '';
   const userPhoto = currentUser?.profilePictureUrl || (currentUser as any)?.logo || (currentUser as any)?.companyLogo || (currentUser as any)?.profile_picture_url || (currentUser as any)?.avatar_url;
-  const isSearchAllowed = location.pathname === '/' && !isEmployer;
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
+  const isSearchAllowed = normalizedPath === '/' && !isEmployer;
+  const isJobsPage = normalizedPath === '/jobs';
+  const isCompaniesPage = normalizedPath === '/companies';
 
-  const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
-  const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
-  const isBannersSection = location.pathname.startsWith('/dashboard') && (
+  const isJobDetailRoute = !isJobsPage && normalizedPath !== '/jobs/map' && (normalizedPath.startsWith('/job/') || normalizedPath.startsWith('/jobs/'));
+  const isCompanyProfileRoute = !isCompaniesPage && (normalizedPath.startsWith('/company/') || normalizedPath.startsWith('/companies/'));
+  const isBannersSection = normalizedPath.startsWith('/dashboard') && (
     location.search.includes('tab=advertisements') ||
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
-  const isAppliedSection = location.pathname.startsWith('/dashboard') && location.search.includes('tab=applied');
-  const isProfileSection = location.pathname === '/profile' || location.pathname === '/my-profile' || (location.pathname.startsWith('/dashboard') && (location.search.includes('tab=profile') || location.search.includes('tab=my-profile')));
-  const isCompaniesRoute = location.pathname === '/companies' || location.pathname.startsWith('/companies');
-  const isJobsRoute = location.pathname === '/jobs' || (location.pathname.startsWith('/jobs') && location.pathname !== '/jobs/map');
-  const isHomeRoute = location.pathname === '/';
+  const isAppliedSection = normalizedPath.startsWith('/dashboard') && location.search.includes('tab=applied');
+  const isProfileSection = normalizedPath === '/profile' || normalizedPath === '/my-profile' || (normalizedPath.startsWith('/dashboard') && (location.search.includes('tab=profile') || location.search.includes('tab=my-profile')));
+  const isCompaniesRoute = isCompaniesPage || normalizedPath.startsWith('/companies');
+  const isJobsRoute = isJobsPage || (normalizedPath.startsWith('/jobs') && normalizedPath !== '/jobs/map');
+  const isHomeRoute = normalizedPath === '/';
   const isInterviewsSection = (
-    location.pathname.startsWith('/interviews') ||
-    location.pathname.startsWith('/schedule') ||
-    (location.pathname.startsWith('/dashboard') && (
+    normalizedPath.startsWith('/interviews') ||
+    normalizedPath.startsWith('/schedule') ||
+    (normalizedPath.startsWith('/dashboard') && (
       location.search.includes('tab=interviews') ||
       location.search.includes('tab=scheduled-interviews') ||
       location.search.includes('tab=schedule')
     ))
   );
-  const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
-  const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
-  const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
-  const isNotificationsRoute = location.pathname === '/notifications' || location.pathname === '/alerts';
+  const isAboutSection = normalizedPath.startsWith('/about') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=about'));
+  const isContactSection = normalizedPath.startsWith('/contact') || normalizedPath.startsWith('/support') || normalizedPath.startsWith('/help') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=support'));
+  const isSecuritySection = normalizedPath.startsWith('/security') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=security'));
+  const isNotificationsRoute = normalizedPath === '/notifications' || normalizedPath === '/alerts';
   const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection || isNotificationsRoute || isAboutSection || isSecuritySection;
 
   // Determine current active section title dynamically
@@ -192,6 +196,9 @@ export const Navbar: React.FC = () => {
     }
     if (location.pathname.startsWith('/companies') || location.pathname.startsWith('/company/')) {
       return 'Top Companies';
+    }
+    if (location.pathname.startsWith('/resume-matcher') || location.pathname.startsWith('/resume-analyzer') || location.pathname.startsWith('/ai-analysis')) {
+      return 'AI Resume Matcher';
     }
     if (location.pathname.startsWith('/resume')) {
       return 'Resume & CV';
@@ -276,6 +283,9 @@ export const Navbar: React.FC = () => {
                   <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
                   <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
                   <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
+                  <Link to="/resume-matcher" className={`nav-link ${location.pathname.startsWith('/resume-matcher') ? 'active' : ''}`}>
+                    Resume Matcher
+                  </Link>
                 </>
               )}
             </div>
@@ -528,6 +538,14 @@ export const Navbar: React.FC = () => {
                   </Link>
 
                   <div className="mobile-drawer-section-label">RESUME & DOCUMENTS</div>
+                  <Link to="/resume-matcher" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="mobile-drawer-item-left">
+                      <FileSearch size={19} className="mobile-drawer-icon" color="#1B4FDF" />
+                      <span>Resume Matcher</span>
+                    </div>
+                    <span style={{ fontSize: '10px', fontWeight: 800, background: '#EFF6FF', color: '#1B4FDF', padding: '2px 6px', marginRight: '6px' }}>FIT</span>
+                    <ChevronRight size={16} color="#94A3B8" />
+                  </Link>
                   <Link to="/resume" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
                     <div className="mobile-drawer-item-left">
                       <FileText size={19} className="mobile-drawer-icon" />
@@ -620,6 +638,14 @@ export const Navbar: React.FC = () => {
                   <Building2 size={19} className="mobile-drawer-icon" />
                   <span>Companies</span>
                 </div>
+                <ChevronRight size={16} color="#94A3B8" />
+              </Link>
+              <Link to="/resume-matcher" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
+                <div className="mobile-drawer-item-left">
+                  <FileSearch size={19} className="mobile-drawer-icon" color="#1B4FDF" />
+                  <span>Resume Matcher</span>
+                </div>
+                <span style={{ fontSize: '10px', fontWeight: 800, background: '#EFF6FF', color: '#1B4FDF', padding: '2px 6px', marginRight: '6px' }}>FIT</span>
                 <ChevronRight size={16} color="#94A3B8" />
               </Link>
               <Link to="/about" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>

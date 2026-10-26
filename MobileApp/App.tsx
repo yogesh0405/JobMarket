@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Linking from 'expo-linking';
 import {
   NavigationContainer,
@@ -241,16 +242,18 @@ function MainAppContent() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <NetworkProvider>
-        <BackendStatusProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <MainAppContent />
-            </AuthProvider>
-          </ToastProvider>
-        </BackendStatusProvider>
-      </NetworkProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NetworkProvider>
+          <BackendStatusProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <MainAppContent />
+              </AuthProvider>
+            </ToastProvider>
+          </BackendStatusProvider>
+        </NetworkProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,4 +1,6 @@
 import { COLORS, RADIUS } from '../../constants/theme';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -12,6 +14,8 @@ import {
   StatusBar,
   BackHandler,
   Linking,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import {
   CheckCircle2,
@@ -58,6 +62,8 @@ import { FocusAwareStatusBar } from '../../components/common/FocusAwareStatusBar
 import { CompanyLogoAvatar } from '../../components/common/CompanyLogoAvatar';
 import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import { SimilarJobsIcon } from '../../components/common/SimilarJobsIcon';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 interface Props {
   navigation: any;
@@ -122,6 +128,48 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
   const [hasApplied, setHasApplied] = useState(false);
   const [appliedItem, setAppliedItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'job_overview' | 'company_info'>('job_overview');
+
+  // Synchronized animation clock for both tab underline and content slider
+  const tabProgress = useRef(new Animated.Value(0)).current;
+  const [tab1Height, setTab1Height] = useState<number | undefined>(undefined);
+  const [tab2Height, setTab2Height] = useState<number | undefined>(undefined);
+
+  const switchTab = useCallback((nextTab: 'job_overview' | 'company_info') => {
+    setActiveTab(nextTab);
+    Animated.spring(tabProgress, {
+      toValue: nextTab === 'company_info' ? 1 : 0,
+      stiffness: 300,
+      damping: 28,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+  }, [tabProgress]);
+
+  // Horizontal swipe gesture to switch between tabs
+  const handleTabSwipe = useCallback((direction: 'left' | 'right') => {
+    if (direction === 'left' && activeTab === 'job_overview') {
+      switchTab('company_info');
+    } else if (direction === 'right' && activeTab === 'company_info') {
+      switchTab('job_overview');
+    }
+  }, [activeTab, switchTab]);
+
+  const contentTranslateX = tabProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -SCREEN_WIDTH],
+  });
+  const activeContentHeight = activeTab === 'job_overview' ? tab1Height : tab2Height;
+
+  const tabSwipeGesture = Gesture.Pan()
+    .activeOffsetX([-35, 35])
+    .failOffsetY([-25, 25])
+    .onEnd((event) => {
+      'worklet';
+      if (Math.abs(event.translationX) > 60 && Math.abs(event.translationX) > Math.abs(event.translationY) * 1.4) {
+        const direction = event.translationX < 0 ? 'left' : 'right';
+        runOnJS(handleTabSwipe)(direction);
+      }
+    });
   const [isReported, setIsReported] = useState<boolean>(() => {
     return initialJobId ? reportedJobsStore.isReported(initialJobId) : false;
   });
@@ -794,7 +842,8 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           job={job}
           isSaved={isSaved}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={switchTab}
+          tabProgress={tabProgress}
           onBack={handleBackNavigation}
           onShare={handleShareJob}
           onToggleSave={handleToggleSave}
@@ -811,9 +860,23 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
           }}
         />
 
-        <View style={styles.tabContentBody}>
-          {activeTab === 'job_overview' ? (
-          <>
+        <GestureDetector gesture={tabSwipeGesture}>
+          <View style={[{ width: SCREEN_WIDTH, overflow: 'hidden' }, activeContentHeight ? { height: activeContentHeight } : null]}>
+            <Animated.View
+              style={{
+                flexDirection: 'row',
+                width: SCREEN_WIDTH * 2,
+                transform: [{ translateX: contentTranslateX }],
+                alignItems: 'flex-start',
+              }}
+            >
+              <View
+                style={{ width: SCREEN_WIDTH, paddingHorizontal: 16, paddingTop: 14 }}
+                onLayout={(e) => {
+                  const h = Math.round(e.nativeEvent.layout.height);
+                  if (h > 0) setTab1Height(h);
+                }}
+              >
             {/* WALK-IN DRIVE CALLOUT CARD (if walk-in) */}
             {isWalkIn && (
               <View style={styles.walkInCard}>
@@ -1159,10 +1222,15 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                 </View>
               </View>
             ) : null}
-          </>
-        ) : (
-          /* TAB 2: REQUIREMENTS & PERKS + COMPANY DETAILS */
-          <>
+              </View>
+
+              <View
+                style={{ width: SCREEN_WIDTH, paddingHorizontal: 16, paddingTop: 14 }}
+                onLayout={(e) => {
+                  const h = Math.round(e.nativeEvent.layout.height);
+                  if (h > 0) setTab2Height(h);
+                }}
+              >
             {/* REQUIREMENTS & CANDIDATE ELIGIBILITY */}
             {reqList.length > 0 && (
               <>
@@ -1312,9 +1380,10 @@ export const CandidateJobDetailScreen: React.FC<Props> = ({ navigation, route })
                 </View>
               </>
             )}
-          </>
-        )}
-        </View>
+              </View>
+            </Animated.View>
+          </View>
+        </GestureDetector>
       </ScrollView>
 
       {/* BOTTOM FIXED CTA ACTION BAR */}

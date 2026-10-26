@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, Platform, StatusBar } from 'react-native';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, Platform, StatusBar, Animated, LayoutChangeEvent, Dimensions } from 'react-native';
 import {
   ArrowLeft,
   Share2,
@@ -18,11 +18,17 @@ import { formatTimeAgo } from '../components/CandidateJobSearchUtils';
 import { Job } from '../../../types';
 import { COLORS, RADIUS } from '../../../constants/theme';
 
+const TAB_BAR_PADDING_H = 16;
+const TAB_KEYS: Array<'job_overview' | 'company_info'> = ['job_overview', 'company_info'];
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const INITIAL_TAB_WIDTH = Math.max(120, (SCREEN_WIDTH - TAB_BAR_PADDING_H * 2) / TAB_KEYS.length);
+
 export interface CandidateJobDetailHeaderProps {
   job: Job;
   isSaved: boolean;
   activeTab: 'job_overview' | 'company_info';
   setActiveTab: (tab: 'job_overview' | 'company_info') => void;
+  tabProgress?: Animated.Value;
   onBack?: () => void;
   onShare: () => void;
   onToggleSave: () => void;
@@ -35,6 +41,7 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   isSaved,
   activeTab,
   setActiveTab,
+  tabProgress,
   onBack,
   onShare,
   onToggleSave,
@@ -44,6 +51,77 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
   const insets = useSafeAreaInsets();
   const safeTopOffset = Math.max(insets.top || 0, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0);
   const [menuVisible, setMenuVisible] = useState(false);
+
+  // Industry-grade sliding underline indicator
+  const [tabWidth, setTabWidth] = useState(INITIAL_TAB_WIDTH);
+  const activeIndex = Math.max(0, TAB_KEYS.indexOf(activeTab));
+  const internalProgress = useRef(new Animated.Value(activeIndex)).current;
+  const progress = tabProgress || internalProgress;
+
+  const handleTabBarLayout = (e: LayoutChangeEvent) => {
+    const width = (e.nativeEvent.layout.width - TAB_BAR_PADDING_H * 2) / TAB_KEYS.length;
+    if (width > 0 && Math.abs(width - tabWidth) > 0.5) {
+      setTabWidth(width);
+    }
+  };
+
+  const animateTo = (index: number) => {
+    Animated.spring(progress, {
+      toValue: index,
+      stiffness: 300,
+      damping: 28,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Keep animated progress in sync when activeTab changes
+  useEffect(() => {
+    if (!tabProgress) {
+      animateTo(activeIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+
+  const handleTabPress = (key: 'job_overview' | 'company_info') => {
+    if (key === activeTab) return;
+    setActiveTab(key);
+  };
+
+  const indicatorTranslateX = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, tabWidth],
+  });
+
+  const renderTab = (
+    key: 'job_overview' | 'company_info',
+    label: string,
+    Icon: typeof Briefcase
+  ) => {
+    const isSelected = activeTab === key;
+    return (
+      <TouchableOpacity
+        key={key}
+        activeOpacity={0.7}
+        style={styles.underlineTabItem}
+        onPress={() => handleTabPress(key)}
+        accessibilityRole="tab"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: isSelected }}
+      >
+        <View style={styles.tabContentRow}>
+          <Icon
+            size={15}
+            color={isSelected ? '#1B4FDF' : '#64748B'}
+            strokeWidth={isSelected ? 2.4 : 2}
+          />
+          <Text style={[styles.underlineTabLabel, isSelected && styles.underlineTabLabelActive]}>
+            {label}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const logoUrl =
     job.companyLogo ||
@@ -321,52 +399,23 @@ export const CandidateJobDetailHeader: React.FC<CandidateJobDetailHeaderProps> =
         </View>
 
         {/* Standard Underline Tab Bar inside Upper Card under Posted Section */}
-        <View style={styles.standardUnderlineTabBar}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={[
-              styles.underlineTabItem,
-              activeTab === 'job_overview' && styles.underlineTabItemActive,
-            ]}
-            onPress={() => setActiveTab('job_overview')}
-          >
-            <Briefcase
-              size={15}
-              color={activeTab === 'job_overview' ? '#1B4FDF' : '#64748B'}
-              strokeWidth={activeTab === 'job_overview' ? 2.4 : 2}
-            />
-            <Text
-              style={[
-                styles.underlineTabLabel,
-                activeTab === 'job_overview' && styles.underlineTabLabelActive,
-              ]}
-            >
-              Job Overview
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.standardUnderlineTabBar} onLayout={handleTabBarLayout}>
+          {renderTab('job_overview', 'Job Overview', Briefcase)}
+          {renderTab('company_info', 'Requirements & Perks', Award)}
 
-          <TouchableOpacity
-            activeOpacity={0.7}
+          {/* Sliding active indicator */}
+          <Animated.View
+            pointerEvents="none"
             style={[
-              styles.underlineTabItem,
-              activeTab === 'company_info' && styles.underlineTabItemActive,
+              styles.slidingIndicatorTrack,
+              {
+                width: tabWidth,
+                transform: [{ translateX: indicatorTranslateX }],
+              },
             ]}
-            onPress={() => setActiveTab('company_info')}
           >
-            <Award
-              size={15}
-              color={activeTab === 'company_info' ? '#1B4FDF' : '#64748B'}
-              strokeWidth={activeTab === 'company_info' ? 2.4 : 2}
-            />
-            <Text
-              style={[
-                styles.underlineTabLabel,
-                activeTab === 'company_info' && styles.underlineTabLabelActive,
-              ]}
-            >
-              Requirements & Perks
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.slidingIndicatorPill} />
+          </Animated.View>
         </View>
       </View>
     </View>
@@ -584,18 +633,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   salaryAmountText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#16A34A',
     letterSpacing: -0.2,
   },
   salaryUndisclosedText: {
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontSize: 13.5,
+    fontWeight: '600',
     color: '#475569',
   },
   salarySubText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748B',
   },
@@ -623,20 +672,37 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: TAB_BAR_PADDING_H,
+    position: 'relative',
   },
   underlineTabItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 12,
-    borderBottomWidth: 2.5,
-    borderBottomColor: 'transparent',
+    paddingVertical: 13,
+    minHeight: 48,
   },
-  underlineTabItemActive: {
-    borderBottomColor: '#1B4FDF',
+  tabContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  slidingIndicatorTrack: {
+    position: 'absolute',
+    left: TAB_BAR_PADDING_H,
+    bottom: 0,
+    height: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slidingIndicatorPill: {
+    width: '100%',
+    height: 2.5,
+    backgroundColor: '#1B4FDF',
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
   },
   underlineTabLabel: {
     fontSize: 13,

@@ -3,6 +3,9 @@ import { env } from '../env';
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
+  ssl: env.DATABASE_URL && (env.DATABASE_URL.includes('rds.amazonaws.com') || env.DATABASE_URL.includes('neon.tech'))
+    ? { rejectUnauthorized: false }
+    : undefined,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,

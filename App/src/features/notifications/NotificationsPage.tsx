@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../utils/api';
@@ -6,14 +7,18 @@ import { resolveWebNotificationRoute } from '../../utils/notificationRouter';
 import {
   Bell,
   CheckCheck,
+  CheckCircle2,
   Trash2,
   Briefcase,
   UserCheck,
+  UserPlus,
   CalendarClock,
   Megaphone,
   ShieldCheck,
-  Info,
-  Clock,
+  FileText,
+  BadgeCheck,
+  XCircle,
+  Headphones,
   ArrowLeft,
   X,
   MoreVertical
@@ -328,6 +333,16 @@ export const NotificationsPage: React.FC = () => {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (showClearConfirm) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [showClearConfirm]);
+
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   // Filtered notifications by Read status and Capsule Category
@@ -406,54 +421,106 @@ export const NotificationsPage: React.FC = () => {
     }
   };
 
-  const renderCategoryIcon = (item: NotificationItem) => {
-    const cat = classifyNotification(item);
-    switch (cat) {
-      case 'BANNERS':
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Megaphone size={18} color="#d97706" />
-          </div>
-        );
-      case 'INTERVIEWS':
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <CalendarClock size={18} color="#7e22ce" />
-          </div>
-        );
-      case 'APPLICATIONS':
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <UserCheck size={18} color="#15803d" />
-          </div>
-        );
-      case 'JOB_POSTINGS':
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Briefcase size={18} color="#1b4fdf" />
-          </div>
-        );
-      case 'PLATFORM':
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ShieldCheck size={18} color="#475569" />
-          </div>
-        );
-      default:
-        return (
-          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Bell size={18} color="#1b4fdf" />
-          </div>
-        );
-    }
-  };
+  // Enterprise-Grade Industry Icons and Semantic Badge Styling (100% matched with MobileApp)
+  const renderNotifVisualMeta = (type?: string, title?: string, message?: string) => {
+    const combined = `${type || ''} ${title || ''} ${message || ''}`.toUpperCase();
 
-  const handleBack = () => {
-    if (window.history.state && window.history.state.idx > 0) {
-      navigate(-1);
-    } else {
-      navigate(isEmployer ? '/dashboard' : '/');
+    // 1. Interviews & Scheduled Walk-Ins
+    if (combined.includes('INTERVIEW') || combined.includes('SCHEDULED') || combined.includes('WALK-IN')) {
+      return {
+        icon: <CalendarClock size={19} color="#D97706" strokeWidth={2.0} />,
+        bgColor: '#FEF3C7',
+        borderColor: '#FDE68A',
+      };
     }
+
+    // 2. Selection, Shortlist, Hired, Offer
+    if (combined.includes('HIRED') || combined.includes('ACCEPTED') || combined.includes('SHORTLIST') || combined.includes('APPROVED')) {
+      return {
+        icon: <BadgeCheck size={19} color="#059669" strokeWidth={2.0} />,
+        bgColor: '#ECFDF5',
+        borderColor: '#A7F3D0',
+      };
+    }
+
+    // 3. New Candidate Application (Employer received applicant)
+    if (combined.includes('APPLICANT') || combined.includes('APPLIED') || combined.includes('JOB_APPLICATION')) {
+      return {
+        icon: <UserPlus size={19} color="#2563EB" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 4. Application Status Confirmation (Candidate sent application)
+    if (combined.includes('APPLICATION') || combined.includes('APPLY')) {
+      return {
+        icon: <UserCheck size={19} color="#2563EB" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 5. Job Posting, Vacancy, Role Management
+    if (combined.includes('JOB') || combined.includes('VACANCY') || combined.includes('POSTED')) {
+      return {
+        icon: <Briefcase size={19} color="#0A58E2" strokeWidth={2.0} />,
+        bgColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+      };
+    }
+
+    // 6. Promotional Banners & Ad Campaigns
+    if (combined.includes('BANNER') || combined.includes('PROMOT') || combined.includes('ADVERTI') || combined.includes('CAMPAIGN')) {
+      return {
+        icon: <Megaphone size={19} color="#7C3AED" strokeWidth={2.0} />,
+        bgColor: '#F5F3FF',
+        borderColor: '#DDD6FE',
+      };
+    }
+
+    // 7. Security, Identity, Aadhaar, KYC
+    if (combined.includes('VERIF') || combined.includes('SECURITY') || combined.includes('SHIELD') || combined.includes('AADHAAR')) {
+      return {
+        icon: <ShieldCheck size={19} color="#0284C7" strokeWidth={2.0} />,
+        bgColor: '#F0F9FF',
+        borderColor: '#BAE6FD',
+      };
+    }
+
+    // 8. Resume, Bio-Data, Documents
+    if (combined.includes('RESUME') || combined.includes('DOC') || combined.includes('BIO-DATA')) {
+      return {
+        icon: <FileText size={19} color="#6366F1" strokeWidth={2.0} />,
+        bgColor: '#EEF2FF',
+        borderColor: '#C7D2FE',
+      };
+    }
+
+    // 9. Rejections, Cancellations, Closed Vacancies
+    if (combined.includes('REJECT') || combined.includes('CANCEL') || combined.includes('DECLIN') || combined.includes('EXPIRE')) {
+      return {
+        icon: <XCircle size={19} color="#DC2626" strokeWidth={2.0} />,
+        bgColor: '#FEF2F2',
+        borderColor: '#FECACA',
+      };
+    }
+
+    // 10. Help, Support, Helpdesk
+    if (combined.includes('SUPPORT') || combined.includes('TICKET') || combined.includes('HELP')) {
+      return {
+        icon: <Headphones size={19} color="#475569" strokeWidth={2.0} />,
+        bgColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
+      };
+    }
+
+    // 11. Default System Alert
+    return {
+      icon: <Bell size={19} color="#2563EB" strokeWidth={2.0} />,
+      bgColor: '#EFF6FF',
+      borderColor: '#BFDBFE',
+    };
   };
 
   return (
@@ -471,46 +538,6 @@ export const NotificationsPage: React.FC = () => {
           flex-direction: column;
           box-sizing: border-box;
         }
-        .notifications-top-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: #ffffff;
-          box-sizing: border-box;
-        }
-        .notifications-back-btn {
-          background: transparent;
-          border: none;
-          color: #0f172a;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 38px;
-          height: 38px;
-          border-radius: 8px;
-          margin-right: 4px;
-          margin-left: -4px;
-          flex-shrink: 0;
-          transition: background 0.15s ease;
-        }
-        .notifications-back-btn:hover {
-          background-color: #f1f5f9;
-        }
-        .notifications-back-btn:active {
-          background-color: #e2e8f0;
-        }
-        .notifications-action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 12px;
-          border-radius: 8px;
-          font-size: 12.5px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
         @media (max-width: 768px) {
           .notifications-page-container {
             padding: 0 !important;
@@ -524,59 +551,338 @@ export const NotificationsPage: React.FC = () => {
             box-shadow: none !important;
             min-height: 100vh !important;
           }
-          .notifications-top-header {
-            position: sticky !important;
-            top: 0 !important;
-            z-index: 50 !important;
-            padding: 10px 14px !important;
-            background: #ffffff !important;
-            border-bottom: 1px solid #e2e8f0 !important;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
-          }
-          .notifications-action-text {
-            display: none !important;
-          }
-          .notifications-action-btn {
-            padding: 7px !important;
-            width: 36px !important;
-            height: 36px !important;
-            justify-content: center !important;
-          }
-          .notifications-tab-strip {
-            padding: 0 14px !important;
-          }
-          .notifications-capsules-strip {
-            padding: 10px 14px !important;
-          }
-          .notifications-list-container {
-            padding: 4px 12px 64px 12px !important;
-          }
         }
         @media (min-width: 769px) {
           .notifications-page-container {
-            padding: 28px 16px 48px 16px !important;
+            padding: 24px 16px 48px 16px !important;
           }
           .notifications-card-box {
-            max-width: 700px !important;
+            max-width: 680px !important;
             margin: 0 auto !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             border: 1px solid #e2e8f0 !important;
-            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
-          }
-          .notifications-top-header {
-            padding: 18px 24px !important;
-            border-bottom: 1px solid #f1f5f9 !important;
-          }
-          .notifications-tab-strip {
-            padding: 0 24px !important;
-          }
-          .notifications-capsules-strip {
-            padding: 12px 24px !important;
-          }
-          .notifications-list-container {
-            padding: 8px 18px 24px 18px !important;
+            box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05) !important;
           }
         }
+
+        /* Top Sticky Controls Wrap: Tab Bar & Capsule Filters with Crisp White Elevation */
+        .notifications-header-controls-wrap {
+          background-color: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+          box-shadow: 0 2px 3px rgba(15, 23, 42, 0.04);
+          position: sticky;
+          top: 0;
+          z-index: 20;
+        }
+
+        /* Standard Underline Tabular Menu (Full Width Equal Tabs with Three-Dot Icon) */
+        .notifications-tabular-menu-row {
+          display: flex;
+          align-items: center;
+          background-color: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
+          padding-left: 4px;
+          padding-right: 8px;
+        }
+        .notifications-tabs-container {
+          display: flex;
+          align-items: center;
+          flex: 1;
+        }
+        .notifications-tabular-tab-item {
+          flex: 1;
+          padding: 13px 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+        }
+        .notifications-tab-text-with-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .notifications-tabular-tab-text {
+          font-size: 13px;
+          font-weight: 600;
+          color: #64748b;
+          transition: color 0.15s ease;
+        }
+        .notifications-tabular-tab-text.active {
+          color: #1b4fdf;
+          font-weight: 700;
+        }
+        .notifications-tab-count-badge {
+          background-color: #f1f5f9;
+          padding: 1.5px 7px;
+          border-radius: 10px;
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #64748b;
+        }
+        .notifications-tab-count-badge.active {
+          background-color: #eff6ff;
+          color: #1b4fdf;
+        }
+        .notifications-tab-count-unread-badge.active {
+          background-color: #fef2f2;
+          color: #1b4fdf;
+        }
+        .notifications-tabular-active-indicator {
+          position: absolute;
+          bottom: -1px;
+          left: 8px;
+          right: 8px;
+          height: 2.5px;
+          background-color: #1b4fdf;
+          border-radius: 2px;
+        }
+        .notifications-tab-more-options-btn {
+          padding: 8px;
+          border-radius: 6px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-left: 4px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .notifications-tab-more-options-btn:hover {
+          background-color: #f1f5f9;
+        }
+
+        /* Three-Dot Dropdown Menu Card */
+        .notifications-dropdown-menu-card {
+          position: absolute;
+          right: 0;
+          top: calc(100% + 4px);
+          background-color: #ffffff;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          min-width: 175px;
+          padding: 4px 0;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+          z-index: 100;
+          animation: fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .notifications-dropdown-menu-item {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 11px 14px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.15s ease;
+        }
+        .notifications-dropdown-menu-item:hover:not(:disabled) {
+          background-color: #f8fafc;
+        }
+        .notifications-dropdown-menu-item:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .notifications-dropdown-menu-item-text {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+        .notifications-dropdown-divider {
+          height: 1px;
+          background-color: #f1f5f9;
+        }
+
+        /* LinkedIn-Style Horizontal Capsule Filter Pills */
+        .notifications-capsule-filters-wrapper {
+          background-color: #ffffff;
+          padding: 8px 0;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .notifications-capsule-filters-wrapper::-webkit-scrollbar {
+          display: none;
+        }
+        .notifications-capsule-scroll-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0 16px;
+          min-width: max-content;
+        }
+        .notifications-capsule-pill {
+          padding: 5.5px 12px;
+          border-radius: 16px;
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s ease;
+        }
+        .notifications-capsule-pill:hover:not(.active) {
+          background-color: #f1f5f9;
+          border-color: #cbd5e1;
+        }
+        .notifications-capsule-pill.active {
+          background-color: #1b4fdf;
+          border-color: #1b4fdf;
+          color: #ffffff;
+        }
+
+        /* LinkedIn-Style Notification List */
+        .notifications-scroll-list {
+          flex: 1;
+          background-color: #ffffff;
+        }
+        .notifications-row-item {
+          display: flex;
+          align-items: flex-start;
+          background-color: #ffffff;
+          padding: 13px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          gap: 12px;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+          text-align: left;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .notifications-row-item:hover {
+          background-color: #f8fafc;
+        }
+        .notifications-row-item.unread {
+          background-color: #f0f7ff;
+        }
+        .notifications-row-item.unread:hover {
+          background-color: #e6f0fd;
+        }
+        .notifications-avatar-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 1px;
+          flex-shrink: 0;
+        }
+        .notifications-row-content-wrap {
+          flex: 1;
+          min-width: 0;
+          padding-right: 4px;
+        }
+        .notifications-row-title-text {
+          font-size: 12.5px;
+          font-weight: 500;
+          color: #334155;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .notifications-row-title-text.unread {
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .notifications-row-message-text {
+          font-size: 11.5px;
+          color: #475569;
+          line-height: 16px;
+          margin-bottom: 4px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          word-break: break-word;
+        }
+        .notifications-row-time-text {
+          font-size: 10.5px;
+          color: #94a3b8;
+          font-weight: 500;
+        }
+        .notifications-right-action-column {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          padding-top: 3px;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        .notifications-unread-indicator-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 4px;
+          background-color: #1b4fdf;
+        }
+        .notifications-delete-row-btn {
+          padding: 3px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          color: #94a3b8;
+          transition: color 0.15s ease, background-color 0.15s ease;
+        }
+        .notifications-delete-row-btn:hover {
+          color: #dc2626;
+          background-color: #fee2e2;
+        }
+
+        /* Skeleton Loading Row */
+        .notifications-skeleton-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        /* Empty State */
+        .notifications-empty-container {
+          margin-top: 60px;
+          padding: 0 32px 60px 32px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .notifications-empty-icon-circle {
+          width: 54px;
+          height: 54px;
+          border-radius: 27px;
+          background-color: #dcfce7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 12px;
+        }
+        .notifications-empty-title {
+          font-size: 14.5px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 4px;
+        }
+        .notifications-empty-desc {
+          font-size: 12px;
+          color: #64748b;
+          text-align: center;
+          line-height: 17px;
+          max-width: 320px;
+        }
+
         @keyframes notifPulse {
           0%, 100% { opacity: 0.95; }
           50% { opacity: 0.35; }
@@ -593,191 +899,139 @@ export const NotificationsPage: React.FC = () => {
         }
       `}</style>
 
-      <div className="notifications-card-box">
-        {/* Top Header Card */}
-        <div className="notifications-top-header">
-          <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1, gap: '4px' }}>
+      {/* Clear All Confirmation Modal - Centered via createPortal */}
+      {showClearConfirm && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => !isClearing && setShowClearConfirm(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            minHeight: '100dvh',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box',
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '12px',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35)',
+              maxWidth: '380px',
+              width: '100%',
+              padding: '24px 20px',
+              textAlign: 'center',
+              position: 'relative',
+              margin: 'auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Close Button */}
             <button
               type="button"
-              onClick={handleBack}
-              className="notifications-back-btn"
-              title="Go Back"
-              aria-label="Go Back"
-            >
-              <ArrowLeft size={22} color="#0f172a" strokeWidth={2.3} />
-            </button>
-            <h1 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
-              Notifications
-            </h1>
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  marginLeft: '6px',
-                  background: '#eff6ff',
-                  color: '#1b4fdf',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {unreadCount > 9 ? '9+' : unreadCount} new
-              </span>
-            )}
-          </div>
-
-          {/* Three-Dot Menu Options (Read all, Clear all) */}
-          <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(prev => !prev)}
-              title="More options"
-              aria-label="More options"
-              aria-expanded={menuOpen}
+              onClick={() => !isClearing && setShowClearConfirm(false)}
+              disabled={isClearing}
               style={{
-                background: menuOpen ? '#f1f5f9' : 'transparent',
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'transparent',
                 border: 'none',
-                color: '#334155',
+                color: '#94A3B8',
                 cursor: 'pointer',
+                padding: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                transition: 'all 0.15s ease'
+                borderRadius: '6px',
               }}
+              aria-label="Close"
             >
-              <MoreVertical size={20} strokeWidth={2.2} />
+              <X size={18} />
             </button>
 
-            {menuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 6px)',
-                  right: 0,
-                  width: '185px',
-                  background: '#ffffff',
-                  borderRadius: '10px',
-                  boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.08)',
-                  border: '1px solid #e2e8f0',
-                  padding: '6px',
-                  zIndex: 100,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                  animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                }}
-              >
-                {/* Option 1: Read all */}
-                <button
-                  type="button"
-                  disabled={unreadCount === 0}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    markAllAsRead();
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    borderRadius: '6px',
-                    color: unreadCount > 0 ? '#0f172a' : '#94a3b8',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: unreadCount > 0 ? 'pointer' : 'default',
-                    textAlign: 'left',
-                    transition: 'background 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (unreadCount > 0) e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <CheckCheck size={16} color={unreadCount > 0 ? '#1b4fdf' : '#94a3b8'} strokeWidth={2.2} />
-                  <span>Read all</span>
-                </button>
-
-                {/* Divider */}
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '3px 0' }} />
-
-                {/* Option 2: Clear all */}
-                <button
-                  type="button"
-                  disabled={notifications.length === 0 || isClearing}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setShowClearConfirm(true);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    borderRadius: '6px',
-                    color: notifications.length > 0 ? '#dc2626' : '#94a3b8',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    cursor: notifications.length > 0 ? 'pointer' : 'default',
-                    textAlign: 'left',
-                    transition: 'background 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (notifications.length > 0) e.currentTarget.style.backgroundColor = '#fef2f2';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Trash2 size={16} color={notifications.length > 0 ? '#dc2626' : '#94a3b8'} strokeWidth={2} />
-                  <span>Clear all</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Clear All Confirmation Banner */}
-        {showClearConfirm && (
-          <div
-            style={{
-              padding: '12px 24px',
-              background: '#fef2f2',
-              borderBottom: '1px solid #fee2e2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-            }}
-          >
-            <div style={{ fontSize: '13px', color: '#991b1b', fontWeight: '500' }}>
-              Are you sure you want to permanently delete all notifications? This action cannot be undone.
+            {/* Warning/Trash Icon Badge */}
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '24px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FEE2E2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 14px auto',
+              }}
+            >
+              <Trash2 size={22} color="#DC2626" strokeWidth={2.2} />
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+
+            {/* Title */}
+            <h3
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '17px',
+                fontWeight: 800,
+                color: '#0F172A',
+                letterSpacing: '-0.2px',
+              }}
+            >
+              Clear All Notifications
+            </h3>
+
+            {/* Message */}
+            <p
+              style={{
+                margin: '0 0 20px 0',
+                fontSize: '13.5px',
+                color: '#64748B',
+                lineHeight: '20px',
+              }}
+            >
+              Are you sure you want to permanently delete all notifications? This action cannot be undone.
+            </p>
+
+            {/* Buttons */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                width: '100%',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(false)}
                 disabled={isClearing}
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '6px',
-                  padding: '5px 12px',
-                  fontSize: '12px',
-                  fontWeight: '600',
+                  flex: 1,
+                  height: '42px',
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
                   color: '#475569',
-                  cursor: 'pointer',
+                  cursor: isClearing ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 Cancel
@@ -787,344 +1041,309 @@ export const NotificationsPage: React.FC = () => {
                 onClick={clearAllNotifications}
                 disabled={isClearing}
                 style={{
-                  background: '#dc2626',
+                  flex: 1,
+                  height: '42px',
+                  background: '#DC2626',
                   border: 'none',
-                  borderRadius: '6px',
-                  padding: '5px 12px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  cursor: isClearing ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)',
                 }}
               >
                 {isClearing ? 'Deleting...' : 'Clear All'}
               </button>
             </div>
           </div>
-        )}
+        </div>,
+        document.body
+      )}
 
-        {clearError && (
-          <div style={{ padding: '10px 24px', background: '#fee2e2', color: '#b91c1c', fontSize: '13px', textAlign: 'center' }}>
-            {clearError}
-          </div>
-        )}
-
-        {/* Tab Bar: ALL vs UNREAD (Matching MobileApp Notification Screen) */}
-        <div
-          className="notifications-tab-strip"
-          style={{
-            display: 'flex',
-            borderBottom: '1px solid #f1f5f9',
-            background: '#ffffff',
-            flexShrink: 0,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setFilter('ALL')}
-            style={{
-              flex: 1,
-              padding: '13px 0',
-              background: 'none',
-              border: 'none',
-              borderBottom: filter === 'ALL' ? '2.5px solid #1b4fdf' : '2.5px solid transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: filter === 'ALL' ? 700 : 600,
-              color: filter === 'ALL' ? '#1b4fdf' : '#64748b',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span>All</span>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '1.5px 7px',
-                borderRadius: '10px',
-                backgroundColor: filter === 'ALL' ? '#eff6ff' : '#f1f5f9',
-                color: filter === 'ALL' ? '#1b4fdf' : '#64748b',
-              }}
-            >
-              {notifications.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilter('UNREAD')}
-            style={{
-              flex: 1,
-              padding: '13px 0',
-              background: 'none',
-              border: 'none',
-              borderBottom: filter === 'UNREAD' ? '2.5px solid #1b4fdf' : '2.5px solid transparent',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: filter === 'UNREAD' ? 700 : 600,
-              color: filter === 'UNREAD' ? '#1b4fdf' : '#64748b',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span>Unread</span>
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '1.5px 7px',
-                  borderRadius: '10px',
-                  backgroundColor: filter === 'UNREAD' ? '#fef2f2' : '#f1f5f9',
-                  color: filter === 'UNREAD' ? '#dc2626' : '#64748b',
-                }}
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* LinkedIn-Style Horizontal Capsule Filter Pills (Matching Mobile Notification Screen) */}
-        <div
-          className="notifications-capsules-strip"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            background: '#ffffff',
-            borderBottom: '1px solid #f1f5f9',
-            flexShrink: 0,
-          }}
-        >
-          {categoryFilterOptions.map((cat) => {
-            const isActive = selectedCategory === cat.key;
-            return (
+      <div className="notifications-card-box">
+        {/* Top Sticky Controls Wrap: Tab Bar & Capsule Filters with Crisp White Elevation */}
+        <div className="notifications-header-controls-wrap">
+          {/* Standard Underline Tabular Menu (Full Width Equal Tabs with Three-Dot Icon) */}
+          <div className="notifications-tabular-menu-row">
+            <div className="notifications-tabs-container">
+              {/* Tab: ALL */}
               <button
-                key={cat.key}
                 type="button"
-                onClick={() => setSelectedCategory(cat.key)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '9999px',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  border: isActive ? '1px solid #1b4fdf' : '1px solid #e2e8f0',
-                  backgroundColor: isActive ? '#1b4fdf' : '#f8fafc',
-                  color: isActive ? '#ffffff' : '#475569',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                }}
+                className="notifications-tabular-tab-item"
+                onClick={() => setFilter('ALL')}
               >
-                {cat.label}
+                <div className="notifications-tab-text-with-badge">
+                  <span className={`notifications-tabular-tab-text ${filter === 'ALL' ? 'active' : ''}`}>
+                    All
+                  </span>
+                  {notifications.length > 0 && (
+                    <span className={`notifications-tab-count-badge ${filter === 'ALL' ? 'active' : ''}`}>
+                      {notifications.length}
+                    </span>
+                  )}
+                </div>
+                {filter === 'ALL' && <div className="notifications-tabular-active-indicator" />}
               </button>
-            );
-          })}
+
+              {/* Tab: UNREAD */}
+              <button
+                type="button"
+                className="notifications-tabular-tab-item"
+                onClick={() => setFilter('UNREAD')}
+              >
+                <div className="notifications-tab-text-with-badge">
+                  <span className={`notifications-tabular-tab-text ${filter === 'UNREAD' ? 'active' : ''}`}>
+                    Unread
+                  </span>
+                  {unreadCount > 0 && (
+                    <span className={`notifications-tab-count-badge notifications-tab-count-unread-badge ${filter === 'UNREAD' ? 'active' : ''}`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                {filter === 'UNREAD' && <div className="notifications-tabular-active-indicator" />}
+              </button>
+            </div>
+
+            {/* Three-Dot Menu Action at End of Tab Menu */}
+            <div ref={menuRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="notifications-tab-more-options-btn"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                title="More options"
+                aria-label="More options"
+                aria-expanded={menuOpen}
+              >
+                <MoreVertical size={20} color="#64748B" strokeWidth={2.2} />
+              </button>
+
+              {/* Dropdown Menu Card */}
+              {menuOpen && (
+                <div className="notifications-dropdown-menu-card">
+                  {/* Option 1: Mark all as read */}
+                  <button
+                    type="button"
+                    className="notifications-dropdown-menu-item"
+                    disabled={unreadCount === 0}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      markAllAsRead();
+                    }}
+                  >
+                    <CheckCheck size={16} color="#1B4FDF" style={{ marginRight: 10, flexShrink: 0 }} />
+                    <span className="notifications-dropdown-menu-item-text">Mark all as read</span>
+                  </button>
+
+                  <div className="notifications-dropdown-divider" />
+
+                  {/* Option 2: Clear all */}
+                  <button
+                    type="button"
+                    className="notifications-dropdown-menu-item"
+                    disabled={notifications.length === 0}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowClearConfirm(true);
+                    }}
+                  >
+                    <Trash2 size={16} color="#DC2626" style={{ marginRight: 10, flexShrink: 0 }} />
+                    <span className="notifications-dropdown-menu-item-text" style={{ color: '#DC2626' }}>Clear all</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* LinkedIn-Style Horizontal Capsule Filter Pills */}
+          <div className="notifications-capsule-filters-wrapper">
+            <div className="notifications-capsule-scroll-content">
+              {categoryFilterOptions.map((cat) => {
+                const isActive = selectedCategory === cat.key;
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    className={`notifications-capsule-pill ${isActive ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.key)}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Notification Items List */}
-        <div className="notifications-list-container" style={{ minHeight: '360px' }}>
-          {loading && notifications.length === 0 ? (
-            <div style={{ padding: '8px 12px' }}>
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '14px',
-                    padding: '16px 12px',
-                    borderBottom: '1px solid #f1f5f9',
-                    animation: 'notifPulse 1.4s ease-in-out infinite'
-                  }}
-                >
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e2e8f0', flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <div style={{ width: '40%', height: '14px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
-                      <div style={{ width: '15%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
-                    </div>
-                    <div style={{ width: '80%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px', marginBottom: '6px' }} />
-                    <div style={{ width: '55%', height: '12px', backgroundColor: '#f1f5f9', borderRadius: '4px' }} />
+        {/* LinkedIn-Style Notification List */}
+        <div className="notifications-scroll-list">
+          {loading ? (
+            <div style={{ padding: '8px 16px', marginTop: '8px' }}>
+              {[1, 2, 3, 4, 5, 6].map((key) => (
+                <div key={key} className="notifications-skeleton-row">
+                  <div style={{ width: '40px', height: '40px', borderRadius: '20px', backgroundColor: '#e2e8f0', flexShrink: 0, animation: 'notifPulse 1.4s ease-in-out infinite' }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ width: '65%', height: '14px', borderRadius: '4px', backgroundColor: '#e2e8f0', animation: 'notifPulse 1.4s ease-in-out infinite' }} />
+                    <div style={{ width: '90%', height: '12px', borderRadius: '4px', backgroundColor: '#f1f5f9', animation: 'notifPulse 1.4s ease-in-out infinite' }} />
+                    <div style={{ width: '30%', height: '10px', borderRadius: '4px', backgroundColor: '#f1f5f9', animation: 'notifPulse 1.4s ease-in-out infinite' }} />
                   </div>
                 </div>
               ))}
             </div>
           ) : !currentUser?.id ? (
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#eff6ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px auto',
-                  color: '#1b4fdf',
-                }}
-              >
-                <Bell size={26} />
+            <div className="notifications-empty-container">
+              <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#EFF6FF' }}>
+                <Bell size={26} color="#1B4FDF" />
               </div>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>
-                Sign in to view notifications
-              </h3>
-              <p style={{ margin: '0 auto 18px', maxWidth: '340px', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+              <div className="notifications-empty-title">Sign in to view notifications</div>
+              <div className="notifications-empty-desc">
                 Stay updated with interview schedules, job applications, and important announcements.
-              </p>
+              </div>
               <button
                 type="button"
                 onClick={() => navigate('/login')}
                 style={{
-                  padding: '9px 22px',
-                  backgroundColor: '#1b4fdf',
-                  color: '#ffffff',
+                  marginTop: '16px',
+                  padding: '9px 24px',
+                  backgroundColor: '#1B4FDF',
+                  color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '13px',
                   fontWeight: '700',
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)'
+                  boxShadow: '0 2px 8px rgba(27, 79, 223, 0.25)',
                 }}
               >
                 Sign In
               </button>
             </div>
           ) : displayedList.length === 0 ? (
-            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#94a3b8' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#f1f5f9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 14px auto',
-                  color: '#94a3b8',
-                }}
-              >
-                <Bell size={26} />
+            filter === 'UNREAD' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle">
+                  <CheckCircle2 size={32} color="#16A34A" />
+                </div>
+                <div className="notifications-empty-title">You're All Caught Up!</div>
+                <div className="notifications-empty-desc">
+                  No unread notifications in this category.
+                </div>
               </div>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
-                {filter === 'UNREAD' ? 'No unread notifications' : 'No notifications in this category'}
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                {filter === 'UNREAD'
-                  ? "You're all caught up! There are no unread notifications at this time."
-                  : 'New activity, alerts, and applications will appear here.'}
-              </p>
-            </div>
+            ) : selectedCategory === 'JOB_POSTINGS' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#EFF6FF' }}>
+                  <Briefcase size={26} color="#1B4FDF" />
+                </div>
+                <div className="notifications-empty-title">No Job Posting Notifications</div>
+                <div className="notifications-empty-desc">
+                  Updates regarding job post approvals, status changes, and vacancy expiries will appear here.
+                </div>
+              </div>
+            ) : selectedCategory === 'APPLICATIONS' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#EFF6FF' }}>
+                  <UserPlus size={26} color="#1B4FDF" />
+                </div>
+                <div className="notifications-empty-title">No Application Notifications</div>
+                <div className="notifications-empty-desc">
+                  {isEmployer
+                    ? 'Candidate job applications and applicant profile alerts will be shown here.'
+                    : 'Updates on your job application statuses, shortlists, and hiring decisions will appear here.'}
+                </div>
+              </div>
+            ) : selectedCategory === 'INTERVIEWS' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#FEF3C7' }}>
+                  <CalendarClock size={26} color="#D97706" />
+                </div>
+                <div className="notifications-empty-title">No Interview Notifications</div>
+                <div className="notifications-empty-desc">
+                  Scheduled interview invitations, timings, and walk-in venue updates will be listed here.
+                </div>
+              </div>
+            ) : selectedCategory === 'BANNERS' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#F5F3FF' }}>
+                  <Megaphone size={26} color="#7C3AED" />
+                </div>
+                <div className="notifications-empty-title">No Banner Notifications</div>
+                <div className="notifications-empty-desc">
+                  Status updates on your advertisement campaigns and promotional banner approvals will be shown here.
+                </div>
+              </div>
+            ) : selectedCategory === 'PLATFORM' ? (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle" style={{ backgroundColor: '#F1F5F9' }}>
+                  <Headphones size={26} color="#475569" />
+                </div>
+                <div className="notifications-empty-title">No Platform Notifications</div>
+                <div className="notifications-empty-desc">
+                  Support ticket responses, team announcements, and account verification updates will appear here.
+                </div>
+              </div>
+            ) : (
+              <div className="notifications-empty-container">
+                <div className="notifications-empty-icon-circle">
+                  <CheckCircle2 size={32} color="#16A34A" />
+                </div>
+                <div className="notifications-empty-title">You're All Caught Up!</div>
+                <div className="notifications-empty-desc">
+                  No notifications found for the selected filter.
+                </div>
+              </div>
+            )
           ) : (
-            displayedList.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => handleNotificationClick(item)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '14px',
-                  padding: '14px 12px',
-                  borderRadius: '10px',
-                  background: item.read ? '#ffffff' : '#f8faff',
-                  borderLeft: item.read ? '3px solid transparent' : '3px solid #1b4fdf',
-                  borderBottom: '1px solid #f1f5f9',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background 0.15s ease',
-                }}
-              >
-                {/* Category Icon */}
-                {renderCategoryIcon(item)}
+            displayedList.map((item) => {
+              const isRead = item.read;
+              const visual = renderNotifVisualMeta(item.rawType || item.type, item.title, item.message);
 
-                {/* Content Box */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span
-                        style={{
-                          fontSize: '13.5px',
-                          fontWeight: item.read ? '600' : '700',
-                          color: item.read ? '#334155' : '#0f172a',
-                        }}
-                      >
-                        {item.title}
-                      </span>
-                      {!item.read && (
-                        <span
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            backgroundColor: '#1b4fdf',
-                            display: 'inline-block',
-                          }}
-                        />
-                      )}
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', fontWeight: '500' }}>
-                      {item.time}
-                    </span>
+              return (
+                <div
+                  key={item.id}
+                  className={`notifications-row-item ${!isRead ? 'unread' : ''}`}
+                  onClick={() => handleNotificationClick(item)}
+                >
+                  {/* Left Circular Avatar with Semantic Theme */}
+                  <div
+                    className="notifications-avatar-circle"
+                    style={{ backgroundColor: visual.bgColor, borderColor: visual.borderColor }}
+                  >
+                    {visual.icon}
                   </div>
 
-                  <p
-                    style={{
-                      margin: '4px 0 0 0',
-                      fontSize: '13px',
-                      color: item.read ? '#64748b' : '#334155',
-                      lineHeight: '1.45',
-                    }}
-                  >
-                    {item.message}
-                  </p>
-                </div>
+                  {/* Middle Content Area */}
+                  <div className="notifications-row-content-wrap">
+                    <div className={`notifications-row-title-text ${!isRead ? 'unread' : ''}`}>
+                      {item.title}
+                    </div>
+                    <div className="notifications-row-message-text">
+                      {item.message}
+                    </div>
+                    <div className="notifications-row-time-text">
+                      {item.time}
+                    </div>
+                  </div>
 
-                {/* Delete Item Button */}
-                <button
-                  type="button"
-                  onClick={(e) => deleteNotification(e, item.id)}
-                  title="Remove notification"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#cbd5e1',
-                    cursor: 'pointer',
-                    padding: '6px',
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '6px',
-                    transition: 'all 0.15s ease',
-                    flexShrink: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ef4444';
-                    e.currentTarget.style.backgroundColor = '#fee2e2';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#cbd5e1';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))
+                  {/* Right Actions / Unread Dot */}
+                  <div className="notifications-right-action-column">
+                    {!isRead && <div className="notifications-unread-indicator-dot" />}
+                    <button
+                      type="button"
+                      className="notifications-delete-row-btn"
+                      onClick={(e) => deleteNotification(e, item.id)}
+                      title="Remove notification"
+                      aria-label="Remove notification"
+                    >
+                      <Trash2 size={13} color="#94A3B8" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>

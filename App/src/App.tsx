@@ -20,6 +20,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { ProfilePage } from './features/profile/ProfilePage';
 import { PublicProfilePage } from './features/profile/PublicProfilePage';
 import { ResumePage } from './features/profile/ResumePage';
+import { ResumeAnalyzerPage } from './features/resume-matcher/ResumeAnalyzerPage';
 import { AboutPage } from './features/static/AboutPage';
 import { ContactPage } from './features/static/ContactPage';
 import { TermsPage } from './features/static/TermsPage';
@@ -214,6 +215,9 @@ export const App: React.FC = () => {
           <Route path="/companies" element={<CompaniesDirectoryPage />} />
           <Route path="/company/:companyId" element={<CompanyProfilePage />} />
           <Route path="/resume" element={<CandidateOrGuestOnly><ResumePage /></CandidateOrGuestOnly>} />
+          <Route path="/resume-matcher" element={<CandidateOrGuestOnly><ResumeAnalyzerPage /></CandidateOrGuestOnly>} />
+          <Route path="/resume-analyzer" element={<CandidateOrGuestOnly><ResumeAnalyzerPage /></CandidateOrGuestOnly>} />
+          <Route path="/ai-analysis" element={<CandidateOrGuestOnly><ResumeAnalyzerPage /></CandidateOrGuestOnly>} />
 
           {/* Employer Only Routes */}
           <Route path="/post-job" element={<EmployerOnly><JobPostPage /></EmployerOnly>} />

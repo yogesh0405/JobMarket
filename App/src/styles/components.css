@@ -655,7 +655,7 @@
 
 @media (max-width: 768px) {
   .mobile-app-tab-dock {
-    display: flex;
+    display: flex !important;
   }
   
   body {

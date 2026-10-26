@@ -22,6 +22,9 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().default(''),
   AWS_REGION: z.string().default('ap-south-1'),
   AWS_S3_BUCKET_NAME: z.string().default(''),
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_BASE_URL: z.string().default('https://api.openai.com/v1'),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
 }).superRefine((data, ctx) => {
   if (data.NODE_ENV === 'production') {
     if (!process.env.DATABASE_URL || data.DATABASE_URL.includes('localhost:5432')) {

@@ -18,6 +18,8 @@
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^1.27.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",

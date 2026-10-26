@@ -9,6 +9,7 @@ import { NotificationService } from '../../notifications/services/NotificationSe
 import { NotificationRepository } from '../../notifications/repositories/NotificationRepository';
 import { S3Util } from '../../../utils/s3';
 import { PlatformRepository } from '../../platform/repositories/PlatformRepository';
+import { AiResumeService } from '../services/aiResumeService';
 
 const isEmployerRole = (r?: string) => {
   const norm = (r || '').toLowerCase().trim();
@@ -1193,6 +1194,35 @@ export class JobController {
       res.status(200).json({
         success: true,
         message: result.message,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/jobs/resume-analysis
+   * Transparent AI Resume Matching & Job Recommendation Intelligence (AlignIQ Standard)
+   */
+  static async analyzeResume(req: any, res: Response, next: NextFunction) {
+    try {
+      const { resumeText = '', documentName = 'Resume.pdf', targetJobDescription = '', category = '' } = req.body;
+      const cleanText = String(resumeText).trim();
+
+      // Retrieve live active jobs from database
+      const activeJobs = await JobRepository.getJobs(80, 1);
+
+      const result = await AiResumeService.analyzeResume(
+        cleanText,
+        documentName,
+        targetJobDescription,
+        activeJobs,
+        category
+      );
+
+      res.status(200).json({
+        success: true,
         data: result
       });
     } catch (error) {

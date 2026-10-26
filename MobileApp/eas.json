@@ -11,8 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com",
-        "EXPO_PUBLIC_CARTO_API_KEY": "cb1_487g_1_09b2acff1a2e8161e1d62095"
+        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com"
       }
     },
     "preview": {
@@ -21,8 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com",
-        "EXPO_PUBLIC_CARTO_API_KEY": "cb1_487g_1_09b2acff1a2e8161e1d62095"
+        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com"
       }
     },
     "production": {
@@ -31,8 +29,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com",
-        "EXPO_PUBLIC_CARTO_API_KEY": "cb1_487g_1_09b2acff1a2e8161e1d62095"
+        "EXPO_PUBLIC_API_URL": "https://jobmarket-8c0p.onrender.com"
       }
     }
   },

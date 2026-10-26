@@ -20,6 +20,7 @@ import { CandidateTabNavigator } from './CandidateTabNavigator';
 import { CandidateProfileScreen } from '../screens/candidate/CandidateProfileScreen';
 import { CandidateEditProfileScreen } from '../screens/candidate/CandidateEditProfileScreen';
 import { CandidateResumeScreen } from '../screens/candidate/CandidateResumeScreen';
+import { CandidateResumeMatcherScreen } from '../screens/candidate/CandidateResumeMatcherScreen';
 import { CandidateJobDetailScreen } from '../screens/candidate/CandidateJobDetailScreen';
 import { CandidateApplyConfirmScreen } from '../screens/candidate/CandidateApplyConfirmScreen';
 import { ReportJobScreen } from '../screens/candidate/ReportJobScreen';
@@ -85,6 +86,8 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen name="CandidateEditProfile" component={CandidateEditProfileScreen} />
           <Stack.Screen name="EditProfile" component={CandidateEditProfileScreen} />
           <Stack.Screen name="CandidateResume" component={CandidateResumeScreen} />
+          <Stack.Screen name="ResumeMatcher" component={CandidateResumeMatcherScreen} />
+          <Stack.Screen name="CandidateResumeMatcher" component={CandidateResumeMatcherScreen} />
           <Stack.Screen name="CandidateJobDetail" component={CandidateJobDetailScreen} />
           <Stack.Screen name="ReportJob" component={ReportJobScreen} />
           <Stack.Screen name="CandidateApplyConfirm" component={CandidateApplyConfirmScreen} />

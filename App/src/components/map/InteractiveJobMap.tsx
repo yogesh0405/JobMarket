@@ -56,11 +56,11 @@ export const InteractiveJobMap: React.FC<InteractiveJobMapProps> = ({
       touchZoom: true
     });
 
-    // Add high-performance CARTO Voyager tile layer with authenticated key
+    // Add high-performance OSM tile layer (No watermark, no API key required)
     const tileLayer = L.tileLayer(MAP_TILE_LAYER_URL, {
       attribution: MAP_ATTRIBUTION,
-      subdomains: 'abcd',
-      maxZoom: 20
+      subdomains: 'abc',
+      maxZoom: 19
     }).addTo(map);
 
     tileLayer.on('tileerror', (error) => {

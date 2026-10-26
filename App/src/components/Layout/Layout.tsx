@@ -97,23 +97,27 @@ export const Layout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isCandidateProfileRoute = location.pathname.startsWith('/profile/') ||
-                                  location.pathname.startsWith('/candidate/') ||
-                                  location.pathname.startsWith('/p/');
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
+  const isJobsPage = normalizedPath === '/jobs';
+  const isCompaniesPage = normalizedPath === '/companies';
 
-  const isPostJobRoute = location.pathname.startsWith('/post-job') ||
-                         location.pathname.startsWith('/edit-job');
+  const isCandidateProfileRoute = normalizedPath.startsWith('/profile/') ||
+                                  normalizedPath.startsWith('/candidate/') ||
+                                  normalizedPath.startsWith('/p/');
 
-  const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
+  const isPostJobRoute = normalizedPath.startsWith('/post-job') ||
+                         normalizedPath.startsWith('/edit-job');
 
-  const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
+  const isJobDetailRoute = !isJobsPage && normalizedPath !== '/jobs/map' && (normalizedPath.startsWith('/job/') || normalizedPath.startsWith('/jobs/'));
+
+  const isCompanyProfileRoute = !isCompaniesPage && (normalizedPath.startsWith('/company/') || normalizedPath.startsWith('/companies/'));
 
   const hideNavbarMobileRoutes = isCandidateProfileRoute || 
                                  isJobDetailRoute || 
                                  isCompanyProfileRoute || 
                                  isGlobalSearchRoute ||
                                  isPostJobRoute ||
-                                 location.pathname.startsWith('/resume');
+                                 normalizedPath.startsWith('/resume');
 
   // Desktop view: Header must NEVER hide in any section!
   // Mobile view: Keep existing hiding logic completely untouched.

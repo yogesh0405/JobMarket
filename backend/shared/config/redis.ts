@@ -1,8 +1,13 @@
 import { createClient } from 'redis';
 import { env } from './env';
 
+let parsedUrl = env.REDIS_URL;
+if (!parsedUrl || !parsedUrl.startsWith('redis://') && !parsedUrl.startsWith('rediss://')) {
+  parsedUrl = 'redis://localhost:6379';
+}
+
 export const redisClient = createClient({
-  url: env.REDIS_URL,
+  url: parsedUrl,
   socket: {
     reconnectStrategy: (retries) => {
       return Math.min(retries * 500, 3000);

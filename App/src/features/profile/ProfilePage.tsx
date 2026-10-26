@@ -884,7 +884,7 @@ export const ProfilePage: React.FC = () => {
               <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                   <h1 style={{
-                    fontSize: '17px',
+                    fontSize: '18.5px',
                     fontWeight: 700,
                     color: '#FFFFFF',
                     margin: 0,
@@ -896,9 +896,9 @@ export const ProfilePage: React.FC = () => {
                     {companyName}
                   </h1>
                   <div style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '8px',
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '9px',
                     backgroundColor: '#1764E8',
                     color: '#FFFFFF',
                     display: 'flex',
@@ -906,7 +906,7 @@ export const ProfilePage: React.FC = () => {
                     justifyContent: 'center',
                     flexShrink: 0
                   }} title="Verified Employer">
-                    <Check size={10} strokeWidth={3} />
+                    <Check size={11} strokeWidth={3} />
                   </div>
                 </div>
 
@@ -919,7 +919,7 @@ export const ProfilePage: React.FC = () => {
                     backgroundColor: 'rgba(255, 255, 255, 0.18)',
                     padding: '2.5px 7px',
                     borderRadius: '5px',
-                    fontSize: '10px',
+                    fontSize: '11.5px',
                     fontWeight: 500,
                     color: '#FFFFFF',
                     flexShrink: 1,
@@ -927,7 +927,7 @@ export const ProfilePage: React.FC = () => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    <Building2 size={11} color="#FFFFFF" strokeWidth={2.2} />
+                    <Building2 size={12} color="#FFFFFF" strokeWidth={2.2} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {currentUser.industry || 'Industrial Manufacturing'}
                     </span>
@@ -940,7 +940,7 @@ export const ProfilePage: React.FC = () => {
                     backgroundColor: 'rgba(255, 255, 255, 0.18)',
                     padding: '2.5px 7px',
                     borderRadius: '5px',
-                    fontSize: '10px',
+                    fontSize: '11.5px',
                     fontWeight: 500,
                     color: '#FFFFFF',
                     flexShrink: 1,
@@ -948,7 +948,7 @@ export const ProfilePage: React.FC = () => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    <Lock size={11} color="#FFFFFF" strokeWidth={2.2} />
+                    <Lock size={12} color="#FFFFFF" strokeWidth={2.2} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {(currentUser as any).companyType || 'Private Limited'}
                     </span>
@@ -963,7 +963,7 @@ export const ProfilePage: React.FC = () => {
             backgroundColor: '#FFFFFF',
             border: '1px solid #E7EBF2',
             borderRadius: '8px',
-            padding: '8px 10px',
+            padding: '8px 12px',
             margin: '-28px 16px 14px 16px',
             display: 'flex',
             alignItems: 'center',
@@ -973,48 +973,48 @@ export const ProfilePage: React.FC = () => {
             boxShadow: '0 3px 8px rgba(20, 42, 80, 0.06)'
           }}>
             {/* Stat 1: Jobs Posted */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '7px', padding: '0 2px' }}>
               <div style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '6px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '7px',
                 backgroundColor: '#EFF5FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Briefcase size={14} color="#1764E8" strokeWidth={2} />
+                <Briefcase size={15} color="#1764E8" strokeWidth={2} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{myJobs.length || 0}</div>
-                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Jobs Posted</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{myJobs.length || 0}</div>
+                <div style={{ fontSize: '11px', fontWeight: 500, color: '#657796', marginTop: '1px' }}>Jobs Posted</div>
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '20px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E3E8F0', margin: '0 3px' }} />
 
             {/* Stat 2: Followers */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 2px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '7px', padding: '0 2px' }}>
               <div style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '6px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '7px',
                 backgroundColor: '#EFF6FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Users size={14} color="#1764E8" strokeWidth={2} />
+                <Users size={15} color="#1764E8" strokeWidth={2} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{employerFollowersCount}</div>
-                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>Followers</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#102A5C', lineHeight: 1.1 }}>{employerFollowersCount}</div>
+                <div style={{ fontSize: '11px', fontWeight: 500, color: '#657796', marginTop: '1px' }}>Followers</div>
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '20px', backgroundColor: '#E3E8F0', margin: '0 2px' }} />
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E3E8F0', margin: '0 3px' }} />
 
             {/* Stat 3: Post Job CTA */}
             <div
@@ -1023,26 +1023,26 @@ export const ProfilePage: React.FC = () => {
                 flex: 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '7px',
                 padding: '0 2px',
                 cursor: 'pointer'
               }}
             >
               <div style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '6px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '7px',
                 backgroundColor: '#EEF4FF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}>
-                <Plus size={15} color="#1764E8" strokeWidth={2.4} />
+                <Plus size={16} color="#1764E8" strokeWidth={2.4} />
               </div>
               <div style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>Post Job</div>
-                <div style={{ fontSize: '9px', fontWeight: 500, color: '#657796', marginTop: '0.5px' }}>New Vacancy</div>
+                <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#1764E8', lineHeight: 1.1 }}>Post Job</div>
+                <div style={{ fontSize: '11px', fontWeight: 500, color: '#657796', marginTop: '1px' }}>New Vacancy</div>
               </div>
             </div>
           </div>
@@ -1058,25 +1058,26 @@ export const ProfilePage: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <div style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '6px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '7px',
                 backgroundColor: '#EEF4FF',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}>
-                <Building2 size={15} color="#1764E8" strokeWidth={2.2} />
+                <Building2 size={16} color="#1764E8" strokeWidth={2.2} />
               </div>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                 About {companyName}
               </h3>
             </div>
 
             <p style={{
-              fontSize: '11.5px',
-              color: '#66789B',
-              lineHeight: '18px',
+              fontSize: '13px',
+              color: '#4B5563',
+              lineHeight: '20px',
               margin: 0,
               whiteSpace: 'pre-line'
             }}>
@@ -1094,7 +1095,7 @@ export const ProfilePage: React.FC = () => {
             boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                 Company Details & Verification
               </h3>
               <div style={{
@@ -1105,8 +1106,8 @@ export const ProfilePage: React.FC = () => {
                 padding: '2.5px 7px',
                 borderRadius: '5px'
               }}>
-                <ShieldCheck size={12} color="#19A98F" strokeWidth={2.4} />
-                <span style={{ fontSize: '10px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
+                <ShieldCheck size={13} color="#19A98F" strokeWidth={2.4} />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#19A98F' }}>Verified</span>
               </div>
             </div>
 
@@ -1117,82 +1118,82 @@ export const ProfilePage: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <MapPin size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plant Address & Location</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {formattedLocation}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#F2F1FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Building2 size={13} color="#625CEB" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Legal Company Type</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).companyType || 'Private Limited'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '9px 0' }} />
 
               {/* Row 2: Company Size & Founded Year */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Users size={13} color="#21A99B" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Company Size</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).companySize || '200–500 employees'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Calendar size={13} color="#D97706" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Founded Year</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {(currentUser as any).foundedYear || '2005'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '9px 0' }} />
 
               {/* Row 3: GST Number & Email */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <FileText size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>GSTIN Registration</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                     {currentUser.gstNumber || '27AABCU9603R1ZN'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Mail size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Official Contact Email</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Official Contact Email</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
                     <a
                       href={`mailto:${currentUser.email}`}
                       style={{
@@ -1212,30 +1213,30 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '8px 0' }} />
+              <div style={{ height: '1px', backgroundColor: '#E5EAF2', margin: '9px 0' }} />
 
               {/* Row 4: Phone & Website */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '10px' }}>
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#ECFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Phone size={13} color="#21A99B" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Contact Phone</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#102A5C', lineHeight: '15px', paddingLeft: '28px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#102A5C', lineHeight: '18px', paddingLeft: '30px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {currentUser.phone ? `+91 ${currentUser.phone}` : 'Not provided'}
                   </div>
                 </div>
 
                 <div style={{ minWidth: 0, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '5px', backgroundColor: '#EFF5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Globe size={13} color="#1764E8" strokeWidth={2} />
                     </div>
-                    <span style={{ fontSize: '9.5px', fontWeight: 500, color: '#66789B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 500, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Website Portal</span>
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#1764E8', lineHeight: '15px', paddingLeft: '28px', minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1764E8', lineHeight: '18px', paddingLeft: '30px', minWidth: 0, overflow: 'hidden' }}>
                     {currentUser.website ? (
                       <a
                         href={currentUser.website.startsWith('http') ? currentUser.website : `https://${currentUser.website}`}
@@ -1272,18 +1273,18 @@ export const ProfilePage: React.FC = () => {
             margin: '0 16px 12px 16px',
             boxShadow: '0 2px 6px rgba(20, 42, 80, 0.04)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#102A5C', margin: 0 }}>
                   Active Job Openings
                 </h3>
                 <div style={{
                   backgroundColor: '#EFF6FF',
                   color: '#1764E8',
-                  fontSize: '10px',
+                  fontSize: '11px',
                   fontWeight: 700,
-                  padding: '1px 5px',
-                  borderRadius: '6px'
+                  padding: '1.5px 6px',
+                  borderRadius: '5px'
                 }}>
                   {activeJobs.length}
                 </div>
@@ -1295,7 +1296,7 @@ export const ProfilePage: React.FC = () => {
                   background: 'none',
                   border: 'none',
                   color: '#1764E8',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
@@ -1305,7 +1306,7 @@ export const ProfilePage: React.FC = () => {
                 }}
               >
                 <span>View all</span>
-                <ChevronRight size={13} strokeWidth={2.4} />
+                <ChevronRight size={14} strokeWidth={2.4} />
               </button>
             </div>
 
@@ -1319,16 +1320,16 @@ export const ProfilePage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '8px 0',
+                      padding: '9px 0',
                       borderTop: idx > 0 ? '1px solid #DFE5EE' : 'none',
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1, minWidth: 0 }}>
                       <div style={{
                         width: '32px',
                         height: '32px',
-                        borderRadius: '8px',
+                        borderRadius: '7px',
                         backgroundColor: idx % 2 === 0 ? '#F2F1FF' : '#ECFAF7',
                         display: 'flex',
                         alignItems: 'center',
@@ -1340,8 +1341,8 @@ export const ProfilePage: React.FC = () => {
 
                       <div style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                         <h4 style={{
-                          fontSize: '12px',
-                          fontWeight: 700,
+                          fontSize: '13.5px',
+                          fontWeight: 600,
                           color: '#102A5C',
                           margin: '0 0 1px 0',
                           overflow: 'hidden',
@@ -1351,8 +1352,8 @@ export const ProfilePage: React.FC = () => {
                           {jobItem.title}
                         </h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <MapPin size={9} color="#66789B" />
-                          <span style={{ fontSize: '9.5px', color: '#66789B', fontWeight: 500 }}>
+                          <MapPin size={11} color="#66789B" />
+                          <span style={{ fontSize: '11.5px', color: '#66789B', fontWeight: 500 }}>
                             {jobItem.location || 'Waluj MIDC, Maharashtra'} • {jobItem.jobType || jobItem.job_type || 'Full Time'}
                           </span>
                         </div>
@@ -1360,7 +1361,7 @@ export const ProfilePage: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, paddingLeft: '8px' }}>
-                      <span style={{ fontSize: '9.5px', color: '#66789B', fontWeight: 500 }}>
+                      <span style={{ fontSize: '11px', color: '#66789B', fontWeight: 500 }}>
                         {timeAgo((jobItem as any).postedAt || (jobItem as any).posted_at || (jobItem as any).created_at || (jobItem as any).createdAt)}
                       </span>
                       <ChevronRight size={13} color="#94A3B8" />
@@ -1369,7 +1370,7 @@ export const ProfilePage: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '16px', textAlign: 'center', color: '#657796', fontSize: '11px' }}>
+              <div style={{ padding: '16px', textAlign: 'center', color: '#657796', fontSize: '12.5px' }}>
                 No active job postings right now. Click "Post Job" to add vacancies.
               </div>
             )}
@@ -1565,25 +1566,25 @@ export const ProfilePage: React.FC = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                marginBottom: '3px',
+                gap: '6px',
+                marginBottom: '5px',
               }}>
                 <h1 style={{
-                  fontSize: '15px',
-                  fontWeight: 700,
+                  fontSize: '18.5px',
+                  fontWeight: 800,
                   color: '#FFFFFF',
                   margin: 0,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  letterSpacing: '-0.2px',
+                  letterSpacing: '-0.3px',
                 }}>
                   {displayName}
                 </h1>
                 <div style={{
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '7px',
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '9px',
                   backgroundColor: '#1764E8',
                   color: '#FFFFFF',
                   display: 'flex',
@@ -1591,55 +1592,32 @@ export const ProfilePage: React.FC = () => {
                   justifyContent: 'center',
                   flexShrink: 0,
                 }} title="Verified Profile">
-                  <Check size={9} strokeWidth={3} />
+                  <Check size={11} strokeWidth={3} />
                 </div>
               </div>
 
               {/* Subtitle Category Chips on Blue Banner */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                 <div style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '3px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                  padding: '2px 6px',
+                  gap: '4px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  padding: '3px 8px',
                   borderRadius: '4px',
-                  fontSize: '9.5px',
-                  fontWeight: 500,
+                  fontSize: '12px',
+                  fontWeight: 600,
                   color: '#FFFFFF',
                   flexShrink: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}>
-                  <Award size={10} color="#FFFFFF" strokeWidth={2.2} />
+                  <Award size={13} color="#FFFFFF" strokeWidth={2.2} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {tradeDisplay}
                   </span>
                 </div>
-
-                {currentUser.location && (
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '9.5px',
-                    fontWeight: 500,
-                    color: '#FFFFFF',
-                    flexShrink: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    <MapPin size={10} color="#FFFFFF" strokeWidth={2.2} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {currentUser.location}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1654,48 +1632,48 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* 2. BODY CONTENT (STATS BAR, TAB MENU, PERSONAL / PROFESSIONAL SECTIONS) */}
-        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+        <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* Quick Stats Floating Card (Overlapping Blue Banner) */}
           <div style={{
             backgroundColor: '#FFFFFF',
-            border: '1px solid #E7EBF2',
-            borderRadius: '7px',
-            padding: '8px 10px',
+            border: '1px solid #E2E8F0',
+            borderRadius: '8px',
+            padding: '11px 14px',
             marginTop: '-24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-around',
             position: 'relative',
             zIndex: 10,
-            boxShadow: '0 2px 6px rgba(20, 42, 80, 0.05)',
+            boxShadow: '0 2px 8px rgba(20, 42, 80, 0.06)',
           }}>
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px' }}>
                 {experienceList.length}
               </div>
-              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
                 Work Exp
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0' }} />
 
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px' }}>
                 {completionPercentage}%
               </div>
-              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
                 Completeness
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '18px', backgroundColor: '#E2E8F0' }} />
+            <div style={{ width: '1px', height: '22px', backgroundColor: '#E2E8F0' }} />
 
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#1B4FDF' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#1B4FDF', letterSpacing: '-0.3px' }}>
                 {skillsList.length}
               </div>
-              <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#64748B', marginTop: '1px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B', marginTop: '2px' }}>
                 Key Skills
               </div>
             </div>
@@ -1706,14 +1684,14 @@ export const ProfilePage: React.FC = () => {
             display: 'flex',
             borderBottom: '1px solid #E2E8F0',
             backgroundColor: '#FFFFFF',
-            borderRadius: '5px',
+            borderRadius: '6px',
             overflow: 'hidden',
           }}>
             <button
               onClick={() => setActiveCandidateTab('PERSONAL')}
               style={{
                 flex: 1,
-                padding: '8px 0',
+                padding: '12px 0',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -1727,12 +1705,12 @@ export const ProfilePage: React.FC = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '11px',
-                fontWeight: activeCandidateTab === 'PERSONAL' ? 700 : 600,
+                gap: '7px',
+                fontSize: '14px',
+                fontWeight: activeCandidateTab === 'PERSONAL' ? 800 : 600,
                 color: activeCandidateTab === 'PERSONAL' ? '#1B4FDF' : '#64748B',
               }}>
-                <User size={12} color={activeCandidateTab === 'PERSONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
+                <User size={16} color={activeCandidateTab === 'PERSONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
                 <span>Personal Info</span>
               </div>
               {activeCandidateTab === 'PERSONAL' && (
@@ -1741,9 +1719,9 @@ export const ProfilePage: React.FC = () => {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: '2px',
+                  height: '3px',
                   backgroundColor: '#1B4FDF',
-                  borderRadius: '2px 2px 0 0',
+                  borderRadius: '3px 3px 0 0',
                 }} />
               )}
             </button>
@@ -1752,7 +1730,7 @@ export const ProfilePage: React.FC = () => {
               onClick={() => setActiveCandidateTab('PROFESSIONAL')}
               style={{
                 flex: 1,
-                padding: '8px 0',
+                padding: '12px 0',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -1766,12 +1744,12 @@ export const ProfilePage: React.FC = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '11px',
-                fontWeight: activeCandidateTab === 'PROFESSIONAL' ? 700 : 600,
+                gap: '7px',
+                fontSize: '14px',
+                fontWeight: activeCandidateTab === 'PROFESSIONAL' ? 800 : 600,
                 color: activeCandidateTab === 'PROFESSIONAL' ? '#1B4FDF' : '#64748B',
               }}>
-                <Briefcase size={12} color={activeCandidateTab === 'PROFESSIONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
+                <Briefcase size={16} color={activeCandidateTab === 'PROFESSIONAL' ? '#1B4FDF' : '#64748B'} strokeWidth={2.2} />
                 <span>Professional Info</span>
               </div>
               {activeCandidateTab === 'PROFESSIONAL' && (
@@ -1780,9 +1758,9 @@ export const ProfilePage: React.FC = () => {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: '2px',
+                  height: '3px',
                   backgroundColor: '#1B4FDF',
-                  borderRadius: '2px 2px 0 0',
+                  borderRadius: '3px 3px 0 0',
                 }} />
               )}
             </button>
@@ -1792,37 +1770,37 @@ export const ProfilePage: React.FC = () => {
           {activeCandidateTab === 'PERSONAL' && (
             <div style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: '7px',
+              borderRadius: '8px',
               border: '1px solid #CBD5E1',
-              padding: '11px 13px',
-              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+              padding: '16px 14px',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '12px',
             }}>
               <h2 style={{
                 margin: 0,
-                fontSize: '12.5px',
+                fontSize: '16px',
                 fontWeight: 800,
                 color: '#0F172A',
-                letterSpacing: '-0.1px',
-                marginBottom: '1px',
+                letterSpacing: '-0.3px',
+                marginBottom: '2px',
               }}>
                 Personal Details
               </h2>
 
               {/* Full Name */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Full Name</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Full Name</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#0F172A',
                 }}>
@@ -1831,17 +1809,17 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Role / Specialization */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Role / Trade Specialization</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Role / Trade Specialization</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#0F172A',
                 }}>
@@ -1850,17 +1828,17 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Joining Availability / Notice Period */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Joining Availability / Notice Period</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Joining Availability / Notice Period</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 700,
                   color: userAvailabilityDays === 0 ? '#16A34A' : '#1B4FDF',
                 }}>
@@ -1871,17 +1849,17 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Registered Email */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Registered Email</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Registered Email</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#0F172A',
                 }}>
@@ -1890,17 +1868,17 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Phone / WhatsApp */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Phone / WhatsApp</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Phone / WhatsApp</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#0F172A',
                 }}>
@@ -1909,17 +1887,17 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Home City / Location Base */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Home City / Location Base</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Home City / Location Base</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  height: '32px',
-                  padding: '0 10px',
+                  borderRadius: '6px',
+                  height: '42px',
+                  padding: '0 12px',
                   display: 'flex',
                   alignItems: 'center',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 500,
                   color: '#0F172A',
                 }}>
@@ -1928,18 +1906,18 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {/* Bio & Notes */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <label style={{ fontSize: '10px', fontWeight: 600, color: '#64748B' }}>Professional Bio & Notes</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>Professional Bio & Notes</label>
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  minHeight: '44px',
-                  padding: '7px 10px',
-                  fontSize: '10.5px',
+                  borderRadius: '6px',
+                  minHeight: '65px',
+                  padding: '10px 12px',
+                  fontSize: '13.5px',
                   fontWeight: 400,
                   color: '#0F172A',
-                  lineHeight: '14.5px',
+                  lineHeight: '20px',
                 }}>
                   {currentUser.headline || currentUser.bio || 'No professional bio summary added yet. Tap Edit Profile to add a summary.'}
                 </div>
@@ -1953,21 +1931,21 @@ export const ProfilePage: React.FC = () => {
               {/* 0. JOINING AVAILABILITY & NOTICE PERIOD CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '7px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
-                padding: '11px 13px',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                padding: '16px 14px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '12px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <h2 style={{
                     margin: 0,
-                    fontSize: '12.5px',
+                    fontSize: '16px',
                     fontWeight: 800,
                     color: '#0F172A',
-                    letterSpacing: '-0.1px',
+                    letterSpacing: '-0.3px',
                   }}>
                     Joining Availability & Notice Period
                   </h2>
@@ -1980,8 +1958,8 @@ export const ProfilePage: React.FC = () => {
                     style={{
                       background: 'none',
                       border: 'none',
-                      padding: 0,
-                      fontSize: '11px',
+                      padding: '4px 6px',
+                      fontSize: '13px',
                       fontWeight: 700,
                       color: '#1B4FDF',
                       cursor: 'pointer',
@@ -1994,16 +1972,16 @@ export const ProfilePage: React.FC = () => {
                 <div style={{
                   backgroundColor: '#F8FAFC',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '5px',
-                  padding: '9px 12px',
+                  borderRadius: '6px',
+                  padding: '12px 14px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
                 }}>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '5px',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '7px',
                     backgroundColor: '#EFF6FF',
                     border: '1px solid #DBEAFE',
                     display: 'flex',
@@ -2011,11 +1989,11 @@ export const ProfilePage: React.FC = () => {
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}>
-                    <Clock size={16} color="#1B4FDF" />
+                    <Clock size={18} color="#1B4FDF" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <div style={{
-                      fontSize: '12px',
+                      fontSize: '14.5px',
                       fontWeight: 800,
                       color: userAvailabilityDays === 0 ? '#16A34A' : '#0F172A',
                     }}>
@@ -2023,7 +2001,7 @@ export const ProfilePage: React.FC = () => {
                         ? 'Immediate Joiner (0 Days Notice)'
                         : `Available in ${userAvailabilityDays} Days`}
                     </div>
-                    <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
+                    <div style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 500 }}>
                       {userAvailabilityDays === 0
                         ? 'Ready to report for duty on day 1 upon hire.'
                         : `Serving or required notice period of ${userAvailabilityDays} days before joining.`}
@@ -2035,35 +2013,35 @@ export const ProfilePage: React.FC = () => {
               {/* 1. SKILLS & EXPERTISE CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '7px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
-                padding: '11px 13px',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                padding: '16px 14px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '12px',
               }}>
                 <h2 style={{
                   margin: 0,
-                  fontSize: '12.5px',
+                  fontSize: '16px',
                   fontWeight: 800,
                   color: '#0F172A',
-                  letterSpacing: '-0.1px',
+                  letterSpacing: '-0.3px',
                 }}>
                   Skills & Expertise
                 </h2>
 
                 {skillsList.length > 0 ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
                     {skillsList.map((s, idx) => (
                       <div
                         key={idx}
                         style={{
                           backgroundColor: '#EFF6FF',
                           border: '1px solid #DBEAFE',
-                          borderRadius: '4px',
-                          padding: '3px 7px',
-                          fontSize: '9.5px',
+                          borderRadius: '6px',
+                          padding: '5px 10px',
+                          fontSize: '12.5px',
                           fontWeight: 600,
                           color: '#1B4FDF',
                         }}
@@ -2076,10 +2054,10 @@ export const ProfilePage: React.FC = () => {
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '5px',
-                    padding: '10px',
+                    borderRadius: '6px',
+                    padding: '12px',
                     textAlign: 'center',
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: '#64748B',
                   }}>
                     No key skills added yet.
@@ -2090,20 +2068,20 @@ export const ProfilePage: React.FC = () => {
               {/* 2. WORK EXPERIENCE TIMELINE CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '7px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
-                padding: '11px 13px',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                padding: '16px 14px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '7px',
+                gap: '12px',
               }}>
                 <h2 style={{
                   margin: 0,
-                  fontSize: '12.5px',
+                  fontSize: '16px',
                   fontWeight: 800,
                   color: '#0F172A',
-                  letterSpacing: '-0.1px',
+                  letterSpacing: '-0.3px',
                 }}>
                   Work Experience
                 </h2>
@@ -2112,26 +2090,26 @@ export const ProfilePage: React.FC = () => {
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '5px',
-                    padding: '10px',
+                    borderRadius: '6px',
+                    padding: '12px',
                     textAlign: 'center',
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: '#64748B',
                   }}>
                     No work experience entries added yet.
                   </div>
                 ) : (
-                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '3px' }}>
+                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '2px' }}>
                     <div style={{
                       position: 'absolute',
                       left: '7px',
-                      top: '10px',
-                      bottom: '10px',
-                      width: '1.5px',
+                      top: '12px',
+                      bottom: '12px',
+                      width: '2px',
                       backgroundColor: '#CBD5E1',
                     }} />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {experienceList.map((item: any, idx: number) => {
                         if (!item || typeof item !== 'object') return null;
                         const isCurrent = idx === 0;
@@ -2141,30 +2119,30 @@ export const ProfilePage: React.FC = () => {
                         const roleCompanyTitle = item.company ? `${item.title || 'Role'} at ${item.company}` : (item.title || 'Role Position');
 
                         return (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <div style={{ width: '8px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                              <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#1B4FDF' }} />
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                            <div style={{ width: '8px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#1B4FDF' }} />
                             </div>
 
                             <div style={{
                               flex: 1,
                               backgroundColor: '#F8FAFC',
                               border: '1px solid #E2E8F0',
-                              borderRadius: '5px',
-                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              padding: '11px 13px',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '2px',
+                              gap: '4px',
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '5px' }}>
-                                <span style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A' }}>{durationText}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>{durationText}</span>
                                 {isCurrent && (
                                   <span style={{
                                     backgroundColor: '#DCFCE7',
                                     color: '#16A34A',
-                                    padding: '1px 5px',
-                                    borderRadius: '3px',
-                                    fontSize: '8.5px',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    fontSize: '11px',
                                     fontWeight: 700,
                                   }}>
                                     Current Role
@@ -2172,45 +2150,45 @@ export const ProfilePage: React.FC = () => {
                                 )}
                               </div>
 
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A', marginTop: '1px' }}>
+                              <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
                                 {roleCompanyTitle}
                               </div>
 
                               {item.location && (
-                                <div style={{ fontSize: '9.5px', color: '#64748B', fontWeight: 500 }}>
+                                <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
                                   {item.location}
                                 </div>
                               )}
 
                               {item.description && (
-                                <div style={{ fontSize: '9.5px', color: '#334155', lineHeight: '13.5px', marginTop: '2px' }}>
+                                <div style={{ fontSize: '13px', color: '#334155', lineHeight: '19px', marginTop: '2px' }}>
                                   {item.description}
                                 </div>
                               )}
 
                               {achievementsList.length > 0 && (
-                                <div style={{ marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#0F172A' }}>Key Achievements</span>
+                                <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>Key Achievements</span>
                                   {achievementsList.map((ach: string, achIdx: number) => (
-                                    <div key={achIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', paddingLeft: '2px' }}>
-                                      <span style={{ fontSize: '9px', color: '#1B4FDF', fontWeight: 700 }}>•</span>
-                                      <span style={{ fontSize: '9px', color: '#475569', lineHeight: '13px' }}>{ach}</span>
+                                    <div key={achIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '5px', paddingLeft: '2px' }}>
+                                      <span style={{ fontSize: '12px', color: '#1B4FDF', fontWeight: 700 }}>•</span>
+                                      <span style={{ fontSize: '12.5px', color: '#475569', lineHeight: '18px' }}>{ach}</span>
                                     </div>
                                   ))}
                                 </div>
                               )}
 
                               {itemSkills.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: '2px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '4px' }}>
                                   {itemSkills.map((sk: string, skIdx: number) => (
                                     <span
                                       key={skIdx}
                                       style={{
                                         backgroundColor: '#FFFFFF',
                                         border: '1px solid #E2E8F0',
-                                        padding: '1.5px 5px',
-                                        borderRadius: '3px',
-                                        fontSize: '8.5px',
+                                        padding: '2.5px 7px',
+                                        borderRadius: '4px',
+                                        fontSize: '11.5px',
                                         fontWeight: 600,
                                         color: '#475569',
                                       }}
@@ -2232,20 +2210,20 @@ export const ProfilePage: React.FC = () => {
               {/* 3. EDUCATION & QUALIFICATIONS TIMELINE CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '7px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
-                padding: '11px 13px',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                padding: '16px 14px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '7px',
+                gap: '12px',
               }}>
                 <h2 style={{
                   margin: 0,
-                  fontSize: '12.5px',
+                  fontSize: '16px',
                   fontWeight: 800,
                   color: '#0F172A',
-                  letterSpacing: '-0.1px',
+                  letterSpacing: '-0.3px',
                 }}>
                   Education & Qualifications
                 </h2>
@@ -2254,50 +2232,50 @@ export const ProfilePage: React.FC = () => {
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '5px',
-                    padding: '10px',
+                    borderRadius: '6px',
+                    padding: '12px',
                     textAlign: 'center',
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: '#64748B',
                   }}>
                     No education or ITI certificate added yet.
                   </div>
                 ) : (
-                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '3px' }}>
+                  <div style={{ position: 'relative', paddingLeft: '4px', marginTop: '2px' }}>
                     <div style={{
                       position: 'absolute',
                       left: '7px',
-                      top: '10px',
-                      bottom: '10px',
-                      width: '1.5px',
+                      top: '12px',
+                      bottom: '12px',
+                      width: '2px',
                       backgroundColor: '#CBD5E1',
                     }} />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {educationList.map((item: any, idx: number) => {
                         if (!item || typeof item !== 'object') return null;
                         const yearText = item.year ? `Class of ${item.year}` : (item.duration || 'Passing Year —');
                         return (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                            <div style={{ width: '8px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                              <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: '#1B4FDF' }} />
+                          <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                            <div style={{ width: '8px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: '#1B4FDF' }} />
                             </div>
 
                             <div style={{
                               flex: 1,
                               backgroundColor: '#F8FAFC',
                               border: '1px solid #E2E8F0',
-                              borderRadius: '5px',
-                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              padding: '11px 13px',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '2px',
+                              gap: '3px',
                             }}>
-                              <span style={{ fontSize: '10px', fontWeight: 800, color: '#0F172A' }}>{yearText}</span>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: '#0F172A' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>{yearText}</span>
+                              <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#0F172A' }}>
                                 {item.degree || 'Degree / ITI Certification'}
                               </div>
-                              <div style={{ fontSize: '9.5px', color: '#64748B', fontWeight: 500 }}>
+                              <div style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 500 }}>
                                 {item.institution || 'Institution / Board'}
                               </div>
                             </div>
@@ -2312,20 +2290,20 @@ export const ProfilePage: React.FC = () => {
               {/* 4. RESUME & BIO-DATA DOCUMENT CARD */}
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '7px',
+                borderRadius: '8px',
                 border: '1px solid #CBD5E1',
-                padding: '11px 13px',
-                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                padding: '16px 14px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '7px',
+                gap: '12px',
               }}>
                 <h2 style={{
                   margin: 0,
-                  fontSize: '12.5px',
+                  fontSize: '16px',
                   fontWeight: 800,
                   color: '#0F172A',
-                  letterSpacing: '-0.1px',
+                  letterSpacing: '-0.3px',
                 }}>
                   Resume
                 </h2>
@@ -2334,18 +2312,18 @@ export const ProfilePage: React.FC = () => {
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '5px',
-                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    padding: '11px 13px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '8px',
+                    gap: '10px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px', flex: 1, minWidth: 0 }}>
                       <div style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '5px',
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '6px',
                         backgroundColor: '#EFF6FF',
                         display: 'flex',
                         alignItems: 'center',
@@ -2353,11 +2331,11 @@ export const ProfilePage: React.FC = () => {
                         color: '#1B4FDF',
                         flexShrink: 0,
                       }}>
-                        <FileText size={13} />
+                        <FileText size={18} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontSize: '11px',
+                          fontSize: '14px',
                           fontWeight: 700,
                           color: '#0F172A',
                           whiteSpace: 'nowrap',
@@ -2366,7 +2344,7 @@ export const ProfilePage: React.FC = () => {
                         }}>
                           {currentUser.resume.name || 'Candidate_Resume.pdf'}
                         </div>
-                        <div style={{ fontSize: '9px', color: '#16A34A', fontWeight: 600, marginTop: '1px' }}>
+                        <div style={{ fontSize: '12px', color: '#16A34A', fontWeight: 600, marginTop: '1px' }}>
                           ✓ Document Attached
                         </div>
                       </div>
@@ -2377,13 +2355,13 @@ export const ProfilePage: React.FC = () => {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '3px',
-                        padding: '4px 9px',
+                        gap: '4px',
+                        padding: '6px 12px',
                         backgroundColor: '#1B4FDF',
-                        borderRadius: '3px',
+                        borderRadius: '6px',
                         color: '#FFFFFF',
                         border: 'none',
-                        fontSize: '9.5px',
+                        fontSize: '12.5px',
                         fontWeight: 700,
                         cursor: 'pointer',
                         flexShrink: 0,
@@ -2396,10 +2374,10 @@ export const ProfilePage: React.FC = () => {
                   <div style={{
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '5px',
-                    padding: '10px',
+                    borderRadius: '6px',
+                    padding: '12px',
                     textAlign: 'center',
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: '#64748B',
                   }}>
                     No resume document attached yet.

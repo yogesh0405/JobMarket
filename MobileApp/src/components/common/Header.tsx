@@ -588,6 +588,29 @@ export const Header: React.FC<HeaderProps> = ({
                     onPress={() => {
                       closeDrawer(() => {
                         if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('ResumeMatcher');
+                        }
+                      });
+                    }}
+                  >
+                    <View style={[styles.iconSquircle, { backgroundColor: '#EFF6FF' }]}>
+                      <Sparkles size={17} color="#1B4FDF" />
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginRight: 8 }}>
+                      <Text style={styles.menuItemTitle}>AI Resume Matcher</Text>
+                      <View style={{ backgroundColor: '#EFF6FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 0 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#1B4FDF' }}>AI FIT</Text>
+                      </View>
+                    </View>
+                    <ChevronRight size={16} color={COLORS.slate400} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.menuItemRow}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      closeDrawer(() => {
+                        if (navigation && typeof navigation.navigate === 'function') {
                           navigation.navigate('CandidateResume');
                         }
                       });

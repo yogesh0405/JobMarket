@@ -360,6 +360,14 @@ export const CompaniesDirectoryPage: React.FC = () => {
           box-sizing: border-box;
         }
 
+        .companies-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
         @media (max-width: 1023px) {
           .companies-page-wrapper {
             max-width: 780px;
@@ -373,11 +381,68 @@ export const CompaniesDirectoryPage: React.FC = () => {
           }
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 768px) {
           .companies-page-wrapper {
-            max-width: 580px;
+            width: 100% !important;
+            max-width: 100% !important;
             padding: 10px 12px 100px 12px !important;
+            flex-direction: column !important;
             gap: 12px !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+          }
+          .companies-main-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+          }
+          .desktop-side-filter {
+            display: none !important;
+          }
+          .companies-cards-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          /* Mobile company card header */
+          .company-card-header {
+            padding: 12px 14px !important;
+            gap: 12px !important;
+          }
+          .company-card-header h3 {
+            font-size: 14.5px !important;
+          }
+          .company-card-header p {
+            font-size: 11.5px !important;
+          }
+          .company-card-header .company-logo-size {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          /* Mobile company card body */
+          .company-card-body {
+            padding: 10px 14px !important;
+            gap: 6px !important;
+          }
+          .company-card-body .detail-row {
+            font-size: 11.5px !important;
+          }
+          .company-card-body .detail-row span {
+            font-size: 11.5px !important;
+          }
+          /* Mobile company card footer */
+          .company-card-footer {
+            padding: 10px 14px !important;
+          }
+          .company-card-footer span {
+            font-size: 11.5px !important;
+          }
+          /* Mobile search bar */
+          .companies-search-bar {
+            height: 42px !important;
           }
         }
 
@@ -431,6 +496,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
           boxSizing: 'border-box',
         }}>
           <div
+            className="companies-search-bar"
             onClick={() => navigate(`/search?cat=companies${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ''}`)}
             style={{
               flex: 1,
@@ -445,6 +511,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
               boxSizing: 'border-box',
               boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
               cursor: 'pointer',
+              minWidth: 0,
             }}
           >
             <Search size={16} color="#64748B" style={{ flexShrink: 0 }} />
@@ -529,21 +596,14 @@ export const CompaniesDirectoryPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Results Count & Quick Reset Filter Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '12px',
-          color: '#64748B',
-          fontWeight: 600,
-          padding: '0 2px',
-        }}>
-          <div>
-            Showing <span style={{ fontWeight: 800, color: '#0F172A' }}>{filteredCompanies.length}</span> Verified Companies
-          </div>
-
-          {(activeFilterCount > 0 || searchQuery.trim()) && (
+        {/* Quick Reset Filter Bar (when filters or search are active) */}
+        {(activeFilterCount > 0 || searchQuery.trim()) && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            padding: '0 2px',
+          }}>
             <button
               onClick={resetAllFilters}
               style={{
@@ -562,13 +622,13 @@ export const CompaniesDirectoryPage: React.FC = () => {
               <RotateCcw size={11} />
               Reset Filters
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Company Cards List or Loading Skeletons */}
         {loading && companies.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {[1, 2, 3, 4].map((n) => (
+          <div className="companies-cards-grid">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
               <div
                 key={n}
                 style={{
@@ -580,6 +640,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
                   flexDirection: 'column',
                   gap: '10px',
                   boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+                  boxSizing: 'border-box',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -594,7 +655,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
             ))}
           </div>
         ) : filteredCompanies.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="companies-cards-grid">
             {filteredCompanies.map((comp) => {
               const jobsCount = comp.open_jobs_count ?? comp.jobs_count ?? comp.openings_count ?? comp.jobsCount ?? 4;
               const locationText = comp.midc_zone || comp.midcZone || comp.city || 'Waluj MIDC, Chhatrapati Sambhajinagar';
@@ -610,14 +671,15 @@ export const CompaniesDirectoryPage: React.FC = () => {
                     backgroundColor: '#FFFFFF',
                     border: '1px solid #CBD5E1',
                     borderRadius: '6px',
-                    marginBottom: '16px',
                     boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)',
                     overflow: 'hidden',
                     textDecoration: 'none',
                     color: 'inherit',
                     display: 'flex',
                     flexDirection: 'column',
+                    justifyContent: 'space-between',
                     width: '100%',
+                    height: '100%',
                     boxSizing: 'border-box',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     cursor: 'pointer',
@@ -632,7 +694,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
                   }}
                 >
                   {/* Card Top Header (Company Profile Logo and Name) */}
-                  <div style={{
+                  <div className="company-card-header" style={{
                     backgroundColor: '#FFFFFF',
                     borderBottom: '1px solid #E2E8F0',
                     padding: '12px 14px',
@@ -643,7 +705,7 @@ export const CompaniesDirectoryPage: React.FC = () => {
                     boxSizing: 'border-box',
                   }}>
                     <CompanyDefaultLogo
-                      name={comp.name}
+                      companyName={comp.name}
                       logoUrl={comp.logo}
                       size={48}
                       borderRadius="6px"
@@ -683,96 +745,101 @@ export const CompaniesDirectoryPage: React.FC = () => {
                   </div>
 
                   {/* Card Middle Body Details */}
-                  <div style={{
+                  <div className="company-card-body" style={{
                     padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
                     boxSizing: 'border-box',
+                    flex: 1,
+                    justifyContent: 'space-between',
                   }}>
-                    {/* Row 1: Address & Estd adjacent in one row (Address truncates with ellipsis if long) */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      marginTop: '2px',
-                      fontSize: '11.5px',
-                      color: '#475569',
-                      width: '100%',
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      <div style={{
-                        display: 'inline-flex',
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      {/* Row 1: Address & Estd adjacent in one row (Address truncates with ellipsis if long) */}
+                      <div className="detail-row" style={{
+                        display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '10px',
+                        marginTop: '2px',
+                        fontSize: '11px',
+                        color: '#475569',
+                        width: '100%',
                         minWidth: 0,
-                        maxWidth: '70%',
                         overflow: 'hidden',
-                        flexShrink: 1,
+                        flexWrap: 'wrap',
                       }}>
-                        <MapPin size={12} color="#1764E8" style={{ flexShrink: 0 }} />
-                        <span style={{
-                          fontWeight: 500,
-                          color: '#334155',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {locationText}
-                        </span>
-                      </div>
-
-                      {foundedYear && (
                         <div style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          flexShrink: 0,
-                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                          flex: 1,
+                          overflow: 'hidden',
                         }}>
-                          <Calendar size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                          <span style={{ fontWeight: 500, color: '#64748B' }}>Estd. {foundedYear}</span>
+                          <MapPin size={12} color="#1764E8" style={{ flexShrink: 0 }} />
+                          <span style={{
+                            fontWeight: 500,
+                            color: '#334155',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {locationText}
+                          </span>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Row 2: Number of employees */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '11.5px',
-                      color: '#64748B',
-                      marginTop: '-2px',
-                    }}>
-                      <Users size={12} color="#64748B" style={{ flexShrink: 0 }} />
-                      <span style={{ fontWeight: 500 }}>{companySize}</span>
+                        {foundedYear && (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            <Calendar size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                            <span style={{ fontWeight: 500, color: '#64748B' }}>Estd. {foundedYear}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Row 2: Number of employees */}
+                      <div className="detail-row" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '11px',
+                        color: '#64748B',
+                        marginTop: '-2px',
+                      }}>
+                        <Users size={12} color="#64748B" style={{ flexShrink: 0 }} />
+                        <span style={{ fontWeight: 500 }}>{companySize}</span>
+                      </div>
                     </div>
 
                     {/* Card Bottom Vacancies CTA Footer */}
-                    <div style={{
+                    <div className="company-card-footer" style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       paddingTop: '8px',
                       borderTop: '1px solid #E2E8F0',
-                      marginTop: '1px',
+                      marginTop: 'auto',
                       width: '100%',
+                      flexWrap: 'wrap',
+                      gap: '4px',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Briefcase size={12} color="#1764E8" />
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#1764E8' }}>
+                        <Briefcase size={11} color="#1764E8" />
+                        <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#1764E8' }}>
                           {jobsCount} Vacancies Available
                         </span>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#1764E8' }}>
+                        <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#1764E8' }}>
                           View Details
                         </span>
-                        <ChevronRight size={13} color="#1764E8" strokeWidth={2.5} />
+                        <ChevronRight size={12} color="#1764E8" strokeWidth={2.5} />
                       </div>
                     </div>
                   </div>

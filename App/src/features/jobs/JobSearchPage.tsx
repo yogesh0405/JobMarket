@@ -378,6 +378,22 @@ export const JobSearchPage: React.FC = () => {
           box-sizing: border-box;
         }
 
+        .jobs-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .jobs-cards-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
         @media (max-width: 1023px) {
           .jobs-page-wrapper {
             max-width: 780px;
@@ -391,11 +407,113 @@ export const JobSearchPage: React.FC = () => {
           }
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 768px) {
           .jobs-page-wrapper {
-            max-width: 580px;
+            width: 100% !important;
+            max-width: 100% !important;
             padding: 10px 12px 100px 12px !important;
+            flex-direction: column !important;
             gap: 12px !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
+          }
+          .jobs-main-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+          }
+          .desktop-side-filter {
+            display: none !important;
+          }
+          .jobs-cards-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .jobs-cards-list {
+            gap: 10px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          /* Mobile card metadata row: wrap to stacked layout */
+          .job-card-meta-row {
+            flex-wrap: wrap !important;
+            gap: 4px 8px !important;
+          }
+          .job-card-meta-row .meta-separator {
+            display: none !important;
+          }
+          .job-card-meta-row .meta-item {
+            font-size: 12px !important;
+          }
+          .job-card-meta-row .meta-item span {
+            font-size: 12px !important;
+          }
+          /* Mobile card specs row */
+          .job-card-specs-row {
+            flex-wrap: wrap !important;
+            gap: 6px 10px !important;
+            padding: 8px 12px !important;
+          }
+          .job-card-specs-row span {
+            font-size: 12px !important;
+          }
+          /* Mobile card top section */
+          .job-card-top {
+            padding: 12px 14px 10px 14px !important;
+          }
+          .job-card-top h3 {
+            font-size: 15px !important;
+          }
+          /* Mobile card bottom section */
+          .job-card-bottom {
+            padding: 10px 14px !important;
+          }
+          .job-card-bottom .company-logo-wrapper {
+            width: 36px !important;
+            height: 36px !important;
+          }
+          .job-card-bottom .company-name {
+            font-size: 13px !important;
+          }
+          .job-card-bottom .company-label {
+            font-size: 11px !important;
+          }
+          .job-card-bottom .time-ago {
+            font-size: 11px !important;
+          }
+          /* Mobile list view card */
+          .job-list-card {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+          .job-list-card h4 {
+            font-size: 14.5px !important;
+          }
+          .job-list-card .list-location {
+            font-size: 12px !important;
+          }
+          /* Mobile search bar height */
+          .jobs-search-bar {
+            height: 42px !important;
+          }
+          /* Mobile category chips */
+          .jobs-category-chips {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            box-sizing: border-box !important;
+            padding-bottom: 4px !important;
+          }
+          .jobs-category-chips button {
+            padding: 6px 12px !important;
+            font-size: 12px !important;
           }
         }
 
@@ -424,25 +542,27 @@ export const JobSearchPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          marginBottom: '10px',
+          marginBottom: '8px',
           width: '100%',
           boxSizing: 'border-box'
         }}>
           {/* Search Input Box */}
           <div
+            className="jobs-search-bar"
             onClick={() => navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
             style={{
               flex: 1,
               minWidth: 0,
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#F8FAFC',
+              backgroundColor: '#FFFFFF',
               border: '1px solid #CBD5E1',
               borderRadius: '6px',
               padding: '0 10px',
               height: '40px',
               gap: '8px',
               boxSizing: 'border-box',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
               cursor: 'pointer',
             }}
           >
@@ -600,7 +720,7 @@ export const JobSearchPage: React.FC = () => {
 
         {/* Category Filter Chips Horizontal Scroll */}
         <div
-          className="no-scrollbar"
+          className="no-scrollbar jobs-category-chips"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -609,7 +729,7 @@ export const JobSearchPage: React.FC = () => {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitOverflowScrolling: 'touch',
-            marginBottom: '12px',
+            marginBottom: '10px',
             width: '100%',
             boxSizing: 'border-box',
             paddingBottom: '4px',
@@ -641,14 +761,9 @@ export const JobSearchPage: React.FC = () => {
           })}
         </div>
 
-        {/* Results Count Line */}
-        <div style={{ marginBottom: '12px', fontSize: '13.5px', fontWeight: 600, color: '#475569' }}>
-          Showing <span style={{ fontWeight: 800, color: '#1B4FDF' }}>{filteredJobs.length}</span> active vacancies
-        </div>
-
         {/* Job Cards List */}
         {filteredJobs.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className={viewMode === 'grid' ? 'jobs-cards-grid' : 'jobs-cards-list'}>
             {filteredJobs.map((job) => {
               const isSaved = isJobSaved(job.id);
               const isExpNotRequired = (job as any).experienceRequired === false || (job as any).experience_required === false;
@@ -672,6 +787,7 @@ export const JobSearchPage: React.FC = () => {
                   <Link
                     key={job.id}
                     to={`/job/${job.id}`}
+                    className="job-list-card"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -680,7 +796,6 @@ export const JobSearchPage: React.FC = () => {
                       borderRadius: '6px',
                       border: '1px solid #CBD5E1',
                       padding: '12px',
-                      marginBottom: '10px',
                       textDecoration: 'none',
                       color: 'inherit',
                       boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
@@ -695,7 +810,7 @@ export const JobSearchPage: React.FC = () => {
                     }}
                   >
                     <CompanyDefaultLogo
-                      name={job.company}
+                      companyName={job.company}
                       logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
                       size={42}
                       borderRadius="6px"
@@ -760,15 +875,16 @@ export const JobSearchPage: React.FC = () => {
                   to={`/job/${job.id}`}
                   style={{
                     width: '100%',
+                    height: '100%',
                     backgroundColor: '#FFFFFF',
                     borderRadius: '6px',
                     border: '1px solid #CBD5E1',
-                    marginBottom: '12px',
                     overflow: 'hidden',
                     textDecoration: 'none',
                     color: 'inherit',
                     display: 'flex',
                     flexDirection: 'column',
+                    justifyContent: 'space-between',
                     boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05)',
                     boxSizing: 'border-box',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -783,7 +899,7 @@ export const JobSearchPage: React.FC = () => {
                   }}
                 >
                   {/* Top Section */}
-                  <div style={{
+                  <div className="job-card-top" style={{
                     padding: '14px',
                     borderBottom: '1px solid #F1F5F9',
                     boxSizing: 'border-box',
@@ -832,7 +948,7 @@ export const JobSearchPage: React.FC = () => {
                       </button>
                     </div>
 
-                    <div style={{
+                    <div className="job-card-meta-row" style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
@@ -840,25 +956,25 @@ export const JobSearchPage: React.FC = () => {
                       width: '100%',
                       overflow: 'hidden',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                        <Briefcase size={14} color="#64748B" />
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                      <div className="meta-item" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                        <Briefcase size={13} color="#64748B" />
+                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
                           {expText}
                         </span>
                       </div>
 
-                      <span style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
+                      <span className="meta-separator" style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '13px' }}>₹</span>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#16A34A' }}>
+                      <div className="meta-item" style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                        <span style={{ fontWeight: 700, color: '#64748B', fontSize: '12.5px' }}>₹</span>
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#16A34A' }}>
                           {salaryText}
                         </span>
                       </div>
 
-                      <span style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
+                      <span className="meta-separator" style={{ fontSize: '12px', color: '#CBD5E1' }}>|</span>
 
-                      <div style={{
+                      <div className="meta-item" style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
@@ -866,9 +982,9 @@ export const JobSearchPage: React.FC = () => {
                         minWidth: 0,
                         overflow: 'hidden',
                       }}>
-                        <MapPin size={14} color="#64748B" style={{ flexShrink: 0 }} />
+                        <MapPin size={13} color="#64748B" style={{ flexShrink: 0 }} />
                         <span style={{
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           fontWeight: 500,
                           color: '#475569',
                           whiteSpace: 'nowrap',
@@ -882,34 +998,35 @@ export const JobSearchPage: React.FC = () => {
                   </div>
 
                   {/* Middle Section (Specs Row) */}
-                  <div style={{
+                  <div className="job-card-specs-row" style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '14px',
+                    gap: '12px',
                     padding: '10px 14px',
                     backgroundColor: '#F8FAFC',
                     borderBottom: '1px solid #F1F5F9',
                     boxSizing: 'border-box',
                     overflow: 'hidden',
+                    flexWrap: 'wrap',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                      <Clock size={13} color="#64748B" />
-                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
+                      <Clock size={12} color="#64748B" />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
                         {job.jobType || 'Full-time'}
                       </span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                      <Building2 size={13} color="#64748B" />
-                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
+                      <Building2 size={12} color="#64748B" />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
                         {job.workMode || 'On-site'}
                       </span>
                     </div>
 
                     {openings ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                        <Users size={13} color="#64748B" />
-                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155' }}>
+                        <Users size={12} color="#64748B" />
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
                           {openings} Vacancies
                         </span>
                       </div>
@@ -917,23 +1034,24 @@ export const JobSearchPage: React.FC = () => {
                   </div>
 
                   {/* Bottom Section (Employer info & time ago) */}
-                  <div style={{
+                  <div className="job-card-bottom" style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '10px 14px',
                     boxSizing: 'border-box',
+                    marginTop: 'auto',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
                       <CompanyDefaultLogo
-                        name={job.company}
+                        companyName={job.company}
                         logoUrl={job.companyLogo || (job as any).company_logo || (job as any).logoUrl || (job as any).logo_url || (job as any).logo}
-                        size={40}
+                        size={36}
                         borderRadius="6px"
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: '13.5px',
+                        <div className="company-name" style={{
+                          fontSize: '13px',
                           fontWeight: 700,
                           color: '#0F172A',
                           whiteSpace: 'nowrap',
@@ -942,18 +1060,18 @@ export const JobSearchPage: React.FC = () => {
                         }}>
                           {job.company}
                         </div>
-                        <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                        <div className="company-label" style={{ fontSize: '11px', color: '#64748B' }}>
                           Direct Employer
                         </div>
                       </div>
                     </div>
 
-                    <div style={{
-                      fontSize: '12px',
+                    <div className="time-ago" style={{
+                      fontSize: '11px',
                       fontWeight: 600,
                       color: '#64748B',
                       flexShrink: 0,
-                      marginLeft: '8px',
+                      marginLeft: '6px',
                     }}>
                       {formatTimeAgo(job.postedAt || (job as any).created_at)}
                     </div>

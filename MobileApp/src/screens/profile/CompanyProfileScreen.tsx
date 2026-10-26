@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,12 @@ import {
   StatusBar,
   Platform,
   DeviceEventEmitter,
+  Animated,
+  Dimensions,
+  LayoutChangeEvent,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import {
   Building2,
   Briefcase,
@@ -43,6 +48,11 @@ interface Props {
   route?: any;
 }
 
+const TAB_BAR_PADDING_H = 12;
+const TAB_KEYS: Array<'jobs' | 'overview' | 'operations'> = ['jobs', 'overview', 'operations'];
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const INITIAL_TAB_WIDTH = Math.max(90, (SCREEN_WIDTH - TAB_BAR_PADDING_H * 2) / TAB_KEYS.length);
+
 export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { user, updateUserProfile, refreshUser } = useAuth();
@@ -62,6 +72,70 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
   // 3-Option Interactive Tabs matching Web App
   const [activeTab, setActiveTab] = useState<'jobs' | 'overview' | 'operations'>('jobs');
+  const [tabWidth, setTabWidth] = useState(INITIAL_TAB_WIDTH);
+  const tabProgress = useRef(new Animated.Value(0)).current;
+
+  const [tabJobsHeight, setTabJobsHeight] = useState<number | undefined>(undefined);
+  const [tabOverviewHeight, setTabOverviewHeight] = useState<number | undefined>(undefined);
+  const [tabOperationsHeight, setTabOperationsHeight] = useState<number | undefined>(undefined);
+
+  const switchTab = useCallback((nextTab: 'jobs' | 'overview' | 'operations') => {
+    setActiveTab(nextTab);
+    const targetIdx = nextTab === 'overview' ? 1 : nextTab === 'operations' ? 2 : 0;
+    Animated.spring(tabProgress, {
+      toValue: targetIdx,
+      stiffness: 300,
+      damping: 28,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+  }, [tabProgress]);
+
+  const handleTabSwipe = useCallback((direction: 'left' | 'right') => {
+    if (direction === 'left') {
+      if (activeTab === 'jobs') switchTab('overview');
+      else if (activeTab === 'overview') switchTab('operations');
+    } else if (direction === 'right') {
+      if (activeTab === 'operations') switchTab('overview');
+      else if (activeTab === 'overview') switchTab('jobs');
+    }
+  }, [activeTab, switchTab]);
+
+  const tabSwipeGesture = Gesture.Pan()
+    .activeOffsetX([-35, 35])
+    .failOffsetY([-25, 25])
+    .onEnd((event) => {
+      'worklet';
+      if (Math.abs(event.translationX) > 60 && Math.abs(event.translationX) > Math.abs(event.translationY) * 1.4) {
+        const direction = event.translationX < 0 ? 'left' : 'right';
+        runOnJS(handleTabSwipe)(direction);
+      }
+    });
+
+  const handleTabBarLayout = (e: LayoutChangeEvent) => {
+    const width = (e.nativeEvent.layout.width - TAB_BAR_PADDING_H * 2) / TAB_KEYS.length;
+    if (width > 0 && Math.abs(width - tabWidth) > 0.5) {
+      setTabWidth(width);
+    }
+  };
+
+  const indicatorTranslateX = tabProgress.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, tabWidth, tabWidth * 2],
+  });
+
+  const contentTranslateX = tabProgress.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [0, -SCREEN_WIDTH, -SCREEN_WIDTH * 2],
+  });
+
+  const activeContentHeight =
+    activeTab === 'jobs'
+      ? tabJobsHeight
+      : activeTab === 'overview'
+      ? tabOverviewHeight
+      : tabOperationsHeight;
+
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   // Company State
@@ -478,15 +552,15 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
         {/* 2. Interactive Navigation Tabs Bar (Exact Web Layout: Jobs, Overview, Plant & Operations) */}
         <View style={styles.tabBarWrapper}>
-          <View style={styles.tabBarRow}>
+          <View style={styles.tabBarRow} onLayout={handleTabBarLayout}>
             {/* Tab 1: Jobs */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setActiveTab('jobs')}
-              style={[
-                styles.tabItem,
-                activeTab === 'jobs' && styles.tabItemActive,
-              ]}
+              onPress={() => switchTab('jobs')}
+              style={styles.tabItem}
+              accessibilityRole="tab"
+              accessibilityLabel="Jobs"
+              accessibilityState={{ selected: activeTab === 'jobs' }}
             >
               <Briefcase
                 size={15}
@@ -521,11 +595,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             {/* Tab 2: Overview */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setActiveTab('overview')}
-              style={[
-                styles.tabItem,
-                activeTab === 'overview' && styles.tabItemActive,
-              ]}
+              onPress={() => switchTab('overview')}
+              style={styles.tabItem}
+              accessibilityRole="tab"
+              accessibilityLabel="Overview"
+              accessibilityState={{ selected: activeTab === 'overview' }}
             >
               <Building2
                 size={15}
@@ -545,12 +619,11 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
             {/* Tab 3: Plant & Operations */}
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => setActiveTab('operations')}
-              style={[
-                styles.tabItem,
-                styles.tabItemOperations,
-                activeTab === 'operations' && styles.tabItemActive,
-              ]}
+              onPress={() => switchTab('operations')}
+              style={styles.tabItem}
+              accessibilityRole="tab"
+              accessibilityLabel="Plant & Operations"
+              accessibilityState={{ selected: activeTab === 'operations' }}
             >
               <MapPin
                 size={15}
@@ -567,6 +640,20 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
                 Plant & Operations
               </Text>
             </TouchableOpacity>
+
+            {/* Sliding active indicator */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.slidingIndicatorTrack,
+                {
+                  width: tabWidth,
+                  transform: [{ translateX: indicatorTranslateX }],
+                },
+              ]}
+            >
+              <View style={styles.slidingIndicatorPill} />
+            </Animated.View>
           </View>
         </View>
 
@@ -574,130 +661,170 @@ export const CompanyProfileScreen: React.FC<Props> = ({ navigation, route }) => 
 
         {loadingCompany ? (
           <CompanySkeleton />
-        ) : activeTab === 'overview' ? (
-          /* TAB 2: OVERVIEW */
-          <CompanyOverviewSection
-            company={company}
-            jobsCount={liveJobs.length}
-            formattedLocation={formattedLocation}
-            onSharePress={handleShare}
-          />
-        ) : activeTab === 'operations' ? (
-          /* TAB 3: PLANT & OPERATIONS */
-          <CompanyOperationsSection
-            company={company}
-            formattedLocation={formattedLocation}
-          />
         ) : (
-          /* TAB 1: JOBS (DEFAULT) */
-          <>
-            {/* "Departments hiring at [Company]" Section */}
-            {departmentsList.length > 0 && (
-              <View style={styles.deptSurfaceCard}>
-                <View style={styles.cardHeaderRow}>
-                  <View style={styles.cardHeaderTitleGroup}>
-                    <View style={styles.cardIconWrap}>
-                      <Layers size={16} color="#1B4FDF" strokeWidth={2.4} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitleText}>
-                        Departments hiring at {company?.name || 'Company'}
-                      </Text>
-                      <Text style={styles.cardSubtitleText}>
-                        Explore live vacancies categorized by technical department & trade
-                      </Text>
-                    </View>
-                  </View>
+          <GestureDetector gesture={tabSwipeGesture}>
+            <View
+              style={[
+                { width: SCREEN_WIDTH, overflow: 'hidden' },
+                activeContentHeight ? { height: activeContentHeight } : null,
+              ]}
+            >
+              <Animated.View
+                style={{
+                  flexDirection: 'row',
+                  width: SCREEN_WIDTH * 3,
+                  transform: [{ translateX: contentTranslateX }],
+                  alignItems: 'flex-start',
+                }}
+              >
+                {/* TAB 1: JOBS */}
+                <View
+                  style={{ width: SCREEN_WIDTH }}
+                  onLayout={(e) => {
+                    const h = Math.round(e.nativeEvent.layout.height);
+                    if (h > 0) setTabJobsHeight(h);
+                  }}
+                >
+                  {/* "Departments hiring at [Company]" Section */}
+                  {departmentsList.length > 0 && (
+                    <View style={styles.deptSurfaceCard}>
+                      <View style={styles.cardHeaderRow}>
+                        <View style={styles.cardHeaderTitleGroup}>
+                          <View style={styles.cardIconWrap}>
+                            <Layers size={16} color="#1B4FDF" strokeWidth={2.4} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.cardTitleText}>
+                              Departments hiring at {company?.name || 'Company'}
+                            </Text>
+                            <Text style={styles.cardSubtitleText}>
+                              Explore live vacancies categorized by technical department & trade
+                            </Text>
+                          </View>
+                        </View>
 
-                  {selectedDept && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => setSelectedDept(null)}
-                      style={styles.clearFilterLink}
-                    >
-                      <X size={13} color="#1B4FDF" />
-                      <Text style={styles.clearFilterLinkText}>Clear</Text>
-                    </TouchableOpacity>
+                        {selectedDept && (
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => setSelectedDept(null)}
+                            style={styles.clearFilterLink}
+                          >
+                            <X size={13} color="#1B4FDF" />
+                            <Text style={styles.clearFilterLinkText}>Clear</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {/* Horizontal Scroll of Department Cards */}
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.deptCardsScroll}
+                      >
+                        {departmentsList.map((dept, idx) => {
+                          const isSelected = selectedDept === dept.name;
+                          const IconComp = getDeptIcon(dept.name);
+
+                          return (
+                            <TouchableOpacity
+                              key={idx}
+                              activeOpacity={0.75}
+                              onPress={() => setSelectedDept(isSelected ? null : dept.name)}
+                              style={[
+                                styles.deptCard,
+                                isSelected && styles.deptCardSelected,
+                              ]}
+                            >
+                              <View style={styles.deptCardTop}>
+                                <View style={styles.deptIconBox}>
+                                  <IconComp size={16} color="#1B4FDF" strokeWidth={2.2} />
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.deptCardName,
+                                    isSelected && styles.deptCardNameSelected,
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {dept.name}
+                                </Text>
+                              </View>
+
+                              <View style={styles.deptOpeningsLink}>
+                                <Text
+                                  style={[
+                                    styles.deptOpeningsText,
+                                    isSelected && styles.deptOpeningsTextSelected,
+                                  ]}
+                                >
+                                  {dept.count} {dept.count === 1 ? 'opening' : 'openings'}
+                                </Text>
+                                <ChevronRight
+                                  size={13}
+                                  color={isSelected ? '#1541BD' : '#1B4FDF'}
+                                  strokeWidth={2.4}
+                                />
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
                   )}
+
+                  {/* Active Job Openings Section */}
+                  <CompanyActiveJobsSection
+                    jobs={filteredByDeptJobs}
+                    companyName={company?.name}
+                    isOwner={isOwner}
+                    selectedDept={selectedDept}
+                    onClearDept={() => setSelectedDept(null)}
+                    onPostJobPress={() => navigation.navigate('JobPost')}
+                    onJobPress={(job: any) => {
+                      navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
+                    }}
+                    onViewAllPress={() => {
+                      if (isOwner) {
+                        navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
+                      } else {
+                        navigation.navigate('CandidateJobSearch');
+                      }
+                    }}
+                  />
                 </View>
 
-                {/* Horizontal Scroll of Department Cards */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.deptCardsScroll}
+                {/* TAB 2: OVERVIEW */}
+                <View
+                  style={{ width: SCREEN_WIDTH }}
+                  onLayout={(e) => {
+                    const h = Math.round(e.nativeEvent.layout.height);
+                    if (h > 0) setTabOverviewHeight(h);
+                  }}
                 >
-                  {departmentsList.map((dept, idx) => {
-                    const isSelected = selectedDept === dept.name;
-                    const IconComp = getDeptIcon(dept.name);
+                  <CompanyOverviewSection
+                    company={company}
+                    jobsCount={liveJobs.length}
+                    formattedLocation={formattedLocation}
+                    onSharePress={handleShare}
+                  />
+                </View>
 
-                    return (
-                      <TouchableOpacity
-                        key={idx}
-                        activeOpacity={0.75}
-                        onPress={() => setSelectedDept(isSelected ? null : dept.name)}
-                        style={[
-                          styles.deptCard,
-                          isSelected && styles.deptCardSelected,
-                        ]}
-                      >
-                        <View style={styles.deptCardTop}>
-                          <View style={styles.deptIconBox}>
-                            <IconComp size={16} color="#1B4FDF" strokeWidth={2.2} />
-                          </View>
-                          <Text
-                            style={[
-                              styles.deptCardName,
-                              isSelected && styles.deptCardNameSelected,
-                            ]}
-                            numberOfLines={2}
-                          >
-                            {dept.name}
-                          </Text>
-                        </View>
-
-                        <View style={styles.deptOpeningsLink}>
-                          <Text
-                            style={[
-                              styles.deptOpeningsText,
-                              isSelected && styles.deptOpeningsTextSelected,
-                            ]}
-                          >
-                            {dept.count} {dept.count === 1 ? 'opening' : 'openings'}
-                          </Text>
-                          <ChevronRight
-                            size={13}
-                            color={isSelected ? '#1541BD' : '#1B4FDF'}
-                            strokeWidth={2.4}
-                          />
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Active Job Openings Section */}
-            <CompanyActiveJobsSection
-              jobs={filteredByDeptJobs}
-              companyName={company?.name}
-              isOwner={isOwner}
-              selectedDept={selectedDept}
-              onClearDept={() => setSelectedDept(null)}
-              onPostJobPress={() => navigation.navigate('JobPost')}
-              onJobPress={(job: any) => {
-                navigation.navigate('CandidateJobDetail', { jobId: job.id, job });
-              }}
-              onViewAllPress={() => {
-                if (isOwner) {
-                  navigation.navigate('EmployerMain', { screen: 'ManageJobsTab' });
-                } else {
-                  navigation.navigate('CandidateJobSearch');
-                }
-              }}
-            />
-          </>
+                {/* TAB 3: PLANT & OPERATIONS */}
+                <View
+                  style={{ width: SCREEN_WIDTH }}
+                  onLayout={(e) => {
+                    const h = Math.round(e.nativeEvent.layout.height);
+                    if (h > 0) setTabOperationsHeight(h);
+                  }}
+                >
+                  <CompanyOperationsSection
+                    company={company}
+                    formattedLocation={formattedLocation}
+                  />
+                </View>
+              </Animated.View>
+            </View>
+          </GestureDetector>
         )}
       </ScrollView>
     </View>
@@ -722,7 +849,8 @@ const styles = StyleSheet.create({
   tabBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: TAB_BAR_PADDING_H,
+    position: 'relative',
   },
   tabItem: {
     flex: 1,
@@ -730,15 +858,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
-    borderBottomWidth: 2.5,
-    borderBottomColor: 'transparent',
+    paddingVertical: 13,
+    minHeight: 48,
   },
-  tabItemActive: {
-    borderBottomColor: '#1B4FDF',
+  tabItemActive: {},
+  slidingIndicatorTrack: {
+    position: 'absolute',
+    left: TAB_BAR_PADDING_H,
+    bottom: 0,
+    height: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tabItemOperations: {
-    marginRight: 12,
+  slidingIndicatorPill: {
+    width: '100%',
+    height: 2.5,
+    backgroundColor: '#1B4FDF',
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
   },
   tabLabel: {
     fontSize: 12.5,

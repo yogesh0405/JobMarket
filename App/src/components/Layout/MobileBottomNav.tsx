@@ -41,34 +41,37 @@ export const MobileBottomNav: React.FC = () => {
 
   const isEmployer = currentUser?.role === 'employer';
 
-  const isJobDetailRoute = (location.pathname.startsWith('/job/') || location.pathname.startsWith('/jobs/')) && location.pathname !== '/jobs' && location.pathname !== '/jobs/map';
-  const isCompanyProfileRoute = (location.pathname.startsWith('/company/') || location.pathname.startsWith('/companies/')) && location.pathname !== '/companies';
-  const isBannersSection = location.pathname.startsWith('/dashboard') && (
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
+  const isJobsPage = normalizedPath === '/jobs';
+  const isCompaniesPage = normalizedPath === '/companies';
+
+  const isJobDetailRoute = !isJobsPage && normalizedPath !== '/jobs/map' && (normalizedPath.startsWith('/job/') || normalizedPath.startsWith('/jobs/'));
+  const isCompanyProfileRoute = !isCompaniesPage && (normalizedPath.startsWith('/company/') || normalizedPath.startsWith('/companies/'));
+  const isBannersSection = normalizedPath.startsWith('/dashboard') && (
     location.search.includes('tab=advertisements') ||
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
   const isInterviewsSection = (
-    location.pathname.startsWith('/interviews') ||
-    location.pathname.startsWith('/schedule') ||
-    (location.pathname.startsWith('/dashboard') && (
+    normalizedPath.startsWith('/interviews') ||
+    normalizedPath.startsWith('/schedule') ||
+    (normalizedPath.startsWith('/dashboard') && (
       location.search.includes('tab=interviews') ||
       location.search.includes('tab=scheduled-interviews') ||
       location.search.includes('tab=schedule')
     ))
   );
-  const isAboutSection = location.pathname.startsWith('/about') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=about'));
-  const isContactSection = location.pathname.startsWith('/contact') || location.pathname.startsWith('/support') || location.pathname.startsWith('/help') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=support'));
-  const isSecuritySection = location.pathname.startsWith('/security') || (location.pathname.startsWith('/dashboard') && location.search.includes('tab=security'));
-
+  const isAboutSection = normalizedPath.startsWith('/about') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=about'));
+  const isContactSection = normalizedPath.startsWith('/contact') || normalizedPath.startsWith('/support') || normalizedPath.startsWith('/help') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=support'));
+  const isSecuritySection = normalizedPath.startsWith('/security') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=security'));
 
   // Do not render on full screen dedicated detail pages
   if (
-    location.pathname.startsWith('/profile/') ||
-    location.pathname.startsWith('/candidate/') ||
-    location.pathname.startsWith('/p/') ||
-    location.pathname.startsWith('/post-job') ||
-    location.pathname.startsWith('/edit-job') ||
+    normalizedPath.startsWith('/profile/') ||
+    normalizedPath.startsWith('/candidate/') ||
+    normalizedPath.startsWith('/p/') ||
+    normalizedPath.startsWith('/post-job') ||
+    normalizedPath.startsWith('/edit-job') ||
     isJobDetailRoute ||
     isCompanyProfileRoute ||
     isBannersSection ||
@@ -76,9 +79,9 @@ export const MobileBottomNav: React.FC = () => {
     isAboutSection ||
     isContactSection ||
     isSecuritySection ||
-    location.pathname === '/notifications' ||
-    location.pathname === '/alerts' ||
-    location.pathname === '/search'
+    normalizedPath === '/notifications' ||
+    normalizedPath === '/alerts' ||
+    normalizedPath === '/search'
   ) {
     return null;
   }
@@ -90,21 +93,21 @@ export const MobileBottomNav: React.FC = () => {
       const currentTab = searchParams.get('tab') || defaultTab;
       const targetTab = new URLSearchParams(targetPath.split('?')[1]).get('tab');
       
-      if (location.pathname === '/profile' && targetTab === 'profile') {
+      if (normalizedPath === '/profile' && targetTab === 'profile') {
         return true;
       }
-      return location.pathname === '/dashboard' && currentTab === targetTab;
+      return normalizedPath === '/dashboard' && currentTab === targetTab;
     }
     if (targetPath === '/post-job') {
-      return location.pathname === '/post-job' || (location.pathname === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'post-job');
+      return normalizedPath === '/post-job' || (normalizedPath === '/dashboard' && new URLSearchParams(location.search).get('tab') === 'post-job');
     }
     if (targetPath === '/companies') {
-      return location.pathname.startsWith('/companies');
+      return isCompaniesPage;
     }
     if (targetPath === '/jobs') {
-      return location.pathname === '/jobs';
+      return isJobsPage;
     }
-    return location.pathname === targetPath && !location.search;
+    return normalizedPath === targetPath && !location.search;
   };
 
   return (

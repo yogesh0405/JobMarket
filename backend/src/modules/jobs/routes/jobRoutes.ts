@@ -40,6 +40,9 @@ router.get('/candidates', requireAuth, JobController.getAllCandidates);
 // High-Scale Dedicated Search Endpoint
 router.get('/search', JobController.searchJobs);
 
+// Transparent AI Resume Matching Intelligence Endpoint
+router.post('/resume-analysis', optionalAuth, JobController.analyzeResume);
+
 // General Jobs Collection
 router.get('/', JobController.getJobs);
 router.post('/', requireAuth, actionLimiter, JobController.createJob);
