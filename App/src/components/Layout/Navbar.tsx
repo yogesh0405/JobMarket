@@ -16,8 +16,7 @@ import {
   User, 
   FileText, 
   Building2, 
-  Home,
-  FileSearch
+  Home
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -283,9 +282,6 @@ export const Navbar: React.FC = () => {
                   <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
                   <Link to="/jobs" className={`nav-link ${isActive('/jobs') ? 'active' : ''}`}>{t.findJobs}</Link>
                   <Link to="/companies" className={`nav-link ${isActive('/companies') ? 'active' : ''}`}>Companies</Link>
-                  <Link to="/resume-matcher" className={`nav-link ${location.pathname.startsWith('/resume-matcher') ? 'active' : ''}`}>
-                    Resume Matcher
-                  </Link>
                 </>
               )}
             </div>
@@ -538,14 +534,6 @@ export const Navbar: React.FC = () => {
                   </Link>
 
                   <div className="mobile-drawer-section-label">RESUME & DOCUMENTS</div>
-                  <Link to="/resume-matcher" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="mobile-drawer-item-left">
-                      <FileSearch size={19} className="mobile-drawer-icon" color="#1B4FDF" />
-                      <span>Resume Matcher</span>
-                    </div>
-                    <span style={{ fontSize: '10px', fontWeight: 800, background: '#EFF6FF', color: '#1B4FDF', padding: '2px 6px', marginRight: '6px' }}>FIT</span>
-                    <ChevronRight size={16} color="#94A3B8" />
-                  </Link>
                   <Link to="/resume" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
                     <div className="mobile-drawer-item-left">
                       <FileText size={19} className="mobile-drawer-icon" />
@@ -638,14 +626,6 @@ export const Navbar: React.FC = () => {
                   <Building2 size={19} className="mobile-drawer-icon" />
                   <span>Companies</span>
                 </div>
-                <ChevronRight size={16} color="#94A3B8" />
-              </Link>
-              <Link to="/resume-matcher" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
-                <div className="mobile-drawer-item-left">
-                  <FileSearch size={19} className="mobile-drawer-icon" color="#1B4FDF" />
-                  <span>Resume Matcher</span>
-                </div>
-                <span style={{ fontSize: '10px', fontWeight: 800, background: '#EFF6FF', color: '#1B4FDF', padding: '2px 6px', marginRight: '6px' }}>FIT</span>
                 <ChevronRight size={16} color="#94A3B8" />
               </Link>
               <Link to="/about" className="mobile-drawer-item" onClick={() => setMobileMenuOpen(false)}>
