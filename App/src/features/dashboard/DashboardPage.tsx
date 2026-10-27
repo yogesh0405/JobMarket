@@ -321,6 +321,28 @@ export const DashboardPage: React.FC = () => {
   const tradesList = ['Fitter', 'Welder', 'CNC Operator', 'Electrician', 'Machinist', 'Helper', 'Quality Inspector'];
 
   const isEmployer = currentUser.role === 'employer';
+  const dashboardSectionTitles: Record<string, string> = {
+    profile: isEmployer ? 'Company Profile' : 'My Profile',
+    saved: 'Saved Jobs',
+    applied: 'Applied Jobs',
+    interviews: 'Scheduled Interviews',
+    'scheduled-interviews': 'Scheduled Interviews',
+    resume: currentUser.resume && (currentUser.resume.name || currentUser.resume.url) ? 'My Resume' : 'Upload Resume',
+    security: 'Security & Sessions',
+    about: 'About Us',
+    support: 'Help & Support',
+    notifications: 'Notifications',
+    alerts: 'Notifications',
+    overview: 'Overview',
+    candidates: 'Browse Candidates',
+    manage: 'Manage Jobs',
+    applicants: 'Applicants',
+    advertisements: 'Promotional Banners',
+    banners: 'Promotional Banners',
+    promotions: 'Promotional Banners',
+    'post-job': 'Post a Job',
+  };
+  const dashboardSectionTitle = dashboardSectionTitles[tab] || (isEmployer ? 'Browse Candidates' : 'Candidate Workspace');
 
   return (
     <>
@@ -563,7 +585,18 @@ export const DashboardPage: React.FC = () => {
           </aside>
 
           {/* Main Dashboard Content */}
-          <main className="dashboard-main">
+          <main className="dashboard-main" data-dashboard-tab={tab}>
+            {tab !== 'profile' && (
+              <header className="dashboard-page-header">
+                <h1>{dashboardSectionTitle}</h1>
+                {tab === 'saved' && (
+                  <span className="dashboard-page-header-badge">
+                    {getSavedJobs().length} {getSavedJobs().length === 1 ? 'Saved Job' : 'Saved Jobs'}
+                  </span>
+                )}
+              </header>
+            )}
+            <div className="dashboard-page-body">
             {tab === 'resume' ? (
               <ResumePage embeddedInDashboard />
             ) : tab === 'security' ? (
@@ -575,7 +608,7 @@ export const DashboardPage: React.FC = () => {
             ) : tab === 'support' ? (
               <ContactPage />
             ) : tab === 'saved' && isEmployer ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="dashboard-employer-saved-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>Saved Jobs</h2>
@@ -607,6 +640,7 @@ export const DashboardPage: React.FC = () => {
             ) : (
               <CandidateDashboard tab={tab} currentUser={currentUser} getAppliedJobs={getAppliedJobs} getSavedJobs={getSavedJobs} toggleSaveJob={toggleSaveJob} setTab={setTab} t={t} />
             )}
+            </div>
           </main>
         </div>
       </div>
@@ -1244,7 +1278,7 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'saved':
       return (
         <>
-          <h2 style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>Saved Jobs</h2>
+          <h2 className="dashboard-candidate-saved-heading" style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>Saved Jobs</h2>
           {savedJobs.length > 0 ? (
             <div className="jobs-list">
               {savedJobs.map(job => (

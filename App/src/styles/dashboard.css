@@ -162,9 +162,23 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: hidden !important;
   position: sticky;
   top: calc(var(--navbar-height) + 16px);
+  max-height: calc(100vh - var(--navbar-height) - 32px);
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.dashboard-sidebar::-webkit-scrollbar,
+.dashboard-nav::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.dashboard-page-header {
+  display: none;
 }
 
 /* ---- Dashboard Profile ---- */
@@ -306,6 +320,7 @@
 
 .dashboard-nav {
   padding: var(--space-3);
+  overflow: hidden !important;
 }
 
 .dashboard-nav-item {
@@ -1207,5 +1222,140 @@
   .dashboard-layout.is-candidates-tab > .dashboard-main {
     width: 100% !important;
     max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  html {
+    overflow-y: scroll;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 260px minmax(0, 1fr) !important;
+  }
+
+  .dashboard-sidebar {
+    display: flex !important;
+    flex-direction: column;
+    position: sticky;
+    align-self: start;
+    top: calc(var(--navbar-height) + 16px);
+    max-height: calc(100vh - var(--navbar-height) - 32px);
+    max-height: calc(100dvh - var(--navbar-height) - 32px);
+  }
+
+  .dashboard-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-main {
+    min-width: 0;
+  }
+
+  .dashboard-page-header {
+    display: flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0;
+  }
+
+  .dashboard-page-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .dashboard-page-header h1 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.3px;
+  }
+
+  .dashboard-page-header-badge {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    border: 1px solid var(--primary-200);
+    border-radius: var(--radius-full);
+    background: var(--primary-50);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dashboard-main[data-dashboard-tab='saved'] .dashboard-employer-saved-content > div:first-child,
+  .dashboard-main[data-dashboard-tab='saved'] .dashboard-candidate-saved-heading,
+  .dashboard-main .dashboard-embedded-page-heading {
+    display: none;
+  }
+
+  .dashboard-page-body,
+  .dashboard-page-body > * {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .dashboard-page-body .about-container,
+  .dashboard-page-body .security-page-container,
+  .dashboard-page-body .profile-main-container,
+  .dashboard-page-body .cand-desktop-wrap,
+  .dashboard-page-body .help-ticket-manager-container,
+  .dashboard-page-body .employer-profile-container,
+  .dashboard-page-body .applicants-section-container,
+  .dashboard-page-body .create-banner-page-container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .dashboard-page-body .about-container {
+    padding-top: 0;
+  }
+
+  .dashboard-page-body .notifications-page-container {
+    padding: 0 0 48px !important;
+  }
+
+  .dashboard-page-body .notifications-card-box {
+    width: 100%;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .dashboard-main .applicants-sticky-header {
+    top: 16px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  html,
+  body,
+  #root,
+  #app,
+  #page-content {
+    overflow-x: clip;
+  }
+
+  html {
+    overflow-y: scroll;
+  }
+
+  .dashboard-layout > .dashboard-sidebar {
+    position: sticky !important;
+    align-self: start !important;
+    top: calc(var(--navbar-height) + 16px) !important;
   }
 }

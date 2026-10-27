@@ -309,7 +309,7 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
           <div style={{ maxWidth: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', margin: '0' }}>
             {/* Main Card */}
             <div className="resume-card" style={{ margin: 0, width: '100%', maxWidth: '100%' }}>
-              <div style={{ marginBottom: '6px' }}>
+              <div className={embeddedInDashboard ? 'dashboard-embedded-page-heading' : undefined} style={{ marginBottom: '6px' }}>
                 <h2>My Resume</h2>
               </div>
               <p className="resume-subtitle">Please upload your updated resume document to increase job application response rates.</p>
@@ -597,7 +597,7 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
         {/* Main Upload Card */}
         <div className="resume-card" style={{ margin: 0, width: '100%', maxWidth: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <h2>Upload Resume</h2>
+            <h2 className={embeddedInDashboard ? 'dashboard-embedded-page-heading' : undefined}>Upload Resume</h2>
             {showReplaceUpload && (
               <button 
                 onClick={() => setShowReplaceUpload(false)} 
@@ -879,4 +879,3 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
 };
 
 export default ResumePage;
-
