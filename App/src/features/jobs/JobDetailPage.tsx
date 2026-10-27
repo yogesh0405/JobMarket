@@ -487,6 +487,20 @@ export const JobDetailPage: React.FC = () => {
 
   const postedTimeAgo = timeAgo(job.posted_at || (job as any).postedAt || (job as any).created_at || new Date());
 
+  const industryTrade = job.industry || job.trade || (job as any).trade_category;
+  const rawWorkMode = job.work_mode || (job as any).workMode || job.job_type || (job as any).jobType;
+  const workMode = (() => {
+    if (!rawWorkMode) return 'On-site';
+    const str = String(rawWorkMode).trim();
+    const lower = str.toLowerCase();
+    if (lower === 'remote') return 'Remote';
+    if (lower === 'hybrid') return 'Hybrid';
+    if (lower === 'onsite' || lower === 'on_site' || lower === 'on-site') return 'On-site';
+    return str;
+  })();
+  const shiftDetails = (job as any).shift_details || (job as any).shiftDetails;
+  const vacancies = job.openings || (job as any).vacancies;
+
   return (
     <div className="jd-page-wrapper">
       <div className="jd-container">
