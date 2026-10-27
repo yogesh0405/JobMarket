@@ -33,7 +33,8 @@ import {
   ShieldCheck,
   Check,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  MoreVertical
 } from 'lucide-react';
 import { MetaVerifiedBadge } from '../../components/common/MetaVerifiedBadge';
 import { WalkInDrivePassModal } from '../interviews/components/WalkInDrivePassModal';
@@ -78,6 +79,7 @@ export const JobDetailPage: React.FC = () => {
   const [isFetchingJob, setIsFetchingJob] = useState(!job);
   const [localSavedOverride, setLocalSavedOverride] = useState<boolean | null>(null);
   const [companyDetails, setCompanyDetails] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [isReported, setIsReported] = useState<boolean>(() => {
     return id ? reportedJobsStore.isReported(id) : false;
@@ -491,115 +493,284 @@ export const JobDetailPage: React.FC = () => {
         
         {/* 1. Hero Header Card */}
         <div className="jd-hero-card">
-          <div className="jd-hero-content">
-            {/* Job / Company Logo */}
-            <Link to={companyUrl} state={companyState} className="jd-company-logo-box" title={`View ${job.company} Profile`}>
-              <CompanyDefaultLogo
-                logoUrl={jobDisplayLogo}
-                companyName={job.company}
-                size={56}
-                borderRadius="8px"
-              />
-            </Link>
+          {/* Desktop Hero View (> 768px) */}
+          <div className="jd-desktop-hero">
+            <div className="jd-hero-content">
+              {/* Job / Company Logo */}
+              <Link to={companyUrl} state={companyState} className="jd-company-logo-box" title={`View ${job.company} Profile`}>
+                <CompanyDefaultLogo
+                  logoUrl={jobDisplayLogo}
+                  companyName={job.company}
+                  size={56}
+                  borderRadius="8px"
+                />
+              </Link>
 
-            {/* Info Stack */}
-            <div className="jd-hero-info">
-              <div className="jd-company-badge-row">
-                <Link to={companyUrl} state={companyState} className="jd-company-link">
-                  <span>{job.company || 'Industrial Partner'}</span>
-                  <ExternalLink size={12} />
-                </Link>
-                <MetaVerifiedBadge size={16} color="#0095F6" title="Verified Employer" />
+              {/* Info Stack */}
+              <div className="jd-hero-info">
+                <div className="jd-company-badge-row">
+                  <Link to={companyUrl} state={companyState} className="jd-company-link">
+                    <span>{job.company || 'Industrial Partner'}</span>
+                    <ExternalLink size={12} />
+                  </Link>
+                  <MetaVerifiedBadge size={16} color="#0095F6" title="Verified Employer" />
+                </div>
+
+                <h1 className="jd-hero-title">{job.title}</h1>
+
+                {/* Badges Strip */}
+                <div className="jd-meta-pills-row">
+                  {industryTrade && (
+                    <span className="jd-pill">
+                      {industryTrade}
+                    </span>
+                  )}
+
+                  {workMode && (
+                    <span className="jd-pill">
+                      {workMode}
+                    </span>
+                  )}
+
+                  {shiftDetails && (
+                    <span className="jd-pill">
+                      {shiftDetails}
+                    </span>
+                  )}
+
+                  {Boolean(vacancies) && (
+                    <span className="jd-pill">
+                      {vacancies} Openings
+                    </span>
+                  )}
+
+                  {isWalkIn && (
+                    <span className="jd-pill jd-pill-walkin">
+                      Walk-in Drive
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <h1 className="jd-hero-title">{job.title}</h1>
+              {/* Action Buttons inside Card */}
+              <div className="jd-card-actions">
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="jd-btn-action-icon"
+                  title="Share job opening"
+                >
+                  <Share2 size={14} />
+                  <span>Share</span>
+                </button>
 
-              {/* Badges Strip */}
-              <div className="jd-meta-pills-row">
-                {(job.industry || job.trade) && (
-                  <span className="jd-pill">
-                    {job.industry || job.trade}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={handleToggleSave}
+                  className={`jd-btn-action-icon ${saved ? 'saved' : ''}`}
+                  title={saved ? 'Remove from bookmarks' : 'Save this job'}
+                >
+                  <Bookmark size={14} fill={saved ? '#1D4ED8' : 'none'} />
+                  <span>{saved ? 'Saved' : 'Save'}</span>
+                </button>
 
-                {(job.work_mode || job.workMode || job.job_type || job.jobType) && (
-                  <span className="jd-pill">
-                    {job.work_mode || job.workMode || job.job_type || job.jobType}
-                  </span>
-                )}
-
-                {(job as any).shift_details && (
-                  <span className="jd-pill">
-                    {(job as any).shift_details}
-                  </span>
-                )}
-
-                {Boolean(job.openings || (job as any).vacancies) && (
-                  <span className="jd-pill">
-                    {job.openings || (job as any).vacancies} Openings
-                  </span>
-                )}
-
-                {isWalkIn && (
-                  <span className="jd-pill">
-                    Walk-in Drive
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={handleOpenReport}
+                  className="jd-btn-action-icon report"
+                  title="Report fake or suspicious listing"
+                >
+                  <Flag size={14} />
+                  <span>Report</span>
+                </button>
               </div>
             </div>
 
-            {/* Action Buttons inside Card */}
-            <div className="jd-card-actions">
-              <button
-                type="button"
-                onClick={handleShare}
-                className="jd-btn-action-icon"
-                title="Share job opening"
-              >
-                <Share2 size={14} />
-                <span>Share</span>
-              </button>
+            {/* Desktop Hero Bottom Bar */}
+            <div className="jd-hero-bottom-bar">
+              <div className="jd-salary-box">
+                {isSalaryDisclosed ? (
+                  <>
+                    <span className="jd-salary-amount">{salaryDisplay}</span>
+                    <span className="jd-salary-sub">/ month (take-home salary)</span>
+                  </>
+                ) : (
+                  <span className="jd-salary-amount jd-salary-undisclosed">Salary Not Disclosed</span>
+                )}
+              </div>
 
-              <button
-                type="button"
-                onClick={handleToggleSave}
-                className={`jd-btn-action-icon ${saved ? 'saved' : ''}`}
-                title={saved ? 'Remove from bookmarks' : 'Save this job'}
-              >
-                <Bookmark size={14} fill={saved ? '#1D4ED8' : 'none'} />
-                <span>{saved ? 'Saved' : 'Save'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenReport}
-                className="jd-btn-action-icon report"
-                title="Report fake or suspicious listing"
-              >
-                <Flag size={14} />
-                <span>Report</span>
-              </button>
+              <div className="jd-posted-meta">
+                <Clock size={13} />
+                <span>Posted {postedTimeAgo}</span>
+                <span>•</span>
+                <span style={{ color: '#047857', fontWeight: 700 }}>Direct Industrial Hiring</span>
+              </div>
             </div>
           </div>
 
-          {/* Hero Bottom Bar */}
-          <div className="jd-hero-bottom-bar">
-            <div className="jd-salary-box">
-              {isSalaryDisclosed ? (
+          {/* Mobile Hero View (<= 768px) - Exact match to Mobile App CandidateJobDetailHeader */}
+          <div className="jd-mobile-hero">
+            {/* Top Nav Row: Back Arrow + Role Name on Left, Three-Dot Menu on Right */}
+            <div className="jd-mobile-top-nav-row">
+              <div className="jd-mobile-role-group">
+                <button
+                  type="button"
+                  onClick={handleBackToJobs}
+                  className="jd-mobile-back-btn"
+                  aria-label="Go back to jobs"
+                >
+                  <ArrowLeft size={22} color="#0F172A" strokeWidth={2.2} />
+                </button>
+                <h1 className="jd-mobile-role-name">
+                  {job.title}
+                </h1>
+              </div>
+
+              {/* Three-Dot Menu Trigger */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(prev => !prev)}
+                className="jd-mobile-more-btn"
+                aria-label="More options"
+                aria-expanded={mobileMenuOpen}
+              >
+                <MoreVertical size={20} color="#334155" strokeWidth={2.2} />
+              </button>
+
+              {/* Three-Dot Dropdown Menu Card */}
+              {mobileMenuOpen && (
                 <>
-                  <span className="jd-salary-amount">{salaryDisplay}</span>
-                  <span className="jd-salary-sub">/ month (take-home salary)</span>
+                  <div
+                    className="jd-mobile-menu-backdrop"
+                    onClick={() => setMobileMenuOpen(false)}
+                  />
+                  <div className="jd-mobile-menu-card">
+                    {/* Option 1: Share */}
+                    <button
+                      type="button"
+                      className="jd-mobile-menu-item"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleShare();
+                      }}
+                    >
+                      <Share2 size={16} color="#475569" strokeWidth={2} />
+                      <span>Share</span>
+                    </button>
+
+                    <div className="jd-mobile-menu-divider" />
+
+                    {/* Option 2: Save / Saved */}
+                    <button
+                      type="button"
+                      className={`jd-mobile-menu-item ${saved ? 'saved' : ''}`}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleToggleSave();
+                      }}
+                    >
+                      <Bookmark
+                        size={16}
+                        color={saved ? '#1D4ED8' : '#475569'}
+                        fill={saved ? '#1D4ED8' : 'none'}
+                        strokeWidth={2}
+                      />
+                      <span>{saved ? 'Saved' : 'Save'}</span>
+                    </button>
+
+                    <div className="jd-mobile-menu-divider" />
+
+                    {/* Option 3: Report */}
+                    <button
+                      type="button"
+                      className="jd-mobile-menu-item danger"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleOpenReport();
+                      }}
+                    >
+                      <Flag size={16} color="#DC2626" strokeWidth={2} />
+                      <span>Report</span>
+                    </button>
+                  </div>
                 </>
-              ) : (
-                <span className="jd-salary-amount jd-salary-undisclosed">Salary Not Disclosed</span>
               )}
             </div>
 
-            <div className="jd-posted-meta">
-              <Clock size={13} />
-              <span>Posted {postedTimeAgo}</span>
-              <span>•</span>
-              <span style={{ color: '#047857', fontWeight: 700 }}>Direct Industrial Hiring</span>
+            {/* Company Info Row: Logo on Left, Company Name & Work Mode on Right */}
+            <div className="jd-mobile-company-row">
+              <Link to={companyUrl} state={companyState} className="jd-mobile-logo-box" title={`View ${job.company} Profile`}>
+                <CompanyDefaultLogo
+                  logoUrl={jobDisplayLogo}
+                  companyName={job.company}
+                  size={52}
+                  borderRadius="8px"
+                />
+              </Link>
+
+              <div className="jd-mobile-company-info">
+                <div className="jd-mobile-company-badge-group">
+                  <Link to={companyUrl} state={companyState} className="jd-mobile-company-link">
+                    <span>{job.company || 'Industrial Partner'}</span>
+                    <ExternalLink size={12} color="#2563EB" strokeWidth={2.4} />
+                  </Link>
+                  <MetaVerifiedBadge size={15} color="#0095F6" />
+                </div>
+
+                {workMode && (
+                  <div className="jd-mobile-work-mode">
+                    {workMode}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Badges Strip matching Mobile App .metaPillsRow */}
+            <div className="jd-meta-pills-row">
+              {industryTrade && (
+                <span className="jd-pill">
+                  {industryTrade}
+                </span>
+              )}
+
+              {shiftDetails && (
+                <span className="jd-pill">
+                  {shiftDetails}
+                </span>
+              )}
+
+              {Boolean(vacancies) && (
+                <span className="jd-pill">
+                  {vacancies} Openings
+                </span>
+              )}
+
+              {isWalkIn && (
+                <span className="jd-pill jd-pill-walkin">
+                  Walk-in Drive
+                </span>
+              )}
+            </div>
+
+            {/* Mobile Hero Bottom Bar */}
+            <div className="jd-hero-bottom-bar">
+              <div className="jd-salary-box">
+                {isSalaryDisclosed ? (
+                  <>
+                    <span className="jd-salary-amount">{salaryDisplay}</span>
+                    <span className="jd-salary-sub">/ month (take-home salary)</span>
+                  </>
+                ) : (
+                  <span className="jd-salary-amount jd-salary-undisclosed">Salary Not Disclosed</span>
+                )}
+              </div>
+
+              <div className="jd-posted-meta">
+                <Clock size={12} color="#64748B" />
+                <span>Posted {postedTimeAgo}</span>
+                <span>•</span>
+                <span style={{ color: '#047857', fontWeight: 700 }}>Direct Industrial Hiring</span>
+              </div>
             </div>
           </div>
         </div>

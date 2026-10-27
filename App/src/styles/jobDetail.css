@@ -713,6 +713,15 @@
   }
 }
 
+/* Desktop vs Mobile Hero Visibility */
+.jd-mobile-hero {
+  display: none;
+}
+
+.jd-desktop-hero {
+  display: block;
+}
+
 @media (max-width: 768px) {
   .jd-page-wrapper {
     padding-top: 10px;
@@ -720,48 +729,284 @@
   }
 
   .jd-hero-card {
-    padding: 16px;
+    padding: 14px 16px 12px 16px;
+    border-radius: 0;
+    margin-bottom: 12px;
   }
 
-  .jd-hero-content {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .jd-desktop-hero {
+    display: none !important;
+  }
+
+  .jd-mobile-hero {
+    display: block !important;
     position: relative;
   }
 
-  .jd-company-logo-box {
-    width: 56px;
-    height: 56px;
+  /* Top Nav Row: Back Arrow + Role Name on Left, Three-Dot Menu on Right */
+  .jd-mobile-top-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    position: relative;
   }
 
-  .jd-card-actions {
-    position: absolute;
+  .jd-mobile-role-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    margin-right: 10px;
+  }
+
+  .jd-mobile-back-btn {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    margin-left: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #0F172A;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+  }
+
+  .jd-mobile-back-btn:active {
+    background-color: rgba(15, 23, 42, 0.08);
+  }
+
+  .jd-mobile-role-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0F172A;
+    letter-spacing: -0.2px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+
+  .jd-mobile-more-btn {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    margin-right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #334155;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+  }
+
+  .jd-mobile-more-btn:active {
+    background-color: rgba(15, 23, 42, 0.08);
+  }
+
+  /* Three-Dot Menu Modal Dropdown */
+  .jd-mobile-menu-backdrop {
+    position: fixed;
     top: 0;
+    left: 0;
     right: 0;
+    bottom: 0;
+    z-index: 2100;
+    background: rgba(15, 23, 42, 0.25);
+  }
+
+  .jd-mobile-menu-card {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    min-width: 175px;
+    padding: 4px 0;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+    z-index: 2101;
+    animation: fadeIn 0.12s ease-out;
+  }
+
+  .jd-mobile-menu-item {
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: 0;
-  }
-
-  .jd-card-actions .jd-btn-action-icon {
-    height: auto;
-    padding: 2px 4px;
-    font-size: 12px;
-    gap: 5px;
+    padding: 11px 14px;
     background: transparent;
-    background-color: transparent;
     border: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1E293B;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.12s ease;
   }
 
-  .jd-hero-title {
-    font-size: 20px;
+  .jd-mobile-menu-item:active,
+  .jd-mobile-menu-item:hover {
+    background-color: #F8FAFC;
   }
 
-  .jd-hero-bottom-bar {
+  .jd-mobile-menu-item.saved {
+    color: #1D4ED8;
+    font-weight: 700;
+  }
+
+  .jd-mobile-menu-item.danger {
+    color: #DC2626;
+    font-weight: 600;
+  }
+
+  .jd-mobile-menu-divider {
+    height: 1px;
+    background-color: #F1F5F9;
+    margin: 0;
+  }
+
+  /* Company Info Row */
+  .jd-mobile-company-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2px;
+  }
+
+  .jd-mobile-logo-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    background-color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+
+  .jd-mobile-company-info {
+    flex: 1;
+    display: flex;
     flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .jd-mobile-company-badge-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .jd-mobile-company-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563EB;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .jd-mobile-company-link:hover {
+    text-decoration: underline;
+  }
+
+  .jd-mobile-work-mode {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #64748B;
+    margin-top: 3px;
+  }
+
+  /* Badges Strip on Mobile */
+  .jd-mobile-hero .jd-meta-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+
+  .jd-mobile-hero .jd-pill {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #334155;
+    box-shadow: none;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .jd-mobile-hero .jd-pill.jd-pill-walkin {
+    background-color: #F0F9FF;
+    border-color: #BAE6FD;
+    color: #0284C7;
+    font-weight: 700;
+  }
+
+  /* Bottom Bar on Mobile */
+  .jd-mobile-hero .jd-hero-bottom-bar {
+    border-top: 1px solid #F1F5F9;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     align-items: flex-start;
+  }
+
+  .jd-mobile-hero .jd-salary-box {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .jd-mobile-hero .jd-salary-amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16A34A;
+    letter-spacing: -0.2px;
+  }
+
+  .jd-mobile-hero .jd-salary-amount.jd-salary-undisclosed {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .jd-mobile-hero .jd-salary-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748B;
+  }
+
+  .jd-mobile-hero .jd-posted-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: #64748B;
   }
 
   .jd-specs-grid {
