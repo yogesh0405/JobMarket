@@ -29,7 +29,6 @@ import {
   ExternalLink,
   Ticket,
   Flag,
-  ShieldAlert,
   ShieldCheck,
   Check,
   AlertCircle,
@@ -1033,13 +1032,6 @@ export const JobDetailPage: React.FC = () => {
               />
             </div>
 
-            {/* Candidate Safety Advisory Card */}
-            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ShieldAlert size={18} color="#DC2626" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.4 }}>
-                JobMarket Safety Guarantee: Employers are strictly forbidden from demanding fees for interviews.
-              </span>
-            </div>
 
           </div>
 
