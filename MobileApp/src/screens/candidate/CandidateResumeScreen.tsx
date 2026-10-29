@@ -5,8 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Switch,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import {
@@ -15,7 +13,6 @@ import {
   CheckCircle2,
   Trash2,
   Eye,
-  EyeOff,
   ArrowUpCircle,
   X,
   ExternalLink,
@@ -45,12 +42,9 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [deleting, setDeleting] = useState(false);
-  const [isPublic, setIsPublic] = useState(user?.isResumePublic !== false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [showReplaceMode, setShowReplaceMode] = useState(false);
-  const [confirmModalState, setConfirmModalState] = useState<{ show: boolean; targetState: boolean } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [updatingVisibility, setUpdatingVisibility] = useState(false);
 
   const extracted = extractCandidateResume(user);
   const resumeUrl = extracted.url || null;
@@ -188,31 +182,6 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
     } catch (e: any) {
       setDeleting(false);
       showToast(e.message || 'Error deleting resume', 'error');
-    }
-  };
-
-  const handleRequestToggle = (targetState: boolean) => {
-    setConfirmModalState({ show: true, targetState });
-  };
-
-  const handleConfirmToggleVisibility = async () => {
-    if (!confirmModalState) return;
-    const targetState = confirmModalState.targetState;
-    setConfirmModalState(null);
-    setUpdatingVisibility(true);
-    try {
-      await candidateApi.toggleResumeVisibility(targetState);
-      setIsPublic(targetState);
-      showToast(
-        targetState 
-          ? 'Recruiter Visibility enabled! Your resume is now public to verified recruiters.' 
-          : 'Recruiter Visibility disabled. Your resume is now private.',
-        'info'
-      );
-    } catch (e) {
-      showToast('Failed to update recruiter visibility', 'error');
-    } finally {
-      setUpdatingVisibility(false);
     }
   };
 
@@ -401,30 +370,6 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           )}
         </View>
 
-        {/* Recruiter Search Visibility Toggle (Always visible below main card) */}
-        <View style={styles.cardContainer}>
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                {isPublic ? <Eye size={16} color={COLORS.primary} /> : <EyeOff size={16} color="#64748B" />}
-                <Text style={styles.toggleTitle}>Recruiter Search Visibility</Text>
-              </View>
-              <Text style={styles.toggleDesc}>
-                {isPublic
-                  ? 'Your candidate profile & resume can be discovered by verified industrial recruiters.'
-                  : 'Hidden from public recruiter search. Visible only when you submit job applications.'}
-              </Text>
-            </View>
-            <Switch
-              value={isPublic}
-              onValueChange={handleRequestToggle}
-              disabled={updatingVisibility}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={isPublic ? COLORS.primary : '#94A3B8'}
-            />
-          </View>
-        </View>
-
         {/* Privacy Note */}
         <View style={styles.privacyNoteContainer}>
           <Text style={styles.privacyNoteText}>
@@ -432,62 +377,6 @@ export const CandidateResumeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         </View>
       </ScrollView>
-
-      {/* Confirmation Modal for Visibility Toggle */}
-      {confirmModalState?.show && (
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContentCard}>
-            <View style={styles.modalHeaderRow}>
-              <View style={[
-                styles.modalIconBox,
-                { backgroundColor: confirmModalState.targetState ? '#EFF6FF' : '#FEF2F2', borderColor: confirmModalState.targetState ? '#DBEAFE' : '#FCA5A5' }
-              ]}>
-                {confirmModalState.targetState ? (
-                  <Eye size={22} color={COLORS.primary} strokeWidth={2.2} />
-                ) : (
-                  <EyeOff size={22} color="#DC2626" strokeWidth={2.2} />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>
-                  {confirmModalState.targetState ? 'Enable Recruiter Visibility?' : 'Make Resume Private?'}
-                </Text>
-                <Text style={styles.modalDesc}>
-                  {confirmModalState.targetState
-                    ? 'Making your resume public allows verified industrial and factory recruiters to discover your profile and contact you directly for new job openings.'
-                    : 'Your profile and resume will be hidden from direct candidate searches. Recruiters cannot discover you directly, but you can still apply to jobs manually.'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.modalActionsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setConfirmModalState(null)}
-                disabled={updatingVisibility}
-              >
-                <Text style={styles.modalCancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalConfirmBtn,
-                  { backgroundColor: confirmModalState.targetState ? COLORS.primary : '#DC2626' }
-                ]}
-                onPress={handleConfirmToggleVisibility}
-                disabled={updatingVisibility}
-              >
-                {updatingVisibility ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.modalConfirmBtnText}>
-                    {confirmModalState.targetState ? 'Make Public' : 'Make Private'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
 
       {/* Themed Confirmation Modal for Delete Resume */}
       {showDeleteModal && (
@@ -879,23 +768,6 @@ const styles = StyleSheet.create({
     borderColor: '#FCA5A5',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  /* Recruiter Search Visibility Toggle */
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  toggleTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  toggleDesc: {
-    fontSize: 11.5,
-    color: '#64748B',
-    lineHeight: 16,
   },
 
   /* Privacy Note */

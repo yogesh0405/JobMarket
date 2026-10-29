@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { apiFetch } from '../../utils/api';
 import { resolveWebNotificationRoute } from '../../utils/notificationRouter';
+import { MobileHeader } from '../../components/common/MobileHeader';
 import {
   Bell,
   CheckCheck,
@@ -538,10 +539,16 @@ export const NotificationsPage: React.FC = () => {
           flex-direction: column;
           box-sizing: border-box;
         }
+        .notifications-mobile-header {
+          display: none;
+        }
         @media (max-width: 768px) {
           .notifications-page-container {
             padding: 0 !important;
             background-color: #ffffff !important;
+          }
+          .notifications-mobile-header {
+            display: block;
           }
           .notifications-card-box {
             max-width: 100% !important;
@@ -1063,6 +1070,15 @@ export const NotificationsPage: React.FC = () => {
         </div>,
         document.body
       )}
+
+      <div className="notifications-mobile-header">
+        <MobileHeader
+          title="Notifications"
+          showBack={true}
+          hideRightActions={true}
+          onBack={() => navigate(-1)}
+        />
+      </div>
 
       <div className="notifications-card-box">
         {/* Top Sticky Controls Wrap: Tab Bar & Capsule Filters with Crisp White Elevation */}

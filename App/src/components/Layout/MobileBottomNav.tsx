@@ -44,6 +44,7 @@ export const MobileBottomNav: React.FC = () => {
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const isJobsPage = normalizedPath === '/jobs';
   const isCompaniesPage = normalizedPath === '/companies';
+  const isResumePage = normalizedPath.startsWith('/resume');
 
   const isJobDetailRoute = !isJobsPage && normalizedPath !== '/jobs/map' && (normalizedPath.startsWith('/job/') || normalizedPath.startsWith('/jobs/'));
   const isCompanyProfileRoute = !isCompaniesPage && (normalizedPath.startsWith('/company/') || normalizedPath.startsWith('/companies/'));
@@ -52,6 +53,8 @@ export const MobileBottomNav: React.FC = () => {
     location.search.includes('tab=banners') ||
     location.search.includes('tab=promotions')
   );
+  const isSavedSection = normalizedPath.startsWith('/dashboard') && location.search.includes('tab=saved');
+  const isResumeSection = normalizedPath.startsWith('/dashboard') && location.search.includes('tab=resume');
   const isInterviewsSection = (
     normalizedPath.startsWith('/interviews') ||
     normalizedPath.startsWith('/schedule') ||
@@ -72,9 +75,12 @@ export const MobileBottomNav: React.FC = () => {
     normalizedPath.startsWith('/p/') ||
     normalizedPath.startsWith('/post-job') ||
     normalizedPath.startsWith('/edit-job') ||
+    isResumePage ||
     isJobDetailRoute ||
     isCompanyProfileRoute ||
     isBannersSection ||
+    isSavedSection ||
+    isResumeSection ||
     isInterviewsSection ||
     isAboutSection ||
     isContactSection ||

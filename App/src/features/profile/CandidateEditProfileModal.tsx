@@ -724,7 +724,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         </div>
 
         {/* Scrollable Form Body */}
-        <div style={{ padding: '20px', overflowY: 'auto', flex: 1, backgroundColor: '#F8FAFC' }}>
+        <div className="candidate-edit-profile-body" style={{ padding: '20px', overflowY: 'auto', flex: 1, minHeight: 0, backgroundColor: '#F8FAFC' }}>
 
           {/* Inline Error Notification Banner inside screen */}
           {inlineError && (
@@ -1656,7 +1656,7 @@ export const CandidateEditProfileModal: React.FC<CandidateEditProfileModalProps>
         </div>
 
         {/* Modal Bottom Fixed Action Bar */}
-        <div style={{
+        <div className="candidate-edit-profile-actions" style={{
           padding: '12px 18px',
           borderTop: '1px solid #E2E8F0',
           backgroundColor: '#FFFFFF',

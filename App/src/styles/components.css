@@ -2434,11 +2434,29 @@
   .edit-profile-modal-container.company-edit-modal {
     width: 100vw !important;
     height: 100vh !important;
+    height: 100dvh !important;
     max-width: 100vw !important;
     max-height: 100vh !important;
+    max-height: 100dvh !important;
     border-radius: 0px !important;
     border: none !important;
     margin: 0 !important;
     box-shadow: none !important;
+  }
+
+  .candidate-edit-profile-body {
+    min-height: 0 !important;
+    flex: 1 1 0% !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .candidate-edit-profile-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex: 0 0 auto !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }

@@ -146,6 +146,7 @@ export const Navbar: React.FC = () => {
     location.search.includes('tab=promotions')
   );
   const isAppliedSection = normalizedPath.startsWith('/dashboard') && location.search.includes('tab=applied');
+  const isSavedSection = normalizedPath.startsWith('/dashboard') && location.search.includes('tab=saved');
   const isProfileSection = normalizedPath === '/profile' || normalizedPath === '/my-profile' || (normalizedPath.startsWith('/dashboard') && (location.search.includes('tab=profile') || location.search.includes('tab=my-profile')));
   const isCompaniesRoute = isCompaniesPage || normalizedPath.startsWith('/companies');
   const isJobsRoute = isJobsPage || (normalizedPath.startsWith('/jobs') && normalizedPath !== '/jobs/map');
@@ -163,7 +164,7 @@ export const Navbar: React.FC = () => {
   const isContactSection = normalizedPath.startsWith('/contact') || normalizedPath.startsWith('/support') || normalizedPath.startsWith('/help') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=support'));
   const isSecuritySection = normalizedPath.startsWith('/security') || (normalizedPath.startsWith('/dashboard') && location.search.includes('tab=security'));
   const isNotificationsRoute = normalizedPath === '/notifications' || normalizedPath === '/alerts';
-  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection || isNotificationsRoute || isAboutSection || isSecuritySection;
+  const hideNavbarMobile = isJobDetailRoute || isCompanyProfileRoute || isInterviewsSection || isSavedSection || isProfileSection || isNotificationsRoute || isAboutSection || isContactSection || isSecuritySection;
 
   // Determine current active section title dynamically
   const getCurrentSectionTitle = () => {

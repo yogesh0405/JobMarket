@@ -46,6 +46,42 @@
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
+.dashboard-saved-mobile-header {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .dashboard-main[data-dashboard-tab='saved'] .dashboard-candidate-saved-heading {
+    display: none !important;
+  }
+
+  .dashboard-saved-mobile-header {
+    display: block;
+    margin: 0 0 12px;
+  }
+
+  .saved-jobs-page-wrapper > .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .saved-jobs-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    width: 100%;
+  }
+
+  .saved-jobs-list .job-card-naukri-style {
+    width: 100% !important;
+    min-width: 0;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  }
+}
+
 .applied-mobile-header {
   display: flex;
   align-items: center;
@@ -1140,6 +1176,20 @@
 }
 
 @media (max-width: 768px) {
+  .dashboard-candidate-saved-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+    width: 100% !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-candidate-saved-list .job-card-naukri-style {
+    border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  }
+
   .applicant-card-item {
     padding: 12px 14px !important;
     border-radius: 8px !important;

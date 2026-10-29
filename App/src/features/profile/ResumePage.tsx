@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, UploadCloud, FileText, Trash2, X, CheckCircle2, ArrowUpCircle, ArrowLeft } from 'lucide-react';
+import { Eye, Lock, UploadCloud, FileText, Trash2, X, CheckCircle2, ArrowUpCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { ResumePreviewModal } from '../../components/profile/ResumePreviewModal';
@@ -8,7 +8,7 @@ import { uploadResumeFast } from '../../utils/uploadToCloudinary';
 
 export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embeddedInDashboard = false }) => {
   const navigate = useNavigate();
-  const { currentUser, syncUser, deleteResume, updateUser } = useAuth();
+  const { currentUser, syncUser, deleteResume } = useAuth();
   const { showToast } = useToast();
 
   const [dragOver, setDragOver] = useState(false);
@@ -18,40 +18,8 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewResume, setPreviewResume] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isPublic, setIsPublic] = useState<boolean>(currentUser?.isResumePublic !== false);
-  const [isUpdatingPublic, setIsUpdatingPublic] = useState(false);
   const [showReplaceUpload, setShowReplaceUpload] = useState(false);
-  const [confirmVisibilityModal, setConfirmVisibilityModal] = useState<{ show: boolean; targetState: boolean } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const handleRequestToggle = (targetState: boolean) => {
-    setConfirmVisibilityModal({ show: true, targetState });
-  };
-
-  const handleConfirmTogglePublic = async () => {
-    if (!confirmVisibilityModal) return;
-    const targetState = confirmVisibilityModal.targetState;
-    setConfirmVisibilityModal(null);
-    setIsUpdatingPublic(true);
-    try {
-      const res = await updateUser({ isResumePublic: targetState });
-      if (res.success) {
-        setIsPublic(targetState);
-        showToast(
-          targetState 
-            ? 'Recruiter Visibility enabled! Your resume is now public to verified recruiters.' 
-            : 'Recruiter Visibility disabled. Your resume is now private.',
-          'info'
-        );
-      } else {
-        showToast(res.error || 'Failed to update recruiter visibility', 'error');
-      }
-    } catch (err) {
-      showToast('Failed to update recruiter visibility', 'error');
-    } finally {
-      setIsUpdatingPublic(false);
-    }
-  };
 
   const handleDeleteResume = () => {
     setShowDeleteModal(true);
@@ -210,79 +178,6 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
     );
   }
 
-  const renderVisibilityCard = () => (
-    <div 
-      className="resume-card"
-      style={{
-        margin: 0,
-        width: '100%',
-        maxWidth: '100%',
-        padding: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        textAlign: 'left'
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-          {isPublic ? (
-            <Eye size={16} color="#1B4FDF" style={{ flexShrink: 0 }} />
-          ) : (
-            <EyeOff size={16} color="#64748B" style={{ flexShrink: 0 }} />
-          )}
-          <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
-            Recruiter Search Visibility
-          </h4>
-        </div>
-        <p style={{ margin: 0, fontSize: '11.5px', color: '#64748B', lineHeight: '16px' }}>
-          {isPublic 
-            ? 'Your profile & resume can be discovered by verified industrial recruiters.' 
-            : 'Hidden from public recruiter search. Visible only when you submit job applications.'}
-        </p>
-      </div>
-
-      {/* Modern Compact Toggle Switch Slider */}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isPublic}
-        disabled={isUpdatingPublic}
-        onClick={() => handleRequestToggle(!isPublic)}
-        style={{
-          width: '36px',
-          height: '20px',
-          borderRadius: '10px',
-          backgroundColor: isPublic ? '#1B4FDF' : '#CBD5E1',
-          border: 'none',
-          padding: '3px',
-          cursor: isUpdatingPublic ? 'wait' : 'pointer',
-          position: 'relative',
-          transition: 'background-color 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          flexShrink: 0,
-          outline: 'none',
-          boxShadow: isPublic ? '0 1px 3px rgba(27, 79, 223, 0.25)' : 'none'
-        }}
-      >
-        <span
-          style={{
-            width: '14px',
-            height: '14px',
-            borderRadius: '50%',
-            backgroundColor: '#FFFFFF',
-            position: 'absolute',
-            left: isPublic ? '19px' : '3px',
-            transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-          }}
-        />
-      </button>
-    </div>
-  );
-
   const renderPrivacyNote = () => (
     <div style={{ textAlign: 'center', marginTop: '8px', padding: '0 16px' }}>
       <p style={{ color: '#94A3B8', fontSize: '11px', margin: 0, lineHeight: '15px' }}>
@@ -375,114 +270,9 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
               </div>
             </div>
 
-            {/* Separate Recruiter Visibility Card */}
-            {renderVisibilityCard()}
-
             {/* Privacy Note */}
             {renderPrivacyNote()}
           </div>
-
-        {/* Confirmation Modal */}
-        {confirmVisibilityModal?.show && (
-          <div 
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.55)',
-              backdropFilter: 'blur(3px)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '16px'
-            }}
-          >
-            <div
-              style={{
-                background: '#FFFFFF',
-                borderRadius: '8px',
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 20px 40px -8px rgba(15, 23, 42, 0.2)',
-                maxWidth: '440px',
-                width: '100%',
-                padding: '24px',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
-                <div
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '8px',
-                    backgroundColor: confirmVisibilityModal.targetState ? '#EFF6FF' : '#FEF2F2',
-                    border: `1px solid ${confirmVisibilityModal.targetState ? '#DBEAFE' : '#FCA5A5'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  {confirmVisibilityModal.targetState ? (
-                    <Eye size={22} color="#1B4FDF" strokeWidth={2.2} />
-                  ) : (
-                    <EyeOff size={22} color="#DC2626" strokeWidth={2.2} />
-                  )}
-                </div>
-                <div>
-                  <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                    {confirmVisibilityModal.targetState ? 'Enable Recruiter Visibility?' : 'Make Resume Private?'}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#64748B', lineHeight: '1.5' }}>
-                    {confirmVisibilityModal.targetState
-                      ? 'Making your resume public allows verified industrial & factory recruiters to discover your profile and contact you directly for job openings.'
-                      : 'Your profile and resume will be hidden from direct recruiter searches. Recruiters cannot find you directly, but you can still apply to jobs manually.'}
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', marginTop: '22px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
-                <button
-                  type="button"
-                  onClick={() => setConfirmVisibilityModal(null)}
-                  disabled={isUpdatingPublic}
-                  style={{
-                    background: '#FFFFFF',
-                    border: '1.5px solid #CBD5E1',
-                    borderRadius: '6px',
-                    padding: '8px 18px',
-                    color: '#475569',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmTogglePublic}
-                  disabled={isUpdatingPublic}
-                  style={{
-                    background: confirmVisibilityModal.targetState ? '#1B4FDF' : '#DC2626',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 20px',
-                    color: '#FFFFFF',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    boxShadow: confirmVisibilityModal.targetState 
-                      ? '0 2px 6px rgba(27, 79, 223, 0.28)' 
-                      : '0 2px 6px rgba(220, 38, 38, 0.28)'
-                  }}
-                >
-                  {isUpdatingPublic ? 'Updating...' : confirmVisibilityModal.targetState ? 'Make Public' : 'Make Private'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Themed Delete Confirmation Modal */}
         {showDeleteModal && (
@@ -761,114 +551,9 @@ export const ResumePage: React.FC<{ embeddedInDashboard?: boolean }> = ({ embedd
           </div>
         </div>
 
-        {/* Separate Recruiter Visibility Card */}
-        {renderVisibilityCard()}
-
         {/* Privacy Note Below */}
         {renderPrivacyNote()}
       </div>
-
-      {/* Confirmation Modal */}
-      {confirmVisibilityModal?.show && (
-        <div 
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(3px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px'
-          }}
-        >
-          <div
-            style={{
-              background: '#FFFFFF',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 20px 40px -8px rgba(15, 23, 42, 0.2)',
-              maxWidth: '440px',
-              width: '100%',
-              padding: '24px',
-              textAlign: 'left'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
-              <div
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '8px',
-                  backgroundColor: confirmVisibilityModal.targetState ? '#EFF6FF' : '#FEF2F2',
-                  border: `1px solid ${confirmVisibilityModal.targetState ? '#DBEAFE' : '#FCA5A5'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                {confirmVisibilityModal.targetState ? (
-                  <Eye size={22} color="#1B4FDF" strokeWidth={2.2} />
-                ) : (
-                  <EyeOff size={22} color="#DC2626" strokeWidth={2.2} />
-                )}
-              </div>
-              <div>
-                <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>
-                  {confirmVisibilityModal.targetState ? 'Enable Recruiter Visibility?' : 'Make Resume Private?'}
-                </h3>
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748B', lineHeight: '1.5' }}>
-                  {confirmVisibilityModal.targetState
-                    ? 'Making your resume public allows verified industrial & factory recruiters to discover your profile and contact you directly for job openings.'
-                    : 'Your profile and resume will be hidden from direct recruiter searches. Recruiters cannot find you directly, but you can still apply to jobs manually.'}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', marginTop: '22px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
-              <button
-                type="button"
-                onClick={() => setConfirmVisibilityModal(null)}
-                disabled={isUpdatingPublic}
-                style={{
-                  background: '#FFFFFF',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '6px',
-                  padding: '8px 18px',
-                  color: '#475569',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmTogglePublic}
-                disabled={isUpdatingPublic}
-                style={{
-                  background: confirmVisibilityModal.targetState ? '#1B4FDF' : '#DC2626',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 20px',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  boxShadow: confirmVisibilityModal.targetState 
-                    ? '0 2px 6px rgba(27, 79, 223, 0.28)' 
-                    : '0 2px 6px rgba(220, 38, 38, 0.28)'
-                }}
-              >
-                {isUpdatingPublic ? 'Updating...' : confirmVisibilityModal.targetState ? 'Make Public' : 'Make Private'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {previewResume && (
         <ResumePreviewModal resume={previewResume} onClose={() => setPreviewResume(null)} />

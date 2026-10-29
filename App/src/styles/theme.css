@@ -8,12 +8,12 @@
   
   /* Font Sizes (Desktop First) */
   --font-hero-title: 24px;
-  --font-section-title: 20px;
-  --font-subtitle: 15px;
-  --font-body: 14px;
-  --font-value: 15px;
+  --font-section-title: 15px;
+  --font-subtitle: 14px;
+  --font-body: 13.5px;
+  --font-value: 13.5px;
   --font-badge-cta: 12.5px;
-  --font-label-caps: 11px;
+  --font-label-caps: 11.5px;
 
   /* Font Weights */
   --weight-extrabold: 800;
@@ -109,13 +109,13 @@
 
 @media (max-width: 767px) {
   :root {
-    --font-hero-title: 15px;
+    --font-hero-title: 17px;
     --font-section-title: 14px;
-    --font-subtitle: 12px;
-    --font-body: 12px;
-    --font-value: 12px;
-    --font-badge-cta: 11px;
-    --font-label-caps: 9.5px;
+    --font-subtitle: 13.5px;
+    --font-body: 13.5px;
+    --font-value: 13.5px;
+    --font-badge-cta: 12.5px;
+    --font-label-caps: 11px;
   }
 
   .ui-card-surface {

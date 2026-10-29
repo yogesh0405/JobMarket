@@ -222,7 +222,7 @@ export const SavedJobsPage: React.FC = () => {
 
             {/* Jobs Grid / List */}
             {filteredJobs.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+              <div className="saved-jobs-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
                 {filteredJobs.map((job) => (
                   <JobCard
                     key={job.id}

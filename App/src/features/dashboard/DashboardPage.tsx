@@ -1278,9 +1278,17 @@ const CandidateDashboard: React.FC<CandidateProps> = ({ tab, currentUser, getApp
     case 'saved':
       return (
         <>
+          <div className="dashboard-saved-mobile-header">
+            <MobileHeader
+              title="Saved Jobs"
+              showBack={true}
+              hideRightActions={true}
+              onBack={() => setTab('profile')}
+            />
+          </div>
           <h2 className="dashboard-candidate-saved-heading" style={{ fontSize: 'var(--fs-2xl)', marginBottom: 'var(--space-6)' }}>Saved Jobs</h2>
           {savedJobs.length > 0 ? (
-            <div className="jobs-list">
+            <div className="jobs-list dashboard-candidate-saved-list">
               {savedJobs.map(job => (
                 <JobCard
                   key={job.id}

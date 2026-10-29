@@ -264,18 +264,6 @@ export const candidateApi = {
     }
   },
 
-  // Toggle resume search visibility (Public vs Private)
-  toggleResumeVisibility: async (isPublic: boolean): Promise<ApiResponse> => {
-    try {
-      return await apiFetch('/api/v1/auth/profile', {
-        method: 'PUT',
-        body: JSON.stringify({ isResumePublic: isPublic, resume_visibility: isPublic }),
-      });
-    } catch {
-      return { success: true };
-    }
-  },
-
   // Fetch platform settings (role_tabs_config, etc.)
   getSettings: async (): Promise<ApiResponse<any>> => {
     return apiFetch('/api/v1/public/settings');
@@ -286,4 +274,3 @@ export const candidateApi = {
     return apiFetch('/api/v1/jobs/interviews/my-interviews');
   },
 };
-
